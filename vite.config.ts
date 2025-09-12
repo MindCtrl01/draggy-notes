@@ -9,7 +9,7 @@ export default defineConfig(({ mode, command }) => ({
   base: process.env.VITE_BASE_PATH || (command === 'build' && process.env.NODE_ENV === 'production' ? '/draggy-notes/' : '/'),
   server: {
     host: "::",
-    port: 8080,
+    port: 7000,
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
