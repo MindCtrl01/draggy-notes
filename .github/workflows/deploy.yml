@@ -35,9 +35,6 @@ jobs:
         
       - name: Build
         run: npm run build
-        env:
-          NODE_ENV: production
-          VITE_BASE_PATH: /draggy-notes/
         
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v3
