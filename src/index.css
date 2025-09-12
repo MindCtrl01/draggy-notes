@@ -8,35 +8,63 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 240 10% 98%;
+    --foreground: 240 10% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 240 10% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 240 10% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 240 6% 10%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 46%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 240 5% 96%;
+    --accent-foreground: 240 6% 10%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 262 83% 58%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+
+    /* Note colors */
+    --note-yellow: 48 100% 88%;
+    --note-yellow-foreground: 45 100% 20%;
+    --note-pink: 330 81% 88%;
+    --note-pink-foreground: 330 81% 25%;
+    --note-blue: 200 100% 88%;
+    --note-blue-foreground: 200 100% 25%;
+    --note-green: 120 60% 88%;
+    --note-green-foreground: 120 60% 25%;
+    --note-purple: 280 80% 88%;
+    --note-purple-foreground: 280 80% 25%;
+    --note-orange: 25 100% 88%;
+    --note-orange-foreground: 25 100% 25%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(262 83% 58%), hsl(280 80% 65%));
+    --gradient-background: linear-gradient(135deg, hsl(240 10% 98%), hsl(250 20% 96%));
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(240 10% 99%));
+
+    /* Shadows */
+    --shadow-note: 0 4px 20px -2px hsl(240 10% 15% / 0.08);
+    --shadow-floating: 0 10px 40px -10px hsl(262 83% 58% / 0.2);
+    --shadow-drag: 0 20px 60px -10px hsl(240 10% 15% / 0.2);
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-spring: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
     --sidebar-background: 0 0% 98%;
 
@@ -100,6 +128,77 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background: var(--gradient-background);
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .note-card {
+    @apply relative p-4 rounded-lg shadow-sm cursor-move select-none;
+    min-width: 200px;
+    min-height: 150px;
+    background: var(--gradient-card);
+    box-shadow: var(--shadow-note);
+    transition: var(--transition-smooth);
+  }
+
+  .note-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-floating);
+  }
+
+  .note-card.dragging {
+    transform: rotate(5deg) scale(1.05);
+    box-shadow: var(--shadow-drag);
+    z-index: 1000;
+  }
+
+  .note-yellow {
+    background: hsl(var(--note-yellow));
+    color: hsl(var(--note-yellow-foreground));
+  }
+
+  .note-pink {
+    background: hsl(var(--note-pink));
+    color: hsl(var(--note-pink-foreground));
+  }
+
+  .note-blue {
+    background: hsl(var(--note-blue));
+    color: hsl(var(--note-blue-foreground));
+  }
+
+  .note-green {
+    background: hsl(var(--note-green));
+    color: hsl(var(--note-green-foreground));
+  }
+
+  .note-purple {
+    background: hsl(var(--note-purple));
+    color: hsl(var(--note-purple-foreground));
+  }
+
+  .note-orange {
+    background: hsl(var(--note-orange));
+    color: hsl(var(--note-orange-foreground));
+  }
+
+  .floating-add-btn {
+    @apply fixed bottom-8 right-8 w-14 h-14 rounded-full flex items-center justify-center;
+    background: var(--gradient-primary);
+    box-shadow: var(--shadow-floating);
+    transition: var(--transition-spring);
+  }
+
+  .floating-add-btn:hover {
+    transform: scale(1.1);
+    box-shadow: var(--shadow-drag);
+  }
+
+  .canvas-container {
+    @apply relative w-full min-h-screen overflow-hidden;
+    background: var(--gradient-background);
   }
 }
