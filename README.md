@@ -1,73 +1,160 @@
-# Welcome to your Lovable project
+# 📝 Draggy Notes
 
-## Project info
+A beautiful, interactive drag-and-drop note-taking application built with React and TypeScript. Create, organize, and manage your notes with an intuitive interface that lets you drag notes around the canvas.
 
-**URL**: https://lovable.dev/projects/7d1f2405-41a3-4cda-9695-dbc97fea75b0
+## ✨ Features
 
-## How can I edit this code?
+- **🎯 Drag & Drop Interface**: Smoothly drag notes around the canvas to organize them visually
+- **📝 Inline Editing**: Click any note to edit its content directly
+- **🎨 Beautiful UI**: Modern design with shadcn/ui components and Tailwind CSS
+- **⚡ Fast Performance**: Built with Vite for lightning-fast development and builds
+- **📱 Responsive Design**: Works seamlessly on desktop and mobile devices
+- **🔄 Real-time Updates**: Instant visual feedback with optimized drag performance
 
-There are several ways of editing your application.
+## 🚀 Live Demo
 
-**Use Lovable**
+Visit the live application: **[https://mindctrl01.github.io/draggy-notes/](https://mindctrl01.github.io/draggy-notes/)**
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/7d1f2405-41a3-4cda-9695-dbc97fea75b0) and start prompting.
+## 🛠️ Tech Stack
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Frontend Framework**: [React 18](https://reactjs.org/)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Build Tool**: [Vite](https://vitejs.dev/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **UI Components**: [shadcn/ui](https://ui.shadcn.com/)
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **Routing**: [React Router DOM](https://reactrouter.com/)
 
-**Use your preferred IDE**
+## 📦 Installation & Setup
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Prerequisites
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Node.js** (version 18 or higher)
+- **npm** or **yarn**
 
-Follow these steps:
+### Getting Started
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/MindCtrl01/draggy-notes.git
+   cd draggy-notes
+   ```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-# Step 3: Install the necessary dependencies.
-npm i
+3. **Start the development server**
+   ```bash
+   npm run dev
+   ```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+4. **Open your browser**
+   ```
+   http://localhost:7000
+   ```
+
+## 🔧 Available Scripts
+
+| Script | Description |
+|--------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Build for production |
+| `npm run preview` | Preview production build |
+| `npm run lint` | Run ESLint |
+| `npm run deploy` | Deploy to GitHub Pages |
+
+## 🎮 How to Use
+
+1. **Creating Notes**: The application starts with sample notes on the canvas
+2. **Moving Notes**: Click and drag any note to reposition it anywhere on the canvas
+3. **Editing Notes**: Click on a note's content to edit it inline
+4. **Deleting Notes**: Hover over a note and click the trash icon to delete it
+5. **Keyboard Shortcuts**:
+   - `Enter`: Save changes when editing
+   - `Shift + Enter`: Add line break while editing
+   - `Escape`: Cancel editing
+
+## 🏗️ Project Structure
+
+```
+draggy-notes/
+├── public/
+│   ├── 404.html          # GitHub Pages fallback
+│   └── favicon.ico
+├── src/
+│   ├── components/
+│   │   ├── ui/           # shadcn/ui components
+│   │   ├── NoteCard.tsx  # Individual note component
+│   │   └── NotesCanvas.tsx # Main canvas component
+│   ├── pages/
+│   │   ├── Index.tsx     # Home page
+│   │   └── NotFound.tsx  # 404 page
+│   ├── types/
+│   │   └── note.ts       # TypeScript interfaces
+│   ├── lib/
+│   │   └── utils.ts      # Utility functions
+│   ├── App.tsx           # Main app component
+│   ├── main.tsx          # Entry point
+│   └── index.css         # Global styles
+├── .github/
+│   └── workflows/
+│       └── deploy.yml    # GitHub Actions deployment
+└── package.json
 ```
 
-**Edit a file directly in GitHub**
+## 🚀 Deployment
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+This project is automatically deployed to GitHub Pages using GitHub Actions.
 
-**Use GitHub Codespaces**
+### Automatic Deployment
+- Every push to the `main` branch triggers a deployment
+- The workflow builds the project and deploys to the `gh-pages` branch
+- Live site: [https://mindctrl01.github.io/draggy-notes/](https://mindctrl01.github.io/draggy-notes/)
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Manual Deployment
+```bash
+npm run build
+npm run deploy
+```
 
-## What technologies are used for this project?
+## 🎨 Customization
 
-This project is built with:
+### Adding New Note Colors
+Edit the CSS variables in `src/index.css` to add new note colors:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```css
+:root {
+  --note-new-color: hsl(200 100% 90%);
+  --note-new-color-foreground: hsl(200 100% 10%);
+}
+```
 
-## How can I deploy this project?
+### Modifying Drag Behavior
+The drag functionality is implemented in `src/components/NoteCard.tsx` with:
+- Smooth animations using `requestAnimationFrame`
+- Optimized event handlers with passive listeners
+- Disabled transitions during dragging for responsiveness
 
-Simply open [Lovable](https://lovable.dev/projects/7d1f2405-41a3-4cda-9695-dbc97fea75b0) and click on Share -> Publish.
+## 🤝 Contributing
 
-## Can I connect a custom domain to my Lovable project?
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-Yes, you can!
+## 📄 License
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+This project is open source and available under the [MIT License](LICENSE).
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## 🙏 Acknowledgments
+
+- Built with [shadcn/ui](https://ui.shadcn.com/) for beautiful, accessible components
+- Icons provided by [Lucide](https://lucide.dev/)
+- Deployed using [GitHub Pages](https://pages.github.com/)
+
+---
+
+**Made with ❤️ by [MindCtrl01](https://github.com/MindCtrl01)**
