@@ -153,6 +153,7 @@ All colors MUST be HSL.
     transform: rotate(5deg) scale(1.05);
     box-shadow: var(--shadow-drag);
     z-index: 1000;
+    transition: none !important; /* Disable transitions during drag for immediate response */
   }
 
   .note-yellow {

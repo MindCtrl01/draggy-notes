@@ -42,12 +42,15 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag }: NoteCardProps) =>
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDragging) return;
       
-      const newPosition = {
-        x: e.clientX - dragOffset.x,
-        y: e.clientY - dragOffset.y
-      };
-      
-      onDrag(note.id, newPosition);
+      // Use requestAnimationFrame for smoother dragging
+      requestAnimationFrame(() => {
+        const newPosition = {
+          x: e.clientX - dragOffset.x,
+          y: e.clientY - dragOffset.y
+        };
+        
+        onDrag(note.id, newPosition);
+      });
     };
 
     const handleMouseUp = () => {
@@ -55,7 +58,8 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag }: NoteCardProps) =>
     };
 
     if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
+      // Use passive event listeners for better performance
+      document.addEventListener('mousemove', handleMouseMove, { passive: true });
       document.addEventListener('mouseup', handleMouseUp);
     }
 
