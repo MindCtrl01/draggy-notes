@@ -13,7 +13,7 @@ A beautiful, interactive drag-and-drop note-taking application built with React 
 
 ## 🚀 Live Demo
 
-Visit the live application: **[https://mindctrl01.github.io/draggy-notes/](https://mindctrl01.github.io/draggy-notes/)**
+Visit the live application: **[Deployed on Vercel](https://draggy-notes.vercel.app)** (URL will be available after deployment)
 
 ## 🛠️ Tech Stack
 
@@ -61,9 +61,9 @@ Visit the live application: **[https://mindctrl01.github.io/draggy-notes/](https
 |--------|-------------|
 | `npm run dev` | Start development server |
 | `npm run build` | Build for production |
+| `npm run build:vercel` | Build for Vercel deployment |
 | `npm run preview` | Preview production build |
 | `npm run lint` | Run ESLint |
-| `npm run deploy` | Deploy to GitHub Pages |
 
 ## 🎮 How to Use
 
@@ -106,18 +106,24 @@ draggy-notes/
 
 ## 🚀 Deployment
 
-This project is automatically deployed to GitHub Pages using GitHub Actions.
+This project is deployed to Vercel for optimal performance and ease of use.
 
-### Automatic Deployment
-- Every push to the `main` branch triggers a deployment
-- The workflow builds the project and deploys to the `gh-pages` branch
-- Live site: [https://mindctrl01.github.io/draggy-notes/](https://mindctrl01.github.io/draggy-notes/)
+### Vercel Deployment
+1. **Connect your GitHub repository** to Vercel
+2. **Import the project** on [vercel.com](https://vercel.com)
+3. **Configure build settings**:
+   - Framework Preset: `Vite`
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
+4. **Deploy automatically** on every push to main branch
 
-### Manual Deployment
+### Manual Build
 ```bash
-npm run build
-npm run deploy
+npm run build:vercel
 ```
+
+### Vercel Configuration
+The project includes a `vercel.json` file with optimized settings for SPA routing and asset handling.
 
 ## 🎨 Customization
 
@@ -153,7 +159,7 @@ This project is open source and available under the [MIT License](LICENSE).
 
 - Built with [shadcn/ui](https://ui.shadcn.com/) for beautiful, accessible components
 - Icons provided by [Lucide](https://lucide.dev/)
-- Deployed using [GitHub Pages](https://pages.github.com/)
+- Deployed using [Vercel](https://vercel.com/) for optimal performance
 
 ---
 

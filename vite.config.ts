@@ -5,8 +5,8 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode, command }) => ({
-  // Set base path for GitHub Pages deployment
-  base: command === 'build' ? '/draggy-notes/' : '/',
+  // Base path set to root for Vercel deployment
+  base: '/',
   server: {
     host: "::",
     port: 7000,
