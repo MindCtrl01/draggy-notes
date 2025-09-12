@@ -1,4 +1,4 @@
-import { NotesCanvas } from '@/components/NotesCanvas';
+import { NotesCanvas } from '@/features/notes';
 
 const Index = () => {
   return <NotesCanvas />;

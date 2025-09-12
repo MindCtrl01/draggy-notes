@@ -1,0 +1,52 @@
+/* Note Card Component Styles */
+.note-card {
+  @apply relative p-4 rounded-lg shadow-sm cursor-move select-none;
+  min-width: 200px;
+  min-height: 150px;
+  background: var(--gradient-card);
+  box-shadow: var(--shadow-note);
+  transition: var(--transition-smooth);
+}
+
+.note-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-floating);
+}
+
+.note-card.dragging {
+  transform: rotate(5deg) scale(1.05);
+  box-shadow: var(--shadow-drag);
+  z-index: 1000;
+  transition: none !important; /* Disable transitions during drag for immediate response */
+}
+
+/* Note Color Variants */
+.note-yellow {
+  background: hsl(var(--note-yellow));
+  color: hsl(var(--note-yellow-foreground));
+}
+
+.note-pink {
+  background: hsl(var(--note-pink));
+  color: hsl(var(--note-pink-foreground));
+}
+
+.note-blue {
+  background: hsl(var(--note-blue));
+  color: hsl(var(--note-blue-foreground));
+}
+
+.note-green {
+  background: hsl(var(--note-green));
+  color: hsl(var(--note-green-foreground));
+}
+
+.note-purple {
+  background: hsl(var(--note-purple));
+  color: hsl(var(--note-purple-foreground));
+}
+
+.note-orange {
+  background: hsl(var(--note-orange));
+  color: hsl(var(--note-orange-foreground));
+}
