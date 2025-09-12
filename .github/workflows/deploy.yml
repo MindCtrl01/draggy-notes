@@ -37,7 +37,17 @@ jobs:
         run: npm ci
         
       - name: Build
-        run: npm run build:pages
+        run: npm run build
+        env:
+          NODE_ENV: production
+          VITE_BASE_PATH: /draggy-notes/
+        
+      - name: Verify build output
+        run: |
+          echo "Build output contents:"
+          ls -la dist/
+          echo "Checking for 404.html:"
+          ls -la dist/404.html || echo "404.html not found"
         
       - name: Setup Pages
         uses: actions/configure-pages@v4

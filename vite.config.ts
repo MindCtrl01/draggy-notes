@@ -4,9 +4,9 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode, command }) => ({
   // Set base path for GitHub Pages deployment
-  base: process.env.NODE_ENV === 'production' ? '/draggy-notes/' : '/',
+  base: process.env.VITE_BASE_PATH || (command === 'build' && process.env.NODE_ENV === 'production' ? '/draggy-notes/' : '/'),
   server: {
     host: "::",
     port: 8080,
