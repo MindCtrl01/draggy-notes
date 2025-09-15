@@ -40,7 +40,7 @@ export const NotesCanvas = () => {
   return (
     <div className="canvas-container group" onDoubleClick={handleCanvasDoubleClick}>
       <div className="absolute top-8 left-8 z-10">
-        <h1 className="text-3xl font-bold text-foreground mb-2">My Notes</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-2">FThu Notes</h1>
         <p className="text-muted-foreground">
           Double-click anywhere to create a note, or use the + button
           {(isCreating || isUpdating || isDeleting) && (
