@@ -20,7 +20,6 @@ const debugMode = import.meta.env.VITE_DEBUG_MODE === 'true';
 export const config = {
   api: {
     baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5231/api',
-    timeout: import.meta.env.VITE_API_TIMEOUT || 10000,
   },
   app: {
     title: import.meta.env.VITE_APP_TITLE || 'Draggy Notes',

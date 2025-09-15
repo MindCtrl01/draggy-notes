@@ -24,13 +24,11 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "env": {
-    "VITE_API_BASE_URL": "@vite_api_base_url",
-    "VITE_API_TIMEOUT": "@vite_api_timeout"
+    "VITE_API_BASE_URL": "@vite_api_base_url"
   },
   "build": {
     "env": {
-      "VITE_API_BASE_URL": "@vite_api_base_url",
-      "VITE_API_TIMEOUT": "@vite_api_timeout"
+      "VITE_API_BASE_URL": "@vite_api_base_url"
     }
   }
 }

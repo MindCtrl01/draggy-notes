@@ -11,11 +11,10 @@ const getApiBaseUrl = () => {
 };
 
 export const API_CONFIG = {
-  BASE_URL: getApiBaseUrl(),
-  TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT || '10000', 10),
+  BASE_URL: getApiBaseUrl()
 } as const;
 
 // Environment detection using Vercel's system
 export const isDevelopment = import.meta.env.DEV;
 export const isProduction = import.meta.env.PROD;
-export const isVercelDeployment = !!import.meta.env.VITE_VERCEL_URL;
+// export const isVercelDeployment = !!import.meta.env.VITE_VERCEL_URL;
