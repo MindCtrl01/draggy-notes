@@ -1,15 +1,34 @@
-import { API_CONFIG } from '@/lib/config/api';
+import { API_CONFIG } from '@/services/config/api';
+import { TokenManager } from '@/helpers/token-manager';
+import { authApi } from './auth-api';
+import { ApiError } from './models/api.model';
 
-// Generic API request helper
+// Enhanced API request helper with JWT authentication
 async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_CONFIG.BASE_URL}${endpoint}`;
   
+  // Get and validate token
+  let token = TokenManager.getToken();
+  
+  // Check if token is expired and try to refresh
+  if (token && TokenManager.isTokenExpired(token)) {
+    try {
+      token = await authApi.refreshAuthToken();
+    } catch (error) {
+      // If refresh fails, clear tokens and redirect to login
+      TokenManager.clearTokens();
+      // You might want to dispatch a logout action or redirect to login page here
+      throw new Error('Authentication expired. Please login again.');
+    }
+  }
+  
   const config: RequestInit = {
     headers: {
       'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
       ...options.headers,
     },
     ...options,
@@ -18,8 +37,20 @@ async function apiRequest<T>(
   try {
     const response = await fetch(url, config);
     
+    // Handle authentication errors
+    if (response.status === 401) {
+      TokenManager.clearTokens();
+      throw new Error('Authentication failed. Please login again.');
+    }
+    
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new ApiError(
+        errorData.message || `API Error: ${response.status} ${response.statusText}`,
+        response.status,
+        errorData.code,
+        errorData.details
+      );
     }
     
     // Handle 204 No Content responses
@@ -34,8 +65,7 @@ async function apiRequest<T>(
   }
 }
 
-// Generic CRUD API service
-export class BaseCrudApi<TEntity, TCreateRequest, TUpdateRequest> {
+export class BaseApi<TEntity, TCreateRequest, TUpdateRequest> {
   constructor(private resourcePath: string) {}
 
   // GET /resource - List all entities
@@ -80,36 +110,6 @@ export class BaseCrudApi<TEntity, TCreateRequest, TUpdateRequest> {
   }
 }
 
-// Generic query key factory
-export const createQueryKeys = (resource: string) => ({
-  all: [resource] as const,
-  lists: () => [resource, 'list'] as const,
-  list: (filters: Record<string, any>) => [resource, 'list', filters] as const,
-  details: () => [resource, 'detail'] as const,
-  detail: (id: string) => [resource, 'detail', id] as const,
-});
 
-// Generic API response types
-export interface ApiResponse<T> {
-  data: T;
-  message?: string;
-  success: boolean;
-}
 
-export interface PaginatedResponse<T> {
-  data: T[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
 
-// Generic error types
-export interface ApiError {
-  message: string;
-  status: number;
-  code?: string;
-  details?: Record<string, any>;
-}

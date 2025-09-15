@@ -1,5 +1,5 @@
-import { BaseCrudApi } from '@/lib/api/base-crud-api';
-import { Note, NoteColor } from '@/types/note';
+import { BaseApi } from '@/services/api/base-api';
+import { Note, NoteColor } from '@/domains/note';
 
 // Notes API request/response types
 export interface CreateNoteRequest {
@@ -46,7 +46,7 @@ function apiNoteToNote(apiNote: NoteApiResponse): Note {
 }
 
 // Extended Notes API with custom methods
-class NotesApi extends BaseCrudApi<Note, CreateNoteRequest, UpdateNoteRequest> {
+class NotesApi extends BaseApi<Note, CreateNoteRequest, UpdateNoteRequest> {
   constructor() {
     super('notes'); // This will create endpoints like /notes, /notes/{id}
   }

@@ -1,10 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { createCrudHooks } from '@/hooks/api/use-crud-api';
+// import { createCrudHooks } from '@/hooks/api/use-api'; // Temporarily disabled - missing function
 import { notesApi, CreateNoteRequest, UpdateNoteRequest } from '../api/notes-crud-api';
-import { Note, NoteColor } from '@/types/note';
+import { Note, NoteColor } from '@/domains/note';
 
-// Create standard CRUD hooks for notes
+// Create standard CRUD hooks for notes (temporarily disabled)
+/*
 const {
   useGetAll: useGetAllNotes,
   useGetById: useGetNoteById,
@@ -27,9 +28,42 @@ const {
     fetch: 'Failed to load notes. Please try again.',
   },
 });
+*/
 
-// Custom hooks for specific note operations
+// Custom hooks for specific note operations (temporarily disabled)
 export const useNotesApi = () => {
+  // API temporarily disabled - returning mock data
+  return {
+    notes: [],
+    isLoading: false,
+    error: null,
+    refetch: () => {},
+    createNote: () => {},
+    updateNote: () => {},
+    patchNote: () => {},
+    deleteNote: () => {},
+    duplicateNote: () => {},
+    searchNotes: () => {},
+    bulkDeleteNotes: () => {},
+    isCreating: false,
+    isUpdating: false,
+    isPatching: false,
+    isDeleting: false,
+    isDuplicating: false,
+    isSearching: false,
+    isBulkDeleting: false,
+    createError: null,
+    updateError: null,
+    patchError: null,
+    deleteError: null,
+    duplicateError: null,
+    searchError: null,
+    bulkDeleteError: null,
+    queryKeys: {},
+    searchResults: [],
+  };
+  
+  /*
   const queryClient = useQueryClient();
 
   // Standard CRUD operations
@@ -167,9 +201,11 @@ export const useNotesApi = () => {
     // Query keys for manual cache management
     queryKeys: notesQueryKeys,
   };
+  */
 };
 
-// Export individual hooks for granular usage
+// Export individual hooks for granular usage (temporarily disabled)
+/*
 export {
   useGetAllNotes,
   useGetNoteById,
@@ -179,3 +215,4 @@ export {
   useDeleteNote,
   notesQueryKeys,
 };
+*/

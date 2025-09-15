@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { Trash2 } from 'lucide-react';
-import { Note } from '@/types/note';
-import { cn } from '@/lib/utils';
+import { Note } from '@/domains/note';
+import { cn } from '@/styles/utils';
 import { useNoteDrag } from '../hooks/use-note-drag';
 import { useNoteEditing } from '../hooks/use-note-editing';
 import '../styles/note-card.css';

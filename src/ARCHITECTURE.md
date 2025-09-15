@@ -103,7 +103,7 @@ import { Toaster, Sonner } from '@/components/common';
 import { useIsMobile } from '@/hooks';
 
 // Utils
-import { cn } from '@/lib/utils';
+import { cn } from '@/styles/utils';
 ```
 
 ## 🧹 Removed Unused Components

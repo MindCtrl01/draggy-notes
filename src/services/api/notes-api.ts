@@ -1,5 +1,5 @@
-import { Note, NoteColor } from '@/types/note';
-import { API_CONFIG } from '@/lib/config/api';
+import { Note, NoteColor } from '@/domains/note';
+import { API_CONFIG } from '@/services/config/api';
 
 // API request helper
 async function apiRequest<T>(

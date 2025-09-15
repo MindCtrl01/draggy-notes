@@ -2,5 +2,8 @@
 export * from './common';
 export * from './use-toast'; // Toast hook for UI components
 
-// API hooks exports
+// Authentication hooks exports
+export * from './auth';
+
+// API hooks exports  
 export * from './api/use-health-api'; // Health check API hooks

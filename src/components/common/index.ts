@@ -13,6 +13,3 @@ export {
   type ToastProps,
   type ToastActionElement,
 } from './ui/toast';
-
-// Feature components
-export { HealthStatus } from './HealthStatus';

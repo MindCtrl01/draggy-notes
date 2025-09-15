@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNotesApi } from '../hooks/use-notes-crud';
-import { NoteColor } from '@/types/note';
+import { NoteColor } from '@/domains/note';
 
 // Example component showing how to use the generic CRUD system
 export const NotesExample = () => {

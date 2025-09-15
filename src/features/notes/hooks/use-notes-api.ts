@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Note, NoteColor } from '@/types/note';
-import { notesApi, CreateNoteRequest, UpdateNoteRequest } from '@/lib/api/notes-api';
+import { Note, NoteColor } from '@/domains/note';
+import { notesApi, CreateNoteRequest, UpdateNoteRequest } from '@/services/api/notes-api';
 
 // Query keys for React Query
 const QUERY_KEYS = {

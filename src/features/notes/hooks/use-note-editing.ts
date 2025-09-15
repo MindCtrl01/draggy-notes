@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Note } from '@/types/note';
+import { Note } from '@/domains/note';
 
 export const useNoteEditing = (
   note: Note,
