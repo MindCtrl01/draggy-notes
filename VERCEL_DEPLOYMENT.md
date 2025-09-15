@@ -99,7 +99,7 @@ const getApiBaseUrl = () => {
   }
   
   // Development: Use local server
-  return import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+  return import.meta.env.VITE_API_BASE_URL || 'http://localhost:5231/api';
 };
 
 export const API_CONFIG = {
@@ -128,7 +128,7 @@ export const API_CONFIG = {
 
 ### **Development (.env.local)**
 ```bash
-VITE_API_BASE_URL=http://localhost:3001/api
+VITE_API_BASE_URL=http://localhost:5231/api
 VITE_API_TIMEOUT=5000
 ```
 

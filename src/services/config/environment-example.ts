@@ -12,14 +12,14 @@ console.log('App Title:', import.meta.env.VITE_APP_TITLE);    // From .env file
 console.log('Debug Mode:', import.meta.env.VITE_DEBUG_MODE);  // From .env file
 
 // With fallbacks
-const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5231/api';
 const appTitle = import.meta.env.VITE_APP_TITLE || 'Draggy Notes';
 const debugMode = import.meta.env.VITE_DEBUG_MODE === 'true';
 
 // Environment-specific configuration
 export const config = {
   api: {
-    baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api',
+    baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5231/api',
     timeout: import.meta.env.VITE_API_TIMEOUT || 10000,
   },
   app: {
