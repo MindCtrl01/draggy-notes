@@ -32,7 +32,7 @@ export const useNotes = (selectedDate?: Date) => {
     loadNotes();
   }, []);
 
-  const notes = selectedDate 
+  const notes = selectedDate
     ? allNotes.filter(note => isSameDay(note.date, selectedDate))
     : allNotes;
 
@@ -168,6 +168,22 @@ export const useNotes = (selectedDate?: Date) => {
     }, 200);
   }, []);
 
+  // Function to refresh a specific note from localStorage
+  const refreshNoteFromStorage = useCallback((noteId: string) => {
+    try {
+      const updatedNote = NotesStorage.getNote(noteId);
+      if (updatedNote) {
+        setAllNotes(prevNotes => 
+          prevNotes.map(note => 
+            note.id === noteId ? updatedNote : note
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Failed to refresh note from localStorage:', error);
+    }
+  }, []);
+
   // Merge notes with dragged positions for display
   const displayNotes = notes.map(note => ({
     ...note,
@@ -185,6 +201,7 @@ export const useNotes = (selectedDate?: Date) => {
       dragNote,
       finalizeDrag,
       moveNoteToDate,
+      refreshNoteFromStorage,
       
       // Loading states for UI feedback
       isCreating,

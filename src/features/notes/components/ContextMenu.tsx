@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Calendar, ChevronUp, ChevronDown, ChevronRightIcon, ChevronLeftIcon } from 'lucide-react';
+import { Calendar, ChevronUp, ChevronDown, ChevronRightIcon, ChevronLeftIcon, Eye } from 'lucide-react';
 
 interface ContextMenuProps {
   x: number;
@@ -8,6 +8,8 @@ interface ContextMenuProps {
   onClose: () => void;
   onMoveToTomorrow: () => void;
   onMoveToYesterday: () => void;
+  onViewDetail?: () => void;
+  showViewDetail?: boolean;
 }
 
 export const ContextMenu: React.FC<ContextMenuProps> = ({
@@ -17,6 +19,8 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   onClose,
   onMoveToTomorrow,
   onMoveToYesterday,
+  onViewDetail,
+  showViewDetail = false,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -59,6 +63,19 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         top: adjustedY,
       }}
     >
+      {showViewDetail && onViewDetail && (
+        <button
+          onClick={() => {
+            onViewDetail();
+            onClose();
+          }}
+          className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
+        >
+          <Eye size={16} />
+          View Detail
+        </button>
+      )}
+      {showViewDetail && <div className="border-t border-gray-200 dark:border-gray-600 my-1" />}
       <button
         onClick={() => {
           onMoveToTomorrow();
@@ -66,6 +83,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         }}
         className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
       >
+        <ChevronRightIcon size={16} />
         Move to tomorrow
       </button>
       <button
@@ -75,6 +93,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         }}
         className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
       >
+        <ChevronLeftIcon size={16} />
         Move to yesterday
       </button>
     </div>

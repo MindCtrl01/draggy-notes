@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useMemo, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
 import { Note } from '@/domains/note';
 import { cn } from '@/styles/utils';
@@ -7,6 +7,7 @@ import { useNoteEditing } from '../hooks/use-note-editing';
 import { getContrastTextColor } from '@/helpers/color-generator';
 import { formatDateDisplay } from '@/helpers/date-helper';
 import { ContextMenu } from './ContextMenu';
+import { NoteDetail } from './NoteDetail';
 import '../styles/note-card.css';
 
 interface NoteCardProps {
@@ -16,15 +17,18 @@ interface NoteCardProps {
   onDrag: (id: string, position: { x: number; y: number }) => void;
   onDragEnd?: (id: string, position: { x: number; y: number }) => void;
   onMoveToDate?: (noteId: string, newDate: Date) => void;
+  onRefreshFromStorage?: (noteId: string) => void;
 }
 
-export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveToDate }: NoteCardProps) => {
+export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveToDate, onRefreshFromStorage }: NoteCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; isOpen: boolean }>({
     x: 0,
     y: 0,
     isOpen: false,
   });
+  const [showNoteDetail, setShowNoteDetail] = useState(false);
+  const [currentDimensions, setCurrentDimensions] = useState<{ width: number; height: number } | null>(null);
   
   const {
     isEditingTitle,
@@ -64,7 +68,32 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
     handleMouseDown(e, cardRef);
   };
 
+
   const textColor = getContrastTextColor(note.color);
+
+  // Constants for content truncation
+  const MAX_CONTENT_LENGTH = 400;
+  const MAX_TITLE_LENGTH = 50;
+
+  // Check if content is too long and needs truncation
+  const isContentTooLong = useMemo(() => {
+    return note.content.length > MAX_CONTENT_LENGTH;
+  }, [note.content]);
+
+  // Truncated content for display
+  const displayContent = useMemo(() => {
+    if (isEditingContent) return content;
+    if (note.content.length <= MAX_CONTENT_LENGTH) return note.content;
+    return note.content.substring(0, MAX_CONTENT_LENGTH) + '...';
+  }, [note.content, isEditingContent, content]);
+
+  // Truncated title for display
+  const displayTitle = useMemo(() => {
+    if (isEditingTitle) return title;
+    if (!note.title) return 'Untitled';
+    if (note.title.length <= MAX_TITLE_LENGTH) return note.title;
+    return note.title.substring(0, MAX_TITLE_LENGTH) + '...';
+  }, [note.title, isEditingTitle, title]);
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -79,19 +108,52 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
 
   const handleMoveToTomorrow = () => {
     if (onMoveToDate) {
-      const tomorrow = new Date(note.date);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      onMoveToDate(note.id, tomorrow);
+      const currentDate = new Date(note.date);
+      currentDate.setDate(currentDate.getDate() + 1);
+      onMoveToDate(note.id, currentDate);
     }
   };
 
   const handleMoveToYesterday = () => {
     if (onMoveToDate) {
-      const yesterday = new Date(note.date);
-      yesterday.setDate(yesterday.getDate() - 1);
-      onMoveToDate(note.id, yesterday);
+      const currentDate = new Date(note.date);
+      currentDate.setDate(currentDate.getDate() - 1);
+      onMoveToDate(note.id, currentDate);
     }
   };
+
+  const handleViewDetail = () => {
+    setShowNoteDetail(true);
+  };
+
+  // Capture current dimensions when starting to edit
+  const captureCurrentDimensions = () => {
+    if (cardRef.current) {
+      const rect = cardRef.current.getBoundingClientRect();
+      setCurrentDimensions({
+        width: rect.width,
+        height: rect.height
+      });
+    }
+  };
+
+  // Custom edit handlers that preserve dimensions
+  const handleStartEditingTitle = () => {
+    captureCurrentDimensions();
+    startEditingTitle();
+  };
+
+  const handleStartEditingContent = () => {
+    captureCurrentDimensions();
+    startEditingContent();
+  };
+
+  // Clear dimensions when editing finishes
+  useEffect(() => {
+    if (!isEditingTitle && !isEditingContent) {
+      setCurrentDimensions(null);
+    }
+  }, [isEditingTitle, isEditingContent]);
 
   return (
     <>
@@ -102,6 +164,8 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
         onClose={() => setContextMenu(prev => ({ ...prev, isOpen: false }))}
         onMoveToTomorrow={handleMoveToTomorrow}
         onMoveToYesterday={handleMoveToYesterday}
+        onViewDetail={isContentTooLong ? handleViewDetail : undefined}
+        showViewDetail={isContentTooLong}
       />
     <div
       ref={cardRef}
@@ -116,7 +180,14 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
         top: note.position.y,
         userSelect: isDragging ? 'none' : 'auto',
         backgroundColor: note.color,
-        color: textColor
+        color: textColor,
+        // Preserve dimensions when editing
+        ...(currentDimensions && (isEditingTitle || isEditingContent) && {
+          width: currentDimensions.width,
+          height: currentDimensions.height,
+          minWidth: currentDimensions.width,
+          minHeight: currentDimensions.height
+        })
       }}
       onMouseDown={onMouseDown}
       onContextMenu={handleContextMenu}
@@ -150,10 +221,10 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
               className="font-bold text-lg cursor-move hover:cursor-pointer hover:bg-black/5 rounded px-1 py-0.5 -mx-1 -my-0.5"
               onDoubleClick={(e) => {
                 e.stopPropagation();
-                startEditingTitle();
+                handleStartEditingTitle();
               }}
             >
-              {note.title || 'Untitled'}
+              {displayTitle}
             </div>
           )}
         </div>
@@ -164,25 +235,26 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
         </div>
         
         {/* Content section */}
-        <div className="flex-1">
+        <div className="flex-1 overflow-hidden">
           {isEditingContent ? (
             <textarea
+              
               ref={textareaRef}
               value={content}
               onChange={(e) => setContent(e.target.value)}
               onBlur={handleContentSubmit}
               onKeyDown={handleContentKeyDown}
-              className="w-full h-full bg-transparent border-none outline-none resize-none text-sm"
+              className="w-full h-full bg-transparent border-none outline-none resize-none text-sm note-content-textarea"
               placeholder="Note content..."
               onMouseDown={(e) => e.stopPropagation()}
               onDoubleClick={(e) => e.stopPropagation()}
             />
           ) : (
             <div 
-              className="w-full h-full text-sm whitespace-pre-wrap break-words overflow-hidden cursor-move hover:cursor-pointer hover:bg-black/5 rounded px-1 py-0.5 -mx-1 -my-0.5"
+              className="w-full h-full text-sm whitespace-pre-wrap break-words cursor-move hover:cursor-pointer hover:bg-black/5 rounded px-1 py-0.5 -mx-1 -my-0.5 note-content-view"
               onDoubleClick={(e) => {
                 e.stopPropagation();
-                startEditingContent();
+                handleStartEditingContent();
               }}
             >
               <span className={
@@ -192,14 +264,29 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
               }>
                 {note.content === '' 
                   ? 'Double-click to add content...' 
-                  : note.content || 'Double-click to add content...'
+                  : displayContent || 'Double-click to add content...'
                 }
               </span>
+              {isContentTooLong && (
+                <div className="mt-1 text-xs opacity-60 italic">
+                  Right-click → View Detail for full content
+                </div>
+              )}
             </div>
           )}
         </div>
       </div>
     </div>
+    
+    {/* Note Detail Modal */}
+    <NoteDetail
+      note={note}
+      isOpen={showNoteDetail}
+      onClose={() => setShowNoteDetail(false)}
+      onUpdate={onUpdate}
+      onMoveToDate={onMoveToDate}
+      onRefreshFromStorage={onRefreshFromStorage}
+    />
     </>
   );
 };

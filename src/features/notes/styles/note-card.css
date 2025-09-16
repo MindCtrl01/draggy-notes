@@ -3,10 +3,76 @@
   @apply relative p-4 rounded-lg shadow-sm cursor-move select-none;
   min-width: 250px;
   min-height: 200px;
+  max-width: 400px;
+  max-height: 300px;
+  width: fit-content;
+  height: fit-content;
   /* Background color is now set via inline styles with random hex colors */
   box-shadow: var(--shadow-note);
   transition: var(--transition-smooth);
   border: 1px solid rgba(0, 0, 0, 0.1); /* Subtle border for definition */
+}
+
+/* Custom scroll styles - hide scrollbars but keep functionality */
+.custom-scroll {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.custom-scroll::-webkit-scrollbar {
+  display: none; /* WebKit browsers (Chrome, Safari, Edge) */
+}
+
+/* Note content editing styles */
+.note-content-textarea {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overflow: auto;
+}
+
+.note-content-textarea::-webkit-scrollbar {
+  display: none;
+}
+
+.note-content-view {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.note-content-view::-webkit-scrollbar {
+  display: none;
+}
+
+/* Note Detail modal content styles */
+.note-detail-content {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.note-detail-content::-webkit-scrollbar {
+  display: none;
+}
+
+.note-detail-textarea {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.note-detail-textarea::-webkit-scrollbar {
+  display: none;
+}
+
+.note-detail-content-view {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+.note-detail-content-view::-webkit-scrollbar {
+  display: none;
 }
 
 .note-card:hover {

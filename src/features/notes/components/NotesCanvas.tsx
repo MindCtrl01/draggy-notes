@@ -1,5 +1,5 @@
 import '../styles/notes-canvas.css';
-import { Plus, Trash2, Calendar, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, Calendar, Search, ChevronLeft, ChevronRight, User } from 'lucide-react';
 import { NoteCard } from './NoteCard';
 import { SearchSidebar } from './SearchSidebar';
 import { ConfirmationDialog } from './ConfirmationDialog';
@@ -14,6 +14,10 @@ export const NotesCanvas = () => {
   const [showSearchSidebar, setShowSearchSidebar] = useState(false);
   const datePickerRef = useRef<HTMLDivElement>(null);
   
+  const user = {
+    name: 'Fthu',
+  };
+  
   const { 
     notes, 
     allNotes,
@@ -25,6 +29,7 @@ export const NotesCanvas = () => {
     dragNote, 
     finalizeDrag,
     moveNoteToDate,
+    refreshNoteFromStorage,
     isCreating,
     isUpdating,
     isDeleting 
@@ -141,6 +146,18 @@ export const NotesCanvas = () => {
 
   return (
     <div className="canvas-container group" onDoubleClick={handleCanvasDoubleClick}>
+      {/* Username in top right */}
+      {user && (
+        <div className="absolute top-8 right-8 z-10">
+          <div className="flex items-center gap-2 px-3 py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
+            <User size={16} className="text-gray-600 dark:text-gray-400" />
+            <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+              {user.name}
+            </span>
+          </div>
+        </div>
+      )}
+      
       <div className="absolute top-8 left-8 z-10">
         <div className="flex items-center gap-4 mb-2">
           <h1 className="text-3xl font-bold text-foreground">
@@ -209,6 +226,7 @@ export const NotesCanvas = () => {
             onDrag={showSearchSidebar ? undefined : dragNote}
             onDragEnd={showSearchSidebar ? undefined : finalizeDrag}
             onMoveToDate={moveNoteToDate}
+            onRefreshFromStorage={refreshNoteFromStorage}
           />
         ))}
       </div>

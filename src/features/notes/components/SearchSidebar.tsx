@@ -13,6 +13,14 @@ interface SearchSidebarProps {
 export const SearchSidebar = ({ allNotes, isOpen, onClose }: SearchSidebarProps) => {
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Helper function to normalize text for search (removes diacritics/accents)
+  const normalizeText = (text: string): string => {
+    return text
+      .toLowerCase()
+      .normalize('NFD') // Normalize to decomposed form
+      .replace(/[\u0300-\u036f]/g, ''); // Remove diacritic marks
+  };
+
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) {
       // Show top 10 most recent notes by creation date when no search query
@@ -21,10 +29,17 @@ export const SearchSidebar = ({ allNotes, isOpen, onClose }: SearchSidebarProps)
         .slice(0, 10);
     }
     
+    const normalizedQuery = normalizeText(searchQuery);
+    
     return allNotes
-      .filter(note => 
-        note.title.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+      .filter(note => {
+        const normalizedTitle = normalizeText(note.title);
+        const normalizedContent = normalizeText(note.content);
+        
+        // Search in both title and content for better results
+        return normalizedTitle.includes(normalizedQuery) || 
+               normalizedContent.includes(normalizedQuery);
+      })
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()); // Sort by most recent
   }, [allNotes, searchQuery]);
 
@@ -78,7 +93,7 @@ export const SearchSidebar = ({ allNotes, isOpen, onClose }: SearchSidebarProps)
             <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Search notes by title..."
+              placeholder="Search notes by title or content..."
               value={searchQuery}
               onChange={handleSearchChange}
               className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
