@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { Note } from '@/domains/note';
 import { cn } from '@/styles/utils';
@@ -6,6 +6,7 @@ import { useNoteDrag } from '../hooks/use-note-drag';
 import { useNoteEditing } from '../hooks/use-note-editing';
 import { getContrastTextColor } from '@/helpers/color-generator';
 import { formatDateDisplay } from '@/helpers/date-helper';
+import { ContextMenu } from './ContextMenu';
 import '../styles/note-card.css';
 
 interface NoteCardProps {
@@ -14,10 +15,16 @@ interface NoteCardProps {
   onDelete: (id: string) => void;
   onDrag: (id: string, position: { x: number; y: number }) => void;
   onDragEnd?: (id: string, position: { x: number; y: number }) => void;
+  onMoveToDate?: (noteId: string, newDate: Date) => void;
 }
 
-export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd }: NoteCardProps) => {
+export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveToDate }: NoteCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; isOpen: boolean }>({
+    x: 0,
+    y: 0,
+    isOpen: false,
+  });
   
   const {
     isEditingTitle,
@@ -59,7 +66,43 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd }: NoteCa
 
   const textColor = getContrastTextColor(note.color);
 
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      isOpen: true,
+    });
+  };
+
+  const handleMoveToTomorrow = () => {
+    if (onMoveToDate) {
+      const tomorrow = new Date(note.date);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      onMoveToDate(note.id, tomorrow);
+    }
+  };
+
+  const handleMoveToYesterday = () => {
+    if (onMoveToDate) {
+      const yesterday = new Date(note.date);
+      yesterday.setDate(yesterday.getDate() - 1);
+      onMoveToDate(note.id, yesterday);
+    }
+  };
+
   return (
+    <>
+      <ContextMenu
+        x={contextMenu.x}
+        y={contextMenu.y}
+        isOpen={contextMenu.isOpen}
+        onClose={() => setContextMenu(prev => ({ ...prev, isOpen: false }))}
+        onMoveToTomorrow={handleMoveToTomorrow}
+        onMoveToYesterday={handleMoveToYesterday}
+      />
     <div
       ref={cardRef}
       className={cn(
@@ -76,6 +119,7 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd }: NoteCa
         color: textColor
       }}
       onMouseDown={onMouseDown}
+      onContextMenu={handleContextMenu}
       onDoubleClick={(e) => e.stopPropagation()}
     >
       <button
@@ -156,5 +200,6 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd }: NoteCa
         </div>
       </div>
     </div>
+    </>
   );
 };

@@ -1,5 +1,5 @@
 import '../styles/notes-canvas.css';
-import { Plus, Trash2, Calendar, Search } from 'lucide-react';
+import { Plus, Trash2, Calendar, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { NoteCard } from './NoteCard';
 import { SearchSidebar } from './SearchSidebar';
 import { ConfirmationDialog } from './ConfirmationDialog';
@@ -24,6 +24,7 @@ export const NotesCanvas = () => {
     clearAllDisplayedNotes,
     dragNote, 
     finalizeDrag,
+    moveNoteToDate,
     isCreating,
     isUpdating,
     isDeleting 
@@ -109,6 +110,24 @@ export const NotesCanvas = () => {
   // Count displayed notes for the confirmation dialog
   const displayedNotesCount = notes.filter(note => note.isDisplayed).length;
 
+  const goToPreviousDay = () => {
+    const previousDay = new Date(selectedDate);
+    previousDay.setDate(previousDay.getDate() - 1);
+    setSelectedDate(previousDay);
+    if (showDatePicker) {
+      setShowDatePicker(false);
+    }
+  };
+
+  const goToNextDay = () => {
+    const nextDay = new Date(selectedDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+    setSelectedDate(nextDay);
+    if (showDatePicker) {
+      setShowDatePicker(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="canvas-container flex items-center justify-center">
@@ -189,8 +208,30 @@ export const NotesCanvas = () => {
             onDelete={deleteNote}
             onDrag={showSearchSidebar ? undefined : dragNote}
             onDragEnd={showSearchSidebar ? undefined : finalizeDrag}
+            onMoveToDate={moveNoteToDate}
           />
         ))}
+      </div>
+
+      {/* Date Navigation Arrows */}
+      <div className="fixed bottom-8 left-8 flex items-center gap-2 z-20">
+        <button
+          onClick={goToPreviousDay}
+          className="date-nav-btn text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 transition-colors"
+          title={`Go to ${formatDateDisplay(new Date(selectedDate.getTime() - 24 * 60 * 60 * 1000))}`}
+        >
+          <ChevronLeft size={24} />
+        </button>
+        <div className="text-sm text-gray-500 dark:text-gray-400 px-2 py-1 bg-white/80 dark:bg-gray-800/80 rounded-md backdrop-blur-sm border border-gray-200 dark:border-gray-700">
+          {formatDateDisplay(selectedDate)}
+        </div>
+        <button
+          onClick={goToNextDay}
+          className="date-nav-btn text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 transition-colors"
+          title={`Go to ${formatDateDisplay(new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000))}`}
+        >
+          <ChevronRight size={24} />
+        </button>
       </div>
 
       {/* Floating Action Buttons */}

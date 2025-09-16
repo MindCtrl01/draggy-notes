@@ -147,6 +147,27 @@ export const useNotes = (selectedDate?: Date) => {
     });
   }, []);
 
+  const moveNoteToDate = useCallback((id: string, newDate: Date) => {
+    setIsUpdating(true);
+    
+    setAllNotes(prevNotes => {
+      const updatedNotes = prevNotes.map(note => {
+        if (note.id === id) {
+          const updatedNote = { ...note, date: newDate, updatedAt: new Date() };
+          NotesStorage.saveNote(updatedNote);
+          return updatedNote;
+        }
+        return note;
+      });
+      return updatedNotes;
+    });
+    
+    // Simulate API delay
+    setTimeout(() => {
+      setIsUpdating(false);
+    }, 200);
+  }, []);
+
   // Merge notes with dragged positions for display
   const displayNotes = notes.map(note => ({
     ...note,
@@ -163,6 +184,7 @@ export const useNotes = (selectedDate?: Date) => {
       clearAllDisplayedNotes,
       dragNote,
       finalizeDrag,
+      moveNoteToDate,
       
       // Loading states for UI feedback
       isCreating,
