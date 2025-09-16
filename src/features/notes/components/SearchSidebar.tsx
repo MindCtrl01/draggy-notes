@@ -12,7 +12,6 @@ interface SearchSidebarProps {
 
 export const SearchSidebar = ({ allNotes, isOpen, onClose, onNoteSelect }: SearchSidebarProps) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
 
   // Search functionality - filter by title primarily
   const searchResults = useMemo(() => {
@@ -29,22 +28,20 @@ export const SearchSidebar = ({ allNotes, isOpen, onClose, onNoteSelect }: Searc
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
-    setSelectedNote(null); // Clear selected note when searching
   };
 
-  const handleNoteClick = (note: Note) => {
-    setSelectedNote(note);
-    onNoteSelect?.(note);
-  };
+  // Disabled for now
+  // const handleNoteClick = (note: Note) => {
+  //   setSelectedNote(note);
+  //   onNoteSelect?.(note);
+  // };
 
   const clearSearch = () => {
     setSearchQuery('');
-    setSelectedNote(null);
   };
 
   const handleClose = () => {
     setSearchQuery('');
-    setSelectedNote(null);
     onClose();
   };
 
@@ -64,7 +61,7 @@ export const SearchSidebar = ({ allNotes, isOpen, onClose, onNoteSelect }: Searc
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex">
+    <div className="fixed inset-0 z-50 flex justify-end">
       {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-black/20 backdrop-blur-sm"
@@ -72,7 +69,7 @@ export const SearchSidebar = ({ allNotes, isOpen, onClose, onNoteSelect }: Searc
       />
       
       {/* Sidebar */}
-      <div className="relative w-96 bg-white dark:bg-gray-900 shadow-2xl border-r border-gray-200 dark:border-gray-700 flex flex-col">
+      <div className="relative w-96 bg-white dark:bg-gray-900 shadow-2xl border-l border-gray-200 dark:border-gray-700 flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
@@ -113,7 +110,7 @@ export const SearchSidebar = ({ allNotes, isOpen, onClose, onNoteSelect }: Searc
         {/* Content Area */}
         <div className="flex-1 flex">
           {/* Search Results List */}
-          <div className="w-full border-r border-gray-200 dark:border-gray-700">
+          <div className="w-full">
             {!searchQuery ? (
               <div className="p-8 text-center text-gray-500 dark:text-gray-400">
                 <Search size={48} className="mx-auto mb-4 opacity-50" />
@@ -135,10 +132,7 @@ export const SearchSidebar = ({ allNotes, isOpen, onClose, onNoteSelect }: Searc
                   {searchResults.map((note) => (
                     <div
                       key={note.id}
-                      onClick={() => handleNoteClick(note)}
-                      className={`p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
-                        selectedNote?.id === note.id ? 'bg-blue-50 dark:bg-blue-900/20 border-r-2 border-blue-500' : ''
-                      }`}
+                      className="p-4"
                     >
                       <div className="flex items-start justify-between mb-2">
                         <h3 className="font-medium text-gray-900 dark:text-white text-sm line-clamp-1">
@@ -163,49 +157,6 @@ export const SearchSidebar = ({ allNotes, isOpen, onClose, onNoteSelect }: Searc
             )}
           </div>
         </div>
-
-        {/* Selected Note Preview */}
-        {selectedNote && (
-          <div className="absolute top-0 right-0 bottom-0 w-80 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 shadow-lg">
-            <div className="h-full flex flex-col">
-              {/* Preview Header */}
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-4 h-4 rounded-full" 
-                      style={{ backgroundColor: selectedNote.color }}
-                    />
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {formatNoteDate(selectedNote.date)}
-                    </span>
-                  </div>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {selectedNote.title}
-                </h3>
-              </div>
-
-              {/* Preview Content */}
-              <div className="flex-1 p-4 overflow-y-auto">
-                <div className="prose prose-sm dark:prose-invert max-w-none">
-                  <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                    {selectedNote.content}
-                  </p>
-                </div>
-              </div>
-
-              {/* Preview Footer */}
-              <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-                <div className="text-xs text-gray-500 dark:text-gray-400">
-                  <p>Created: {formatNoteDate(selectedNote.createdAt)}</p>
-                  <p>Updated: {formatNoteDate(selectedNote.updatedAt)}</p>
-                  <p>Position: ({Math.round(selectedNote.position.x)}, {Math.round(selectedNote.position.y)})</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
