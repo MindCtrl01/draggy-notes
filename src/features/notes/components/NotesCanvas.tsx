@@ -7,11 +7,14 @@ import { useNotes, formatDateKey, formatDateDisplay } from '../hooks/use-notes';
 import { useState, useEffect, useRef } from 'react';
 import { DatePicker } from '@mantine/dates';
 import { NotesStorage } from '@/helpers/notes-storage';
+import { Note } from '@/domains/note';
+import { isSameDay } from '@/helpers/date-helper';
 
 export const NotesCanvas = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showSearchSidebar, setShowSearchSidebar] = useState(false);
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const datePickerRef = useRef<HTMLDivElement>(null);
   
   const user = {
@@ -110,6 +113,32 @@ export const NotesCanvas = () => {
 
   const handleCancelClear = () => {
     setShowClearConfirmation(false);
+  };
+
+  const handleNoteSelect = (note: Note) => {
+    // Check if the note is on a different date
+    if (!isSameDay(note.date, selectedDate)) {
+      // Switch to the note's date
+      setSelectedDate(new Date(note.date));
+    }
+    
+    // Set the selected note ID for highlighting
+    setSelectedNoteId(note.id);
+    
+    // Close the search sidebar
+    setShowSearchSidebar(false);
+    
+    // Scroll to the note after a brief delay to ensure it's rendered
+    setTimeout(() => {
+      const noteElement = document.querySelector(`[data-note-id="${note.id}"]`);
+      if (noteElement) {
+        noteElement.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center',
+          inline: 'center'
+        });
+      }
+    }, 100);
   };
 
   // Count displayed notes for the confirmation dialog
@@ -227,6 +256,8 @@ export const NotesCanvas = () => {
             onDragEnd={showSearchSidebar ? undefined : finalizeDrag}
             onMoveToDate={moveNoteToDate}
             onRefreshFromStorage={refreshNoteFromStorage}
+            isSelected={selectedNoteId === note.id}
+            onClearSelection={() => setSelectedNoteId(null)}
           />
         ))}
       </div>
@@ -330,10 +361,7 @@ export const NotesCanvas = () => {
         allNotes={allNotes}
         isOpen={showSearchSidebar}
         onClose={() => setShowSearchSidebar(false)}
-        onNoteSelect={(note) => {
-          // Optional: Handle note selection (e.g., scroll to note, highlight it)
-          console.log('Selected note:', note);
-        }}
+        onNoteSelect={handleNoteSelect}
       />
     </div>
   );

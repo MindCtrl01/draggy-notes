@@ -10,7 +10,7 @@ interface SearchSidebarProps {
   onNoteSelect?: (note: Note) => void;
 }
 
-export const SearchSidebar = ({ allNotes, isOpen, onClose }: SearchSidebarProps) => {
+export const SearchSidebar = ({ allNotes, isOpen, onClose, onNoteSelect }: SearchSidebarProps) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Helper function to normalize text for search (removes diacritics/accents)
@@ -129,7 +129,8 @@ export const SearchSidebar = ({ allNotes, isOpen, onClose }: SearchSidebarProps)
                   {searchResults.map((note) => (
                     <div
                       key={note.id}
-                      className="p-4"
+                      className="p-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                      onClick={() => onNoteSelect?.(note)}
                     >
                       <div className="flex items-start justify-between mb-2">
                         <h3 className="font-medium text-gray-900 dark:text-white text-sm line-clamp-1">
@@ -166,7 +167,8 @@ export const SearchSidebar = ({ allNotes, isOpen, onClose }: SearchSidebarProps)
                   {searchResults.map((note) => (
                     <div
                       key={note.id}
-                      className="p-4"
+                      className="p-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                      onClick={() => onNoteSelect?.(note)}
                     >
                       <div className="flex items-start justify-between mb-2">
                         <h3 className="font-medium text-gray-900 dark:text-white text-sm line-clamp-1">

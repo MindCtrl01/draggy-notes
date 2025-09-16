@@ -86,3 +86,23 @@
   z-index: 1000;
   transition: none !important; /* Disable transitions during drag for immediate response */
 }
+
+.note-card.selected {
+  transition: all 0.3s ease;
+  animation: pulse-selection 2s ease-in-out;
+}
+
+@keyframes pulse-selection {
+  0% {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3);
+    transform: scale(1.02);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(59, 130, 246, 0.7), 0 0 30px rgba(59, 130, 246, 0.5);
+    transform: scale(1.03);
+  }
+  100% {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3);
+    transform: scale(1.02);
+  }
+}

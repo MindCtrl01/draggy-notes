@@ -18,9 +18,11 @@ interface NoteCardProps {
   onDragEnd?: (id: string, position: { x: number; y: number }) => void;
   onMoveToDate?: (noteId: string, newDate: Date) => void;
   onRefreshFromStorage?: (noteId: string) => void;
+  isSelected?: boolean;
+  onClearSelection?: () => void;
 }
 
-export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveToDate, onRefreshFromStorage }: NoteCardProps) => {
+export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveToDate, onRefreshFromStorage, isSelected, onClearSelection }: NoteCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; isOpen: boolean }>({
     x: 0,
@@ -169,9 +171,11 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
       />
     <div
       ref={cardRef}
+      data-note-id={note.id}
       className={cn(
         'note-card',
         isDragging && 'dragging',
+        isSelected && 'selected',
         !(isEditingTitle || isEditingContent) && 'cursor-move'
       )}
       style={{
@@ -181,6 +185,12 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
         userSelect: isDragging ? 'none' : 'auto',
         backgroundColor: note.color,
         color: textColor,
+        // Add selection highlighting
+        ...(isSelected && {
+          boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3)',
+          transform: 'scale(1.02)',
+          zIndex: 1000
+        }),
         // Preserve dimensions when editing
         ...(currentDimensions && (isEditingTitle || isEditingContent) && {
           width: currentDimensions.width,
@@ -192,6 +202,13 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
       onMouseDown={onMouseDown}
       onContextMenu={handleContextMenu}
       onDoubleClick={(e) => e.stopPropagation()}
+      onClick={(e) => {
+        // Clear selection when clicking on the note
+        if (isSelected && onClearSelection) {
+          e.stopPropagation();
+          onClearSelection();
+        }
+      }}
     >
       <button
         onClick={() => onDelete(note.id)}
