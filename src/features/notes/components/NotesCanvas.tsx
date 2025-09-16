@@ -1,6 +1,7 @@
 import '../styles/notes-canvas.css';
-import { Plus, Trash2, Calendar } from 'lucide-react';
+import { Plus, Trash2, Calendar, Search } from 'lucide-react';
 import { NoteCard } from './NoteCard';
+import { SearchSidebar } from './SearchSidebar';
 import { useNotes, formatDateKey } from '../hooks/use-notes';
 import { useState, useEffect } from 'react';
 import { NotesStorage } from '@/helpers/notes-storage';
@@ -8,6 +9,7 @@ import { NotesStorage } from '@/helpers/notes-storage';
 export const NotesCanvas = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showSearchSidebar, setShowSearchSidebar] = useState(false);
   
   const { 
     notes, 
@@ -26,6 +28,14 @@ export const NotesCanvas = () => {
 
   const [showClearConfirmation, setShowClearConfirmation] = useState(false);
 
+  const handleSearchToggle = () => {
+    setShowSearchSidebar(!showSearchSidebar);
+    // Close date picker if open
+    if (showDatePicker) {
+      setShowDatePicker(false);
+    }
+  };
+
   // Save canvas data and recent view when notes change or date changes
   useEffect(() => {
     if (!isLoading && selectedDate) {
@@ -41,7 +51,7 @@ export const NotesCanvas = () => {
   }, [notes.length, selectedDate, isLoading]);
 
   const handleCanvasDoubleClick = (e: React.MouseEvent) => {
-    // Close date picker if it's open
+    // Close date picker if open
     if (showDatePicker) {
       setShowDatePicker(false);
       return;
@@ -104,24 +114,36 @@ export const NotesCanvas = () => {
           <h1 className="text-3xl font-bold text-foreground">
             {formatDisplayDate(selectedDate)}
           </h1>
-          <div className="relative">
+          <div className="flex items-center gap-2">
+            {/* Search Button */}
             <button
-              onClick={() => setShowDatePicker(!showDatePicker)}
+              onClick={handleSearchToggle}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-              title="Select date"
+              title="Search notes"
             >
-              <Calendar size={20} />
+              <Search size={20} />
             </button>
-            {showDatePicker && (
-              <div className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 z-50">
-                <input
-                  type="date"
-                  value={formatDateKey(selectedDate)}
-                  onChange={handleDateChange}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-              </div>
-            )}
+            
+            {/* Date Picker Button */}
+            <div className="relative">
+              <button
+                onClick={() => setShowDatePicker(!showDatePicker)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                title="Select date"
+              >
+                <Calendar size={20} />
+              </button>
+              {showDatePicker && (
+                <div className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 z-50">
+                  <input
+                    type="date"
+                    value={formatDateKey(selectedDate)}
+                    onChange={handleDateChange}
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
         <p className="text-muted-foreground">
@@ -151,6 +173,27 @@ export const NotesCanvas = () => {
 
       {/* Floating Action Buttons */}
       <div className="fixed bottom-8 right-8 flex flex-col gap-4 z-20">
+        {/* Search Button */}
+        <button
+          onClick={handleSearchToggle}
+          className={`floating-search-btn text-white hover:text-white transition-colors ${
+            showSearchSidebar ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 hover:bg-gray-700'
+          }`}
+          title="Search notes"
+          style={{
+            width: '56px',
+            height: '56px',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: 'none',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          }}
+        >
+          <Search size={24} />
+        </button>
+
         {/* Clear All Button */}
         <button
           onClick={handleClearAllClick}
@@ -243,6 +286,17 @@ export const NotesCanvas = () => {
           </div>
         </div>
       )}
+
+      {/* Search Sidebar */}
+      <SearchSidebar
+        allNotes={allNotes}
+        isOpen={showSearchSidebar}
+        onClose={() => setShowSearchSidebar(false)}
+        onNoteSelect={(note) => {
+          // Optional: Handle note selection (e.g., scroll to note, highlight it)
+          console.log('Selected note:', note);
+        }}
+      />
     </div>
   );
 };
