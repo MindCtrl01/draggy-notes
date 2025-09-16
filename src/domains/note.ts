@@ -1,6 +1,8 @@
 export interface Note {
   id: string;
+  title: string;
   content: string;
+  date: Date;
   color: string;
   isDisplayed: boolean;
   position: {
@@ -10,5 +12,3 @@ export interface Note {
   createdAt: Date;
   updatedAt: Date;
 }
-
-export type NoteColor = string; // Hex color code

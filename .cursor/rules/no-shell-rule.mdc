@@ -1,0 +1,5 @@
+---
+description: no powershell or command when make prompt
+globs:
+alwaysApply: true
+---

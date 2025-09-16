@@ -1,12 +1,17 @@
 import '../styles/notes-canvas.css';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Calendar } from 'lucide-react';
 import { NoteCard } from './NoteCard';
-import { useNotes } from '../hooks/use-notes';
-import { useState } from 'react';
+import { useNotes, formatDateKey } from '../hooks/use-notes';
+import { useState, useEffect } from 'react';
+import { NotesStorage } from '@/helpers/notes-storage';
 
 export const NotesCanvas = () => {
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  
   const { 
     notes, 
+    allNotes,
     isLoading,
     createNote, 
     updateNote, 
@@ -17,17 +22,52 @@ export const NotesCanvas = () => {
     isCreating,
     isUpdating,
     isDeleting 
-  } = useNotes();
+  } = useNotes(selectedDate);
 
   const [showClearConfirmation, setShowClearConfirmation] = useState(false);
 
+  // Save canvas data and recent view when notes change or date changes
+  useEffect(() => {
+    if (!isLoading && selectedDate) {
+      const dateKey = formatDateKey(selectedDate);
+      const noteCount = NotesStorage.getNotesCountByDate(dateKey);
+      
+      // Save canvas data if more than 1 note
+      NotesStorage.saveCanvasData(dateKey, noteCount);
+      
+      // Save as most recent viewed canvas date
+      NotesStorage.saveRecentCanvasDate(dateKey);
+    }
+  }, [notes.length, selectedDate, isLoading]);
+
   const handleCanvasDoubleClick = (e: React.MouseEvent) => {
+    // Close date picker if it's open
+    if (showDatePicker) {
+      setShowDatePicker(false);
+      return;
+    }
+    
     const rect = e.currentTarget.getBoundingClientRect();
     const position = {
       x: e.clientX - rect.left - 100, // Center the note
       y: e.clientY - rect.top - 75
     };
     createNote(position);
+  };
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDate = new Date(e.target.value);
+    setSelectedDate(newDate);
+    setShowDatePicker(false);
+  };
+
+  const formatDisplayDate = (date: Date): string => {
+    return date.toLocaleDateString('vi-VN', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric'
+    });
   };
 
   const handleClearAllClick = () => {
@@ -60,9 +100,31 @@ export const NotesCanvas = () => {
   return (
     <div className="canvas-container group" onDoubleClick={handleCanvasDoubleClick}>
       <div className="absolute top-8 left-8 z-10">
-        <h1 className="text-3xl font-bold text-foreground mb-2">FThu Notes 1</h1>
+        <div className="flex items-center gap-4 mb-2">
+          <h1 className="text-3xl font-bold text-foreground">
+            {formatDisplayDate(selectedDate)}
+          </h1>
+          <div className="relative">
+            <button
+              onClick={() => setShowDatePicker(!showDatePicker)}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              title="Select date"
+            >
+              <Calendar size={20} />
+            </button>
+            {showDatePicker && (
+              <div className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 z-50">
+                <input
+                  type="date"
+                  value={formatDateKey(selectedDate)}
+                  onChange={handleDateChange}
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+            )}
+          </div>
+        </div>
         <p className="text-muted-foreground">
-          Double-click anywhere to create a note, or use the + button
           {(isCreating || isUpdating || isDeleting) && (
             <span className="ml-2 text-xs text-primary">
               {isCreating && "Creating..."}
@@ -70,6 +132,9 @@ export const NotesCanvas = () => {
               {isDeleting && "Deleting..."}
             </span>
           )}
+        </p>
+        <p className="text-sm text-muted-foreground mt-1">
+          Showing {notes.length} note{notes.length !== 1 ? 's' : ''} for this date
         </p>
       </div>
 

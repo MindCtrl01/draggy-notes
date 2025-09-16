@@ -19,29 +19,37 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd }: NoteCa
   const cardRef = useRef<HTMLDivElement>(null);
   
   const {
-    isEditing,
+    isEditingTitle,
+    isEditingContent,
+    title,
     content,
+    titleRef,
     textareaRef,
+    setTitle,
     setContent,
+    handleTitleSubmit,
     handleContentSubmit,
-    handleKeyDown,
-    startEditing
+    handleContentKeyDown,
+    handleTitleKeyDown,
+    startEditingTitle,
+    startEditingContent
   } = useNoteEditing(note, onUpdate);
 
   const { isDragging, handleMouseDown } = useNoteDrag(
     (position) => onDrag(note.id, position),
     (position) => onDragEnd?.(note.id, position),
-    isEditing
+    isEditingTitle || isEditingContent
   );
 
   const onMouseDown = (e: React.MouseEvent) => {
-    // Only prevent dragging if clicking on interactive elements
+    // Only prevent dragging if clicking on interactive elements or input fields
     const target = e.target as HTMLElement;
     const isInteractiveElement = target.tagName === 'BUTTON' || 
                                 target.tagName === 'TEXTAREA' || 
+                                target.tagName === 'INPUT' ||
                                 target.closest('button');
     
-    if (isInteractiveElement) {
+    if (isInteractiveElement || isEditingTitle || isEditingContent) {
       return;
     }
     
@@ -56,7 +64,7 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd }: NoteCa
       className={cn(
         'note-card',
         isDragging && 'dragging',
-        !isEditing && 'cursor-move'
+        !(isEditingTitle || isEditingContent) && 'cursor-move'
       )}
       style={{
         position: 'absolute',
@@ -67,6 +75,7 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd }: NoteCa
         color: textColor
       }}
       onMouseDown={onMouseDown}
+      onDoubleClick={(e) => e.stopPropagation()}
     >
       <button
         onClick={() => onDelete(note.id)}
@@ -76,35 +85,75 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd }: NoteCa
         <Trash2 size={14} />
       </button>
 
-      {isEditing ? (
-        <textarea
-          ref={textareaRef}
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          onBlur={handleContentSubmit}
-          onKeyDown={handleKeyDown}
-          className="w-full h-full bg-transparent border-none outline-none resize-none font-medium"
-          placeholder="Type your note..."
-          onMouseDown={(e) => e.stopPropagation()}
-        />
-      ) : (
-        <div
-          className="w-full h-full font-medium whitespace-pre-wrap break-words cursor-text"
-          onClick={startEditing}
-          onMouseDown={(e) => e.stopPropagation()}
-        >
-          <span className={
-            note.content === 'Click to add content...' || note.content === '' 
-              ? 'text-gray-500 italic' 
-              : ''
-          }>
-            {note.content === '' 
-              ? 'Empty note - Click to edit...' 
-              : note.content || 'Click to edit...'
-            }
-          </span>
+      <div className="w-full h-full flex flex-col p-1">
+        {/* Title section */}
+        <div className="mb-2">
+          {isEditingTitle ? (
+            <input
+              ref={titleRef}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              onBlur={handleTitleSubmit}
+              onKeyDown={handleTitleKeyDown}
+              className="w-full bg-transparent border-none outline-none font-bold text-lg placeholder-gray-400"
+              placeholder="Note title..."
+              onMouseDown={(e) => e.stopPropagation()}
+              onDoubleClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <div 
+              className="font-bold text-lg cursor-move hover:cursor-pointer hover:bg-black/5 rounded px-1 py-0.5 -mx-1 -my-0.5"
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                startEditingTitle();
+              }}
+            >
+              {note.title || 'Untitled'}
+            </div>
+          )}
         </div>
-      )}
+        
+        {/* Date display */}
+        <div className="text-xs opacity-70 mb-2">
+          {note.date.toLocaleDateString()}
+        </div>
+        
+        {/* Content section */}
+        <div className="flex-1">
+          {isEditingContent ? (
+            <textarea
+              ref={textareaRef}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              onBlur={handleContentSubmit}
+              onKeyDown={handleContentKeyDown}
+              className="w-full h-full bg-transparent border-none outline-none resize-none text-sm"
+              placeholder="Note content..."
+              onMouseDown={(e) => e.stopPropagation()}
+              onDoubleClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <div 
+              className="w-full h-full text-sm whitespace-pre-wrap break-words overflow-hidden cursor-move hover:cursor-pointer hover:bg-black/5 rounded px-1 py-0.5 -mx-1 -my-0.5"
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                startEditingContent();
+              }}
+            >
+              <span className={
+                note.content === 'Click to add content...' || note.content === 'Double-click to add content...' || note.content === '' 
+                  ? 'text-gray-500 italic' 
+                  : ''
+              }>
+                {note.content === '' 
+                  ? 'Double-click to add content...' 
+                  : note.content || 'Double-click to add content...'
+                }
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

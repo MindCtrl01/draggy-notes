@@ -1,13 +1,23 @@
 import { useCallback, useState, useEffect } from 'react';
-import { Note, NoteColor } from '@/domains/note';
+import { Note } from '@/domains/note';
 // import { useNotesApi } from './use-notes-api'; // Temporarily disabled
 import { useDebounce } from '@/hooks/common/use-debounce';
 import { NotesStorage } from '@/helpers/notes-storage';
 import { generateRandomNoteColor } from '@/helpers/color-generator';
 
-export const useNotes = () => {
+// Helper function to format date as YYYY-MM-DD
+const formatDateKey = (date: Date): string => {
+  return date.toISOString().split('T')[0];
+};
+
+// Helper function to check if two dates are the same day
+const isSameDay = (date1: Date, date2: Date): boolean => {
+  return formatDateKey(date1) === formatDateKey(date2);
+};
+
+export const useNotes = (selectedDate?: Date) => {
   // Local state management (API temporarily disabled)
-  const [notes, setNotes] = useState<Note[]>([]);
+  const [allNotes, setAllNotes] = useState<Note[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -19,7 +29,7 @@ export const useNotes = () => {
       try {
         if (NotesStorage.isStorageAvailable()) {
           const savedNotes = NotesStorage.getAllNotes();
-          setNotes(savedNotes);
+          setAllNotes(savedNotes);
         }
       } catch (error) {
         console.error('Failed to load notes from localStorage:', error);
@@ -30,6 +40,11 @@ export const useNotes = () => {
 
     loadNotes();
   }, []);
+
+  // Filter notes by selected date
+  const notes = selectedDate 
+    ? allNotes.filter(note => isSameDay(note.date, selectedDate))
+    : allNotes;
 
   // Disabled API integration
   // const {
@@ -57,7 +72,7 @@ export const useNotes = () => {
     const newId = `note-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
     // Create note with provided content or default placeholder
-    const noteContent = content !== undefined ? content.trim() : 'Click to add content...';
+    const noteContent = content !== undefined ? content.trim() : 'Double-click to add content...';
     const randomColor = generateRandomNoteColor(); // Generate random hex color
     const defaultPosition = position || { 
       x: Math.random() * (window.innerWidth - 250), 
@@ -66,7 +81,9 @@ export const useNotes = () => {
 
     const newNote: Note = {
       id: newId,
+      title: 'New Note',
       content: noteContent,
+      date: selectedDate || new Date(), // Use selected date if available
       color: randomColor,
       isDisplayed: true,
       position: defaultPosition,
@@ -78,13 +95,13 @@ export const useNotes = () => {
     NotesStorage.saveNote(newNote);
     
     // Add note to local state
-    setNotes(prevNotes => [...prevNotes, newNote]);
+    setAllNotes(prevNotes => [...prevNotes, newNote]);
     
     // Simulate API delay
     setTimeout(() => {
       setIsCreating(false);
     }, 300);
-  }, []);
+  }, [selectedDate]);
 
   const updateNote = useCallback((updatedNote: Note) => {
     setIsUpdating(true);
@@ -95,7 +112,7 @@ export const useNotes = () => {
     NotesStorage.saveNote(noteToUpdate);
     
     // Update note in local state
-    setNotes(prevNotes => 
+    setAllNotes(prevNotes => 
       prevNotes.map(note => 
         note.id === updatedNote.id ? noteToUpdate : note
       )
@@ -114,7 +131,7 @@ export const useNotes = () => {
     NotesStorage.deleteNote(id);
     
     // Remove note from local state
-    setNotes(prevNotes => prevNotes.filter(note => note.id !== id));
+    setAllNotes(prevNotes => prevNotes.filter(note => note.id !== id));
     
     // Simulate API delay
     setTimeout(() => {
@@ -125,7 +142,7 @@ export const useNotes = () => {
   const clearAllDisplayedNotes = useCallback(() => {
     setIsDeleting(true);
     
-    // Find all displayed notes
+    // Find all displayed notes (filtered by date if selected)
     const displayedNotes = notes.filter(note => note.isDisplayed);
     
     // Remove each displayed note from localStorage
@@ -134,7 +151,7 @@ export const useNotes = () => {
     });
     
     // Remove displayed notes from local state
-    setNotes(prevNotes => prevNotes.filter(note => !note.isDisplayed));
+    setAllNotes(prevNotes => prevNotes.filter(note => !displayedNotes.some(dn => dn.id === note.id)));
     
     // Simulate API delay
     setTimeout(() => {
@@ -152,7 +169,7 @@ export const useNotes = () => {
 
   const finalizeDrag = useCallback((id: string, position: { x: number; y: number }) => {
     // Update the note position in local state when drag ends
-    setNotes(prevNotes => {
+    setAllNotes(prevNotes => {
       const updatedNotes = prevNotes.map(note => {
         if (note.id === id) {
           const updatedNote = { ...note, position, updatedAt: new Date() };
@@ -180,6 +197,7 @@ export const useNotes = () => {
 
   return {
     notes: displayNotes,
+    allNotes,
     isLoading,
     createNote,
     updateNote,
@@ -192,5 +210,12 @@ export const useNotes = () => {
     isCreating,
     isUpdating,
     isDeleting,
+    
+    // Helper functions
+    formatDateKey,
+    isSameDay,
   };
 };
+
+// Export helper functions for use in other components
+export { formatDateKey, isSameDay };

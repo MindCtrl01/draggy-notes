@@ -3,6 +3,8 @@ import { Note } from '@/domains/note';
 // Storage keys
 const STORAGE_PREFIX = 'draggy-notes';
 const NOTES_LIST_KEY = `${STORAGE_PREFIX}-list`;
+const CANVAS_PREFIX = 'canvas';
+const RECENT_CANVAS_KEY = 'recent-canvas-date';
 
 /**
  * Helper functions for managing notes in localStorage
@@ -17,6 +19,7 @@ export class NotesStorage {
       const key = `${STORAGE_PREFIX}-${note.id}`;
       const noteData = {
         ...note,
+        date: note.date.toISOString(),
         createdAt: note.createdAt.toISOString(),
         updatedAt: note.updatedAt.toISOString(),
       };
@@ -44,6 +47,7 @@ export class NotesStorage {
       const parsed = JSON.parse(noteData);
       return {
         ...parsed,
+        date: new Date(parsed.date),
         createdAt: new Date(parsed.createdAt),
         updatedAt: new Date(parsed.updatedAt),
       };
@@ -164,6 +168,83 @@ export class NotesStorage {
       return false;
     }
   }
+
+  /**
+   * Save canvas data to localStorage if date has more than 1 note
+   * @param date - The date to save canvas data for
+   * @param noteCount - Number of notes for this date
+   */
+  static saveCanvasData(date: string, noteCount: number): void {
+    try {
+      if (noteCount > 1) {
+        const canvasKey = `${CANVAS_PREFIX}_${date}`;
+        localStorage.setItem(canvasKey, noteCount.toString());
+      }
+    } catch (error) {
+      console.error('Failed to save canvas data to localStorage:', error);
+    }
+  }
+
+  /**
+   * Get canvas data from localStorage
+   * @param date - The date to get canvas data for
+   * @returns Number of notes for the date or null if not found
+   */
+  static getCanvasData(date: string): number | null {
+    try {
+      const canvasKey = `${CANVAS_PREFIX}_${date}`;
+      const data = localStorage.getItem(canvasKey);
+      return data ? parseInt(data, 10) : null;
+    } catch (error) {
+      console.error('Failed to get canvas data from localStorage:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Save the most recent viewed canvas date
+   * @param date - The date key to save as most recent
+   */
+  static saveRecentCanvasDate(date: string): void {
+    try {
+      const canvasKey = `${CANVAS_PREFIX}_${date}`;
+      localStorage.setItem(RECENT_CANVAS_KEY, canvasKey);
+    } catch (error) {
+      console.error('Failed to save recent canvas date to localStorage:', error);
+    }
+  }
+
+  /**
+   * Get the most recent viewed canvas date
+   * @returns The most recent canvas key or null if not found
+   */
+  static getRecentCanvasDate(): string | null {
+    try {
+      return localStorage.getItem(RECENT_CANVAS_KEY);
+    } catch (error) {
+      console.error('Failed to get recent canvas date from localStorage:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get notes count by date
+   * @param date - The date to count notes for
+   * @returns Number of notes for the specified date
+   */
+  static getNotesCountByDate(date: string): number {
+    try {
+      const allNotes = this.getAllNotes();
+      const dateKey = date;
+      return allNotes.filter(note => {
+        const noteDate = note.date.toISOString().split('T')[0];
+        return noteDate === dateKey;
+      }).length;
+    } catch (error) {
+      console.error('Failed to get notes count by date:', error);
+      return 0;
+    }
+  }
 }
 
 // Export individual functions for convenience
@@ -174,4 +255,9 @@ export const {
   deleteNote,
   clearAllNotes,
   isStorageAvailable,
+  saveCanvasData,
+  getCanvasData,
+  saveRecentCanvasDate,
+  getRecentCanvasDate,
+  getNotesCountByDate,
 } = NotesStorage;

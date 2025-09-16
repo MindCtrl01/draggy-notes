@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 export interface DragState {
   isDragging: boolean;
+  isPending: boolean;
   dragOffset: { x: number; y: number };
 }
 
@@ -12,8 +13,11 @@ export const useNoteDrag = (
 ) => {
   const [dragState, setDragState] = useState<DragState>({
     isDragging: false,
+    isPending: false,
     dragOffset: { x: 0, y: 0 }
   });
+  
+  const dragTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleMouseDown = useCallback((e: React.MouseEvent, cardRef: React.RefObject<HTMLDivElement>) => {
     // Don't start dragging if we're in editing mode
@@ -24,13 +28,26 @@ export const useNoteDrag = (
     
     const rect = cardRef.current?.getBoundingClientRect();
     if (rect) {
+      const dragOffset = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      };
+      
+      // Set pending state first
       setDragState({
-        isDragging: true,
-        dragOffset: {
-          x: e.clientX - rect.left,
-          y: e.clientY - rect.top
-        }
+        isDragging: false,
+        isPending: true,
+        dragOffset
       });
+      
+      // Start dragging after 100ms delay
+      dragTimeoutRef.current = setTimeout(() => {
+        setDragState(prev => ({
+          ...prev,
+          isDragging: true,
+          isPending: false
+        }));
+      }, 100);
     }
   }, [isEditing]);
 
@@ -50,6 +67,12 @@ export const useNoteDrag = (
     };
 
     const handleMouseUp = () => {
+      // Clear the timeout if mouse is released before drag starts
+      if (dragTimeoutRef.current) {
+        clearTimeout(dragTimeoutRef.current);
+        dragTimeoutRef.current = null;
+      }
+      
       if (dragState.isDragging && onDragEnd) {
         // Calculate final position and call onDragEnd
         const finalPosition = {
@@ -58,10 +81,15 @@ export const useNoteDrag = (
         };
         onDragEnd(finalPosition);
       }
-      setDragState(prev => ({ ...prev, isDragging: false }));
+      
+      setDragState(prev => ({ 
+        ...prev, 
+        isDragging: false,
+        isPending: false
+      }));
     };
 
-    if (dragState.isDragging) {
+    if (dragState.isDragging || dragState.isPending) {
       // Use passive event listeners for better performance
       document.addEventListener('mousemove', handleMouseMove, { passive: true });
       document.addEventListener('mouseup', handleMouseUp);
@@ -71,7 +99,16 @@ export const useNoteDrag = (
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [dragState.isDragging, dragState.dragOffset, onDrag]);
+  }, [dragState.isDragging, dragState.isPending, dragState.dragOffset, onDrag]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (dragTimeoutRef.current) {
+        clearTimeout(dragTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return {
     isDragging: dragState.isDragging,
