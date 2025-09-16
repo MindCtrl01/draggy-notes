@@ -115,15 +115,6 @@ export const NotesCanvas = () => {
             {formatDisplayDate(selectedDate)}
           </h1>
           <div className="flex items-center gap-2">
-            {/* Search Button */}
-            <button
-              onClick={handleSearchToggle}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-              title="Search notes"
-            >
-              <Search size={20} />
-            </button>
-            
             {/* Date Picker Button */}
             <div className="relative">
               <button
