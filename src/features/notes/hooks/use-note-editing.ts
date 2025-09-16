@@ -19,16 +19,8 @@ export const useNoteEditing = (
   const handleContentSubmit = () => {
     const trimmedContent = content.trim();
     
-    // Don't save empty content (except for placeholder text)
-    if (trimmedContent === '' && note.content !== 'Click to add content...') {
-      // Reset to original content if user tries to save empty
-      setContent(note.content);
-      setIsEditing(false);
-      return;
-    }
-    
-    // Only update if content actually changed
-    if (trimmedContent !== note.content && trimmedContent !== '') {
+    // Always allow content updates, including empty content
+    if (trimmedContent !== note.content) {
       onUpdate({
         ...note,
         content: trimmedContent,
@@ -53,7 +45,6 @@ export const useNoteEditing = (
   };
 
   const startEditing = () => {
-    // Clear placeholder text when starting to edit
     if (note.content === 'Click to add content...') {
       setContent('');
     }

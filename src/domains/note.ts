@@ -1,7 +1,8 @@
 export interface Note {
   id: string;
   content: string;
-  color: 'yellow' | 'pink' | 'blue' | 'green' | 'purple' | 'orange';
+  color: string;
+  isDisplayed: boolean;
   position: {
     x: number;
     y: number;
@@ -10,4 +11,4 @@ export interface Note {
   updatedAt: Date;
 }
 
-export type NoteColor = Note['color'];
+export type NoteColor = string; // Hex color code

@@ -4,8 +4,9 @@
   background: var(--gradient-background);
 }
 
+/* Floating Action Buttons */
 .floating-add-btn {
-  @apply fixed bottom-8 right-8 w-14 h-14 rounded-full flex items-center justify-center;
+  @apply w-14 h-14 rounded-full flex items-center justify-center;
   background: var(--gradient-primary);
   box-shadow: var(--shadow-floating);
   transition: var(--transition-spring);
@@ -14,4 +15,23 @@
 .floating-add-btn:hover {
   transform: scale(1.1);
   box-shadow: var(--shadow-drag);
+}
+
+.floating-clear-btn {
+  @apply w-14 h-14 rounded-full flex items-center justify-center;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); /* Red gradient */
+  box-shadow: var(--shadow-floating);
+  transition: var(--transition-spring);
+}
+
+.floating-clear-btn:hover:not(:disabled) {
+  transform: scale(1.1);
+  box-shadow: var(--shadow-drag);
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); /* Darker red on hover */
+}
+
+.floating-clear-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #9ca3af; /* Gray when disabled */
 }

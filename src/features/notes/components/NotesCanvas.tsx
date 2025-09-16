@@ -1,7 +1,8 @@
 import '../styles/notes-canvas.css';
-import { Plus } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { NoteCard } from './NoteCard';
 import { useNotes } from '../hooks/use-notes';
+import { useState } from 'react';
 
 export const NotesCanvas = () => {
   const { 
@@ -10,12 +11,15 @@ export const NotesCanvas = () => {
     createNote, 
     updateNote, 
     deleteNote, 
+    clearAllDisplayedNotes,
     dragNote, 
     finalizeDrag,
     isCreating,
     isUpdating,
     isDeleting 
   } = useNotes();
+
+  const [showClearConfirmation, setShowClearConfirmation] = useState(false);
 
   const handleCanvasDoubleClick = (e: React.MouseEvent) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -25,6 +29,22 @@ export const NotesCanvas = () => {
     };
     createNote(position);
   };
+
+  const handleClearAllClick = () => {
+    setShowClearConfirmation(true);
+  };
+
+  const handleConfirmClear = () => {
+    clearAllDisplayedNotes();
+    setShowClearConfirmation(false);
+  };
+
+  const handleCancelClear = () => {
+    setShowClearConfirmation(false);
+  };
+
+  // Count displayed notes for the confirmation dialog
+  const displayedNotesCount = notes.filter(note => note.isDisplayed).length;
 
   if (isLoading) {
     return (
@@ -64,18 +84,42 @@ export const NotesCanvas = () => {
         />
       ))}
 
-      <button
-        onClick={() => createNote()}
-        disabled={isCreating}
-        className="floating-add-btn text-white hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-        title={isCreating ? "Creating note..." : "Add new note"}
-      >
-        {isCreating ? (
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-        ) : (
-          <Plus size={24} />
-        )}
-      </button>
+      {/* Floating Action Buttons */}
+      <div className="fixed bottom-8 right-8 flex flex-col gap-4 z-20">
+        {/* Clear All Button */}
+        <button
+          onClick={handleClearAllClick}
+          disabled={isDeleting || displayedNotesCount === 0}
+          className="floating-clear-btn text-white hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          title={
+            displayedNotesCount === 0 
+              ? "No displayed notes to clear" 
+              : isDeleting 
+                ? "Clearing notes..." 
+                : `Clear ${displayedNotesCount} displayed note${displayedNotesCount !== 1 ? 's' : ''}`
+          }
+        >
+          {isDeleting ? (
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+          ) : (
+            <Trash2 size={24} />
+          )}
+        </button>
+
+        {/* Add Note Button */}
+        <button
+          onClick={() => createNote()}
+          disabled={isCreating}
+          className="floating-add-btn text-white hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          title={isCreating ? "Creating note..." : "Add new note"}
+        >
+          {isCreating ? (
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+          ) : (
+            <Plus size={24} />
+          )}
+        </button>
+      </div>
 
       {notes.length === 0 && !isLoading && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -83,6 +127,54 @@ export const NotesCanvas = () => {
             <div className="text-6xl mb-4">📝</div>
             <h2 className="text-2xl font-semibold mb-2">No notes yet</h2>
             <p className="text-lg">Double-click anywhere to create your first note!</p>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Dialog */}
+      {showClearConfirmation && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md mx-4 shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-red-100 dark:bg-red-900/20 rounded-full">
+                <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Clear All Notes
+              </h3>
+            </div>
+            
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              Are you sure you want to clear all {displayedNotesCount} displayed note{displayedNotesCount !== 1 ? 's' : ''}? 
+              This action cannot be undone.
+            </p>
+            
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={handleCancelClear}
+                disabled={isDeleting}
+                className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmClear}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {isDeleting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Clearing...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={16} />
+                    Clear All
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

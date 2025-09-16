@@ -16,7 +16,11 @@ export const useNoteDrag = (
   });
 
   const handleMouseDown = useCallback((e: React.MouseEvent, cardRef: React.RefObject<HTMLDivElement>) => {
+    // Don't start dragging if we're in editing mode
     if (isEditing) return;
+    
+    // Prevent default to avoid text selection during drag
+    e.preventDefault();
     
     const rect = cardRef.current?.getBoundingClientRect();
     if (rect) {

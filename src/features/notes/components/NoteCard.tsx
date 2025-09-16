@@ -4,6 +4,7 @@ import { Note } from '@/domains/note';
 import { cn } from '@/styles/utils';
 import { useNoteDrag } from '../hooks/use-note-drag';
 import { useNoteEditing } from '../hooks/use-note-editing';
+import { getContrastTextColor } from '@/helpers/color-generator';
 import '../styles/note-card.css';
 
 interface NoteCardProps {
@@ -34,22 +35,36 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd }: NoteCa
   );
 
   const onMouseDown = (e: React.MouseEvent) => {
+    // Only prevent dragging if clicking on interactive elements
+    const target = e.target as HTMLElement;
+    const isInteractiveElement = target.tagName === 'BUTTON' || 
+                                target.tagName === 'TEXTAREA' || 
+                                target.closest('button');
+    
+    if (isInteractiveElement) {
+      return;
+    }
+    
     handleMouseDown(e, cardRef);
   };
+
+  const textColor = getContrastTextColor(note.color);
 
   return (
     <div
       ref={cardRef}
       className={cn(
         'note-card',
-        `note-${note.color}`,
-        isDragging && 'dragging'
+        isDragging && 'dragging',
+        !isEditing && 'cursor-move'
       )}
       style={{
         position: 'absolute',
         left: note.position.x,
         top: note.position.y,
-        userSelect: isDragging ? 'none' : 'auto'
+        userSelect: isDragging ? 'none' : 'auto',
+        backgroundColor: note.color,
+        color: textColor
       }}
       onMouseDown={onMouseDown}
     >
@@ -78,8 +93,15 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd }: NoteCa
           onClick={startEditing}
           onMouseDown={(e) => e.stopPropagation()}
         >
-          <span className={note.content === 'Click to add content...' ? 'text-gray-500 italic' : ''}>
-            {note.content || 'Click to edit...'}
+          <span className={
+            note.content === 'Click to add content...' || note.content === '' 
+              ? 'text-gray-500 italic' 
+              : ''
+          }>
+            {note.content === '' 
+              ? 'Empty note - Click to edit...' 
+              : note.content || 'Click to edit...'
+            }
           </span>
         </div>
       )}
