@@ -170,15 +170,18 @@ export class NotesStorage {
   }
 
   /**
-   * Save canvas data to localStorage if date has more than 1 note
+   * Save canvas data to localStorage with note count for the date
    * @param date - The date to save canvas data for
    * @param noteCount - Number of notes for this date
    */
   static saveCanvasData(date: string, noteCount: number): void {
     try {
-      if (noteCount > 1) {
-        const canvasKey = `${CANVAS_PREFIX}_${date}`;
+      const canvasKey = `${CANVAS_PREFIX}_${date}`;
+      if (noteCount > 0) {
         localStorage.setItem(canvasKey, noteCount.toString());
+      } else {
+        // Remove canvas data when no notes exist for this date
+        localStorage.removeItem(canvasKey);
       }
     } catch (error) {
       console.error('Failed to save canvas data to localStorage:', error);

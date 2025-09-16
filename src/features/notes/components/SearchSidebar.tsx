@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Search, X, Calendar, FileText } from 'lucide-react';
 import { Note } from '@/domains/note';
-import { formatDateKey } from '../hooks/use-notes';
+import { formatDateShort } from '@/helpers/date-helper';
 
 interface SearchSidebarProps {
   allNotes: Note[];
@@ -10,13 +10,15 @@ interface SearchSidebarProps {
   onNoteSelect?: (note: Note) => void;
 }
 
-export const SearchSidebar = ({ allNotes, isOpen, onClose, onNoteSelect }: SearchSidebarProps) => {
+export const SearchSidebar = ({ allNotes, isOpen, onClose }: SearchSidebarProps) => {
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Search functionality - filter by title primarily
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) {
-      return [];
+      // Show top 10 most recent notes by creation date when no search query
+      return allNotes
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 10);
     }
     
     return allNotes
@@ -30,12 +32,6 @@ export const SearchSidebar = ({ allNotes, isOpen, onClose, onNoteSelect }: Searc
     setSearchQuery(e.target.value);
   };
 
-  // Disabled for now
-  // const handleNoteClick = (note: Note) => {
-  //   setSelectedNote(note);
-  //   onNoteSelect?.(note);
-  // };
-
   const clearSearch = () => {
     setSearchQuery('');
   };
@@ -43,14 +39,6 @@ export const SearchSidebar = ({ allNotes, isOpen, onClose, onNoteSelect }: Searc
   const handleClose = () => {
     setSearchQuery('');
     onClose();
-  };
-
-  const formatNoteDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
   };
 
   const truncateContent = (content: string, maxLength: number = 100) => {
@@ -64,7 +52,7 @@ export const SearchSidebar = ({ allNotes, isOpen, onClose, onNoteSelect }: Searc
     <div className="fixed inset-0 z-50 flex justify-end">
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black/20 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/20 backdrop-blur-xs"
         onClick={handleClose}
       />
       
@@ -74,7 +62,7 @@ export const SearchSidebar = ({ allNotes, isOpen, onClose, onNoteSelect }: Searc
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
             <Search size={20} />
-            Search Notes
+            Notes
           </h2>
           <button
             onClick={handleClose}
@@ -111,11 +99,42 @@ export const SearchSidebar = ({ allNotes, isOpen, onClose, onNoteSelect }: Searc
         <div className="flex-1 flex">
           {/* Search Results List */}
           <div className="w-full">
-            {!searchQuery ? (
+            {!searchQuery && searchResults.length === 0 ? (
               <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                <Search size={48} className="mx-auto mb-4 opacity-50" />
-                <p className="text-lg font-medium mb-2">Search Your Notes</p>
-                <p className="text-sm">Type in the search box to find notes by title</p>
+                <FileText size={48} className="mx-auto mb-4 opacity-50" />
+                <p className="text-lg font-medium mb-2">No Notes Yet</p>
+                <p className="text-sm">Create your first note to see it here</p>
+              </div>
+            ) : !searchQuery ? (
+              <div className="overflow-y-auto">
+                <div className="p-3 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                  Recent Notes ({searchResults.length})
+                </div>
+                <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {searchResults.map((note) => (
+                    <div
+                      key={note.id}
+                      className="p-4"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="font-medium text-gray-900 dark:text-white text-sm line-clamp-1">
+                          {note.title}
+                        </h3>
+                        <div 
+                          className="w-3 h-3 rounded-full ml-2 flex-shrink-0" 
+                          style={{ backgroundColor: note.color }}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-2 mb-2">
+                        {truncateContent(note.content)}
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                        <Calendar size={12} />
+                        <span>{formatDateShort(note.date)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : searchResults.length === 0 ? (
               <div className="p-8 text-center text-gray-500 dark:text-gray-400">
@@ -148,7 +167,7 @@ export const SearchSidebar = ({ allNotes, isOpen, onClose, onNoteSelect }: Searc
                       </p>
                       <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                         <Calendar size={12} />
-                        <span>{formatNoteDate(note.date)}</span>
+                        <span>{formatDateShort(note.date)}</span>
                       </div>
                     </div>
                   ))}
@@ -157,6 +176,7 @@ export const SearchSidebar = ({ allNotes, isOpen, onClose, onNoteSelect }: Searc
             )}
           </div>
         </div>
+
       </div>
     </div>
   );

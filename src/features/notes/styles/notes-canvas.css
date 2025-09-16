@@ -35,3 +35,9 @@
   cursor: not-allowed;
   background: #9ca3af; /* Gray when disabled */
 }
+
+.floating-search-btn {
+  @apply w-14 h-14 rounded-full flex items-center justify-center border-0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: var(--transition-spring);
+}

@@ -2,14 +2,17 @@ import '../styles/notes-canvas.css';
 import { Plus, Trash2, Calendar, Search } from 'lucide-react';
 import { NoteCard } from './NoteCard';
 import { SearchSidebar } from './SearchSidebar';
-import { useNotes, formatDateKey } from '../hooks/use-notes';
-import { useState, useEffect } from 'react';
+import { ConfirmationDialog } from './ConfirmationDialog';
+import { useNotes, formatDateKey, formatDateDisplay } from '../hooks/use-notes';
+import { useState, useEffect, useRef } from 'react';
+import { DatePicker } from '@mantine/dates';
 import { NotesStorage } from '@/helpers/notes-storage';
 
 export const NotesCanvas = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showSearchSidebar, setShowSearchSidebar] = useState(false);
+  const datePickerRef = useRef<HTMLDivElement>(null);
   
   const { 
     notes, 
@@ -28,9 +31,25 @@ export const NotesCanvas = () => {
 
   const [showClearConfirmation, setShowClearConfirmation] = useState(false);
 
+  // Handle click outside datepicker to close it
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
+        setShowDatePicker(false);
+      }
+    };
+
+    if (showDatePicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showDatePicker]);
+
   const handleSearchToggle = () => {
     setShowSearchSidebar(!showSearchSidebar);
-    // Close date picker if open
     if (showDatePicker) {
       setShowDatePicker(false);
     }
@@ -42,18 +61,21 @@ export const NotesCanvas = () => {
       const dateKey = formatDateKey(selectedDate);
       const noteCount = NotesStorage.getNotesCountByDate(dateKey);
       
-      // Save canvas data if more than 1 note
       NotesStorage.saveCanvasData(dateKey, noteCount);
-      
-      // Save as most recent viewed canvas date
       NotesStorage.saveRecentCanvasDate(dateKey);
+      
+      console.log(`Canvas data updated for ${dateKey}: ${noteCount} notes`);
     }
-  }, [notes.length, selectedDate, isLoading]);
+  }, [notes.length, selectedDate, isLoading, isCreating, isUpdating, isDeleting]);
 
   const handleCanvasDoubleClick = (e: React.MouseEvent) => {
-    // Close date picker if open
     if (showDatePicker) {
       setShowDatePicker(false);
+      return;
+    }
+    
+    // Disable canvas interactions when SearchSidebar is open
+    if (showSearchSidebar) {
       return;
     }
     
@@ -65,19 +87,10 @@ export const NotesCanvas = () => {
     createNote(position);
   };
 
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newDate = new Date(e.target.value);
-    setSelectedDate(newDate);
-    setShowDatePicker(false);
-  };
-
-  const formatDisplayDate = (date: Date): string => {
-    return date.toLocaleDateString('vi-VN', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'numeric',
-      day: 'numeric'
-    });
+  const formatHeaderDate = (date: Date): string => {
+    const dayName = date.toLocaleDateString('vi-VN', { weekday: 'long' });
+    const formattedDate = formatDateDisplay(date); // DD-MM-YYYY
+    return `${dayName}, ${formattedDate}`;
   };
 
   const handleClearAllClick = () => {
@@ -112,11 +125,11 @@ export const NotesCanvas = () => {
       <div className="absolute top-8 left-8 z-10">
         <div className="flex items-center gap-4 mb-2">
           <h1 className="text-3xl font-bold text-foreground">
-            {formatDisplayDate(selectedDate)}
+            {formatHeaderDate(selectedDate)}
           </h1>
           <div className="flex items-center gap-2">
             {/* Date Picker Button */}
-            <div className="relative">
+            <div className="relative" ref={datePickerRef}>
               <button
                 onClick={() => setShowDatePicker(!showDatePicker)}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
@@ -124,16 +137,32 @@ export const NotesCanvas = () => {
               >
                 <Calendar size={20} />
               </button>
-              {showDatePicker && (
-                <div className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 z-50">
-                  <input
-                    type="date"
-                    value={formatDateKey(selectedDate)}
-                    onChange={handleDateChange}
-                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
-                </div>
-              )}
+                {showDatePicker && (
+                 <div className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 z-50">
+                   <DatePicker
+                     value={selectedDate}
+                     onChange={(date: string | null) => {
+                       if (date) {
+                         setSelectedDate(new Date(date));
+                         setShowDatePicker(false);
+                       }
+                     }}
+                     size="sm"
+                     styles={{
+                       day: {
+                         color: 'var(--mantine-color-text)',
+                         '&[dataSelected]': {
+                           backgroundColor: 'var(--mantine-color-blue-6)',
+                           color: 'white',
+                         },
+                         '&:hover': {
+                           backgroundColor: 'var(--mantine-color-gray-1)',
+                         },
+                       },
+                     }}
+                   />
+                 </div>
+               )}
             </div>
           </div>
         </div>
@@ -151,16 +180,18 @@ export const NotesCanvas = () => {
         </p>
       </div>
 
-      {notes.map(note => (
-        <NoteCard
-          key={note.id}
-          note={note}
-          onUpdate={updateNote}
-          onDelete={deleteNote}
-          onDrag={dragNote}
-          onDragEnd={finalizeDrag}
-        />
-      ))}
+      <div className={showSearchSidebar ? 'pointer-events-none' : ''}>
+        {notes.map(note => (
+          <NoteCard
+            key={note.id}
+            note={note}
+            onUpdate={updateNote}
+            onDelete={deleteNote}
+            onDrag={showSearchSidebar ? undefined : dragNote}
+            onDragEnd={showSearchSidebar ? undefined : finalizeDrag}
+          />
+        ))}
+      </div>
 
       {/* Floating Action Buttons */}
       <div className="fixed bottom-8 right-8 flex flex-col gap-4 z-20">
@@ -171,16 +202,6 @@ export const NotesCanvas = () => {
             showSearchSidebar ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 hover:bg-gray-700'
           }`}
           title="Search notes"
-          style={{
-            width: '56px',
-            height: '56px',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: 'none',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-          }}
         >
           <Search size={24} />
         </button>
@@ -220,6 +241,7 @@ export const NotesCanvas = () => {
         </button>
       </div>
 
+      {/* No notes message */}
       {notes.length === 0 && !isLoading && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="text-center text-muted-foreground">
@@ -231,52 +253,18 @@ export const NotesCanvas = () => {
       )}
 
       {/* Confirmation Dialog */}
-      {showClearConfirmation && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md mx-4 shadow-2xl">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-red-100 dark:bg-red-900/20 rounded-full">
-                <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Clear All Notes
-              </h3>
-            </div>
-            
-            <p className="text-gray-600 dark:text-gray-300 mb-6">
-              Are you sure you want to clear all {displayedNotesCount} displayed note{displayedNotesCount !== 1 ? 's' : ''}? 
-              This action cannot be undone.
-            </p>
-            
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={handleCancelClear}
-                disabled={isDeleting}
-                className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmClear}
-                disabled={isDeleting}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
-              >
-                {isDeleting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Clearing...
-                  </>
-                ) : (
-                  <>
-                    <Trash2 size={16} />
-                    Clear All
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmationDialog
+        isOpen={showClearConfirmation}
+        title="Clear All Notes"
+        message={`Are you sure you want to clear all ${displayedNotesCount} displayed note${displayedNotesCount !== 1 ? 's' : ''}? This action cannot be undone.`}
+        confirmText="Clear All"
+        cancelText="Cancel"
+        isLoading={isDeleting}
+        loadingText="Clearing..."
+        onConfirm={handleConfirmClear}
+        onCancel={handleCancelClear}
+        variant="danger"
+      />
 
       {/* Search Sidebar */}
       <SearchSidebar

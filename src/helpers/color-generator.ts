@@ -1,11 +1,3 @@
-/**
- * Color generation utilities for notes
- */
-
-/**
- * Generates a random hex color code
- * @returns A hex color string (e.g., "#ff5733")
- */
 export function generateRandomHexColor(): string {
   // Generate random values for RGB
   const r = Math.floor(Math.random() * 256);
@@ -18,10 +10,6 @@ export function generateRandomHexColor(): string {
   return `#${hex}`;
 }
 
-/**
- * Generates a random pastel hex color (softer, more suitable for note backgrounds)
- * @returns A pastel hex color string
- */
 export function generateRandomPastelColor(): string {
   // Generate pastel colors by using higher base values (128-255 range)
   // This ensures lighter, more pleasant colors for note backgrounds
@@ -34,11 +22,6 @@ export function generateRandomPastelColor(): string {
   return `#${hex}`;
 }
 
-/**
- * Generates a random bright color suitable for notes
- * Ensures good contrast and readability
- * @returns A bright hex color string
- */
 export function generateRandomNoteColor(): string {
   // Pre-defined color ranges that work well for notes
   const colorRanges = [
@@ -66,31 +49,19 @@ export function generateRandomNoteColor(): string {
   return `#${hex}`;
 }
 
-/**
- * Determines if a color is light or dark (for text contrast)
- * @param hexColor - Hex color string
- * @returns true if the color is light, false if dark
- */
+
 export function isLightColor(hexColor: string): boolean {
-  // Remove # if present
   const hex = hexColor.replace('#', '');
   
-  // Parse RGB values
-  const r = parseInt(hex.substr(0, 2), 16);
-  const g = parseInt(hex.substr(2, 2), 16);
-  const b = parseInt(hex.substr(4, 2), 16);
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
   
-  // Calculate luminance using the standard formula
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   
   return luminance > 0.5;
 }
 
-/**
- * Gets appropriate text color (black or white) for a given background color
- * @param backgroundColor - Background hex color
- * @returns "#000000" for light backgrounds, "#ffffff" for dark backgrounds
- */
 export function getContrastTextColor(backgroundColor: string): string {
   return isLightColor(backgroundColor) ? '#000000' : '#ffffff';
 }

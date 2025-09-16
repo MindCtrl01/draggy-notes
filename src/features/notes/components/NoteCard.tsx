@@ -5,6 +5,7 @@ import { cn } from '@/styles/utils';
 import { useNoteDrag } from '../hooks/use-note-drag';
 import { useNoteEditing } from '../hooks/use-note-editing';
 import { getContrastTextColor } from '@/helpers/color-generator';
+import { formatDateDisplay } from '@/helpers/date-helper';
 import '../styles/note-card.css';
 
 interface NoteCardProps {
@@ -115,7 +116,7 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd }: NoteCa
         
         {/* Date display */}
         <div className="text-xs opacity-70 mb-2">
-          {note.date.toLocaleDateString()}
+          {formatDateDisplay(note.date)}
         </div>
         
         {/* Content section */}
