@@ -18,7 +18,7 @@ export const NotesCanvas = () => {
   const datePickerRef = useRef<HTMLDivElement>(null);
   
   const user = {
-    name: 'Fthu',
+    name: ' Fthu ',
   };
   
   const { 

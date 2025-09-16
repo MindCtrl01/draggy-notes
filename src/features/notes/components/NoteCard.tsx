@@ -24,6 +24,7 @@ interface NoteCardProps {
 
 export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveToDate, onRefreshFromStorage, isSelected, onClearSelection }: NoteCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; isOpen: boolean }>({
     x: 0,
     y: 0,
@@ -31,6 +32,8 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
   });
   const [showNoteDetail, setShowNoteDetail] = useState(false);
   const [currentDimensions, setCurrentDimensions] = useState<{ width: number; height: number } | null>(null);
+  const [displayContent, setDisplayContent] = useState(note.content);
+  const [isContentTooLong, setIsContentTooLong] = useState(false);
   
   const {
     isEditingTitle,
@@ -44,6 +47,7 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
     handleTitleSubmit,
     handleContentSubmit,
     handleContentKeyDown,
+    handleContentPaste,
     handleTitleKeyDown,
     startEditingTitle,
     startEditingContent
@@ -73,20 +77,102 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
 
   const textColor = getContrastTextColor(note.color);
 
-  // Constants for content truncation
-  const MAX_CONTENT_LENGTH = 400;
   const MAX_TITLE_LENGTH = 50;
 
-  // Check if content is too long and needs truncation
-  const isContentTooLong = useMemo(() => {
-    return note.content.length > MAX_CONTENT_LENGTH;
-  }, [note.content]);
+  // Calculate effective content length considering line breaks as full lines
+  const calculateEffectiveLength = (text: string) => {
+    const lines = text.split('\n');
+    const avgCharsPerLine = 40; // Average characters per line in the card
+    let effectiveLength = 0;
+    
+    for (const line of lines) {
+      // Each line contributes its character count
+      effectiveLength += line.length;
+      // Each line break adds the equivalent of a full line
+      if (line !== lines[lines.length - 1]) { // Not the last line
+        effectiveLength += avgCharsPerLine;
+      }
+    }
+    
+    return effectiveLength;
+  };
 
-  // Truncated content for display
-  const displayContent = useMemo(() => {
-    if (isEditingContent) return content;
-    if (note.content.length <= MAX_CONTENT_LENGTH) return note.content;
-    return note.content.substring(0, MAX_CONTENT_LENGTH) + '...';
+  // Calculate maximum characters based on current card dimensions
+  const calculateMaxCharacters = () => {
+    if (!contentRef.current) return 1000; // Fallback limit
+    
+    const cardElement = contentRef.current.closest('.note-card');
+    if (!cardElement) return 1000;
+    
+    const rect = cardElement.getBoundingClientRect();
+    const cardWidth = rect.width;
+    const cardHeight = rect.height;
+    
+    // Account for padding (p-4 = 16px on each side)
+    const contentWidth = cardWidth - 32; // 16px padding on each side
+    const contentHeight = cardHeight - 100; // Account for title, date, and padding
+    
+    // Estimate characters per line based on card width
+    const avgCharWidth = 8; // Average character width in pixels
+    const charsPerLine = Math.floor(contentWidth / avgCharWidth);
+    
+    // Estimate lines based on card height
+    const lineHeight = 21; // Line height in pixels
+    const maxLines = Math.floor(contentHeight / lineHeight);
+    
+    // Calculate total character capacity
+    const totalCapacity = charsPerLine * maxLines;
+    
+    return Math.max(100, totalCapacity); // Minimum 100 characters
+  };
+
+  // Dynamic overflow detection based on actual card dimensions and character limits
+  useEffect(() => {
+    if (isEditingContent) {
+      setDisplayContent(content);
+      setIsContentTooLong(false);
+      return;
+    }
+    
+    if (!note.content || note.content === '') {
+      setDisplayContent('Double-click to add content...');
+      setIsContentTooLong(false);
+      return;
+    }
+    
+    // Calculate effective length considering line breaks as full line characters
+    const effectiveLength = calculateEffectiveLength(note.content);
+    const maxCharacters = calculateMaxCharacters();
+    
+    if (effectiveLength <= maxCharacters) {
+      setDisplayContent(note.content);
+      setIsContentTooLong(false);
+    } else {
+      // Find truncation point that keeps effective length under limit
+      let truncateAt = 0;
+      let currentEffectiveLength = 0;
+      const avgCharsPerLine = 45; // Average characters per line
+      
+      for (let i = 0; i < note.content.length; i++) {
+        const char = note.content[i];
+        if (char === '\n') {
+          // Line break adds full line worth of characters
+          currentEffectiveLength += avgCharsPerLine;
+        } else {
+          currentEffectiveLength += 1;
+        }
+        
+        // Reserve 3 characters for "..."
+        if (currentEffectiveLength + 3 > maxCharacters) {
+          break;
+        }
+        truncateAt = i + 1;
+      }
+      
+      const truncatedContent = note.content.substring(0, truncateAt) + '...';
+      setDisplayContent(truncatedContent);
+      setIsContentTooLong(true);
+    }
   }, [note.content, isEditingContent, content]);
 
   // Truncated title for display
@@ -261,6 +347,7 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
               onChange={(e) => setContent(e.target.value)}
               onBlur={handleContentSubmit}
               onKeyDown={handleContentKeyDown}
+              onPaste={handleContentPaste}
               className="w-full h-full bg-transparent border-none outline-none resize-none text-sm note-content-textarea"
               placeholder="Note content..."
               onMouseDown={(e) => e.stopPropagation()}
@@ -268,6 +355,7 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
             />
           ) : (
             <div 
+              ref={contentRef}
               className="w-full h-full text-sm whitespace-pre-wrap break-words cursor-move hover:cursor-pointer hover:bg-black/5 rounded px-1 py-0.5 -mx-1 -my-0.5 note-content-view"
               onDoubleClick={(e) => {
                 e.stopPropagation();
@@ -281,7 +369,7 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
               }>
                 {note.content === '' 
                   ? 'Double-click to add content...' 
-                  : displayContent || 'Double-click to add content...'
+                  : displayContent
                 }
               </span>
               {isContentTooLong && (

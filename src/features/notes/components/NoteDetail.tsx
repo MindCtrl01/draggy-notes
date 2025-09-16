@@ -123,7 +123,7 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
   useEffect(() => {
     if (isEditingContent && textareaRef.current) {
       textareaRef.current.focus();
-      textareaRef.current.setSelectionRange(textareaRef.current.value.length, textareaRef.current.value.length);
+      // Don't automatically move cursor to end - preserve user's click position
     }
   }, [isEditingContent]);
 
@@ -198,10 +198,39 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
       setContent(note.content);
       setIsEditingContent(false);
     }
-    // Allow Ctrl+Enter to save and exit
-    if (e.key === 'Enter' && e.ctrlKey) {
-      e.preventDefault();
-      handleContentSubmit();
+  };
+
+  const handleContentPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData('text');
+    const MAX_CONTENT_LENGTH = 10000; // Higher limit for detail view
+    
+    // Get current cursor position
+    const textarea = e.target as HTMLTextAreaElement;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    
+    // Calculate new content length after paste
+    const newContent = content.substring(0, start) + pastedText + content.substring(end);
+    
+    // If paste would exceed max length, truncate the pasted text
+    if (newContent.length > MAX_CONTENT_LENGTH) {
+      const availableSpace = MAX_CONTENT_LENGTH - (content.length - (end - start));
+      const truncatedPastedText = pastedText.substring(0, availableSpace);
+      const finalContent = content.substring(0, start) + truncatedPastedText + content.substring(end);
+      setContent(finalContent);
+      
+      // Set cursor position after the pasted text
+      setTimeout(() => {
+        textarea.setSelectionRange(start + truncatedPastedText.length, start + truncatedPastedText.length);
+      }, 0);
+    } else {
+      setContent(newContent);
+      
+      // Set cursor position after the pasted text
+      setTimeout(() => {
+        textarea.setSelectionRange(start + pastedText.length, start + pastedText.length);
+      }, 0);
     }
   };
 
@@ -215,7 +244,7 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
       {/* Modal */}
       <div
         ref={modalRef}
-        className="relative w-[60%] max-w-4xl max-h-[80vh] rounded-xl shadow-2xl overflow-hidden"
+        className="relative w-[60%] max-w-4xl max-h-[100vh] rounded-xl shadow-2xl overflow-hidden"
         style={{
           backgroundColor: note.color,
           color: textColor,
@@ -223,36 +252,43 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-black/10">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-1 mr-4">
             <Edit3 size={24} />
-            <h2 className="text-xl font-semibold">Note Detail</h2>
+            {/* Title in header */}
+            <div className="flex-1">
+              {isEditingTitle ? (
+                <input
+                  ref={titleRef}
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  onBlur={handleTitleSubmit}
+                  onKeyDown={handleTitleKeyDown}
+                  className="w-full bg-transparent border-none outline-none text-xl font-semibold placeholder-gray-400"
+                  placeholder="Enter note title..."
+                />
+              ) : (
+                <div
+                  onClick={() => setIsEditingTitle(true)}
+                  className="text-xl font-semibold cursor-pointer hover:bg-black/5 rounded px-2 py-1 -mx-2 -my-1"
+                >
+                  {note.title || 'Untitled Note'}
+                </div>
+              )}
+            </div>
           </div>
-          <button
-            onClick={() => {
-              saveAllChanges();
-              onClose();
-            }}
-            className="p-2 rounded-full hover:bg-black/10 transition-colors"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(80vh-140px)] note-detail-content">
-          {/* Date */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium opacity-70 mb-2">Date</label>
+          
+          {/* Date in top right */}
+          <div className="flex items-center gap-3 flex-shrink-0 mr-4">
+            <Calendar size={20} />
             <div className="relative" ref={datePickerRef}>
               <button
                 onClick={() => setShowDatePicker(!showDatePicker)}
-                className="flex items-center gap-3 w-full px-4 py-3 text-base cursor-pointer hover:bg-black/5 rounded-lg border-2 border-transparent hover:border-black/10 transition-colors"
+                className="text-base cursor-pointer hover:bg-black/5 rounded px-2 py-1 -mx-2 -my-1 transition-colors"
               >
-                <Calendar size={20} />
-                <span>{formatDateDisplay(selectedDate)}</span>
+                {formatDateDisplay(selectedDate)}
               </button>
               {showDatePicker && (
-                <div className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 z-50">
+                <div className="absolute top-full right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 z-50">
                   <DatePicker
                     value={selectedDate}
                     onChange={handleDateChange}
@@ -274,33 +310,23 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
               )}
             </div>
           </div>
+          
+          <button
+            onClick={() => {
+              saveAllChanges();
+              onClose();
+            }}
+            className="p-2 rounded-full hover:bg-black/10 transition-colors flex-shrink-0"
+          >
+            <X size={20} />
+          </button>
+        </div>
 
-          {/* Title */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium opacity-70 mb-2">Title</label>
-            {isEditingTitle ? (
-              <input
-                ref={titleRef}
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                onBlur={handleTitleSubmit}
-                onKeyDown={handleTitleKeyDown}
-                className="w-full bg-transparent border-2 border-black/20 rounded-lg px-4 py-3 text-2xl font-bold focus:border-black/40 focus:outline-none"
-                placeholder="Enter note title..."
-              />
-            ) : (
-              <div
-                onClick={() => setIsEditingTitle(true)}
-                className="w-full px-4 py-3 text-2xl font-bold cursor-pointer hover:bg-black/5 rounded-lg border-2 border-transparent hover:border-black/10 transition-colors"
-              >
-                {note.title || 'Untitled Note'}
-              </div>
-            )}
-          </div>
-
+        {/* Content */}
+        <div className="p-6 overflow-y-auto max-h-[calc(100vh-140px)] note-detail-content">
           {/* Content */}
           <div>
-            <label className="block text-sm font-medium opacity-70 mb-2">Content</label>
+            {/* <label className="block text-sm font-medium opacity-70 mb-2">Content</label> */}
             {isEditingContent ? (
               <textarea
                 ref={textareaRef}
@@ -308,8 +334,9 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
                 onChange={(e) => setContent(e.target.value)}
                 onBlur={handleContentSubmit}
                 onKeyDown={handleContentKeyDown}
+                onPaste={handleContentPaste}
                 className="w-full h-64 bg-transparent border-2 border-black/20 rounded-lg px-4 py-3 text-base resize-none focus:border-black/40 focus:outline-none note-detail-textarea"
-                placeholder="Enter note content... (Ctrl+Enter to save)"
+                placeholder="Enter note content... (Shift+Enter or Ctrl+Enter to save)"
               />
             ) : (
               <div
