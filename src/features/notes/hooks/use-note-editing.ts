@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Note, Task, Tag } from '@/domains/note';
 import { createTask, toggleTaskCompletion, updateTaskText } from '@/helpers/task-manager';
-import { TagManager } from '@/helpers/tag-manager';
 
 export const useNoteEditing = (
   note: Note,
@@ -45,13 +44,9 @@ export const useNoteEditing = (
     const trimmedContent = content.trim();
     
     if (trimmedContent !== note.content) {
-      // Auto-detect tags in content
-      const detectedTagIds = TagManager.findOrCreateTagsFromText(trimmedContent, note.userId);
-      
       onUpdate({
         ...note,
         content: trimmedContent,
-        tagIds: detectedTagIds,
         updatedAt: new Date()
       });
     }
@@ -62,33 +57,6 @@ export const useNoteEditing = (
     if (e.key === 'Escape') {
       setContent(note.content);
       setIsEditingContent(false);
-    } else if (e.key === 'Enter' && !e.shiftKey) {
-      // Check if we just completed typing a tag (cursor is after a word that starts with #)
-      const textarea = e.target as HTMLTextAreaElement;
-      const cursorPosition = textarea.selectionStart;
-      const textBeforeCursor = textarea.value.substring(0, cursorPosition);
-      
-      // Look for a tag pattern at the end of the text before cursor
-      const tagMatch = textBeforeCursor.match(/#(\w+(?:\s+\w+)*)$/);
-      
-      if (tagMatch) {
-        // User just typed a complete tag and pressed Enter
-        // Immediately create the tag and update the note
-        const detectedTagIds = TagManager.findOrCreateTagsFromText(textarea.value, note.userId);
-        const detectedTags = TagManager.getTagsByIds(detectedTagIds, note.userId);
-        
-        // Update selected tags immediately if callback provided
-        if (onTagsUpdate) {
-          onTagsUpdate(detectedTags);
-        }
-        
-        onUpdate({
-          ...note,
-          content: textarea.value,
-          tagIds: detectedTagIds,
-          updatedAt: new Date()
-        });
-      }
     }
   };
 
@@ -195,13 +163,9 @@ export const useNoteEditing = (
   const addTask = (text: string) => {
     if (!text.trim()) return;
     
-    // Auto-detect tags in task text
-    const detectedTagIds = TagManager.findOrCreateTagsFromText(text, note.userId);
-    
     const newTask = {
       ...createTask(text),
       userId: note.userId,
-      tagIds: detectedTagIds,
     };
     const updatedTasks = [...(note.tasks || []), newTask];
     
@@ -217,15 +181,7 @@ export const useNoteEditing = (
     
     const updatedTasks = note.tasks.map(task => {
       if (task.id === taskId) {
-        const updatedTask = { ...task, ...updates };
-        
-        // If text is being updated, auto-detect tags
-        if (updates.text) {
-          const detectedTagIds = TagManager.findOrCreateTagsFromText(updates.text, note.userId);
-          updatedTask.tagIds = detectedTagIds;
-        }
-        
-        return updatedTask;
+        return { ...task, ...updates };
       }
       return task;
     });

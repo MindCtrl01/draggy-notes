@@ -44,7 +44,10 @@ export const useNoteDrag = (
         isDragging: false,
         isPending: true,
         dragOffset,
-        currentPosition: { x: e.clientX - 280 + scrollLeft, y: e.clientY }
+        currentPosition: { 
+          x: e.clientX - dragOffset.x - 280 + scrollLeft, 
+          y: e.clientY - dragOffset.y 
+        }
       });
       
       // Start dragging after 100ms delay

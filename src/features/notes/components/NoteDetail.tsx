@@ -2,8 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { X, Edit3, Calendar, Plus } from 'lucide-react';
 import { DatePicker } from '@mantine/dates';
 import { Note, Task, Tag } from '@/domains/note';
-import { useTagSuggestions } from '@/hooks/common/use-tag-suggestions';
-import { TagSuggestion, TagDisplay } from '@/components/common';
+import { TagDisplay } from '@/components/common';
 import { TagManager } from '@/helpers/tag-manager';
 import { getContrastTextColor } from '@/helpers/color-generator';
 import { formatDateDisplay } from '@/helpers/date-helper';
@@ -66,105 +65,37 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
     toggleTask
   } = useNoteEditing(note, onUpdate, setSelectedTags);
 
-  // Tag suggestions integration
-  const handleTagInsert = (tag: Tag, position: number) => {
-    if (!textareaRef.current) return;
-    
-    const textarea = textareaRef.current;
-    const currentText = textarea.value;
-    const beforeTag = currentText.substring(0, position);
-    const afterTag = currentText.substring(textarea.selectionStart);
-    
-    // Replace the # and partial text with the complete tag
-    const newText = beforeTag + `#${tag.name} ` + afterTag;
-    setContent(newText);
-    
-    // Immediately add tag to display (if not already present)
-    setSelectedTags(prevTags => {
-      const tagExists = prevTags.some(t => t.id === tag.id);
-      if (!tagExists) {
-        return [...prevTags, tag];
-      }
-      return prevTags;
-    });
-    
-    // Increment tag usage count and update note
-    TagManager.incrementTagUsage(tag.id, note.userId || -1);
-    
-    // Update the note with the new content and tags
-    const detectedTagIds = TagManager.findOrCreateTagsFromText(newText, note.userId || -1);
-    onUpdate({
-      ...note,
-      content: newText,
-      tagIds: detectedTagIds,
-      updatedAt: new Date()
-    });
-    
-    // Set cursor position after the inserted tag
-    setTimeout(() => {
-      const newCursorPosition = position + tag.name.length + 2; // +2 for # and space
-      textarea.focus();
-      textarea.setSelectionRange(newCursorPosition, newCursorPosition);
-    }, 0);
-  };
-
-  const {
-    suggestionState,
-    handleTextChange,
-    handleTagSelect,
-    closeSuggestions,
-  } = useTagSuggestions(textareaRef, note.userId || -1, handleTagInsert);
-
-  // Task tag suggestions
-  const handleTaskTagInsert = (tag: Tag, position: number) => {
-    if (!taskTextareaRef.current) return;
-    
-    const textarea = taskTextareaRef.current;
-    const currentText = textarea.value;
-    const beforeTag = currentText.substring(0, position);
-    const afterTag = currentText.substring(textarea.selectionStart);
-    
-    // Replace the # and partial text with the complete tag
-    const newText = beforeTag + `#${tag.name} ` + afterTag;
-    setNewTaskText(newText);
-    
-    // Increment tag usage count
-    TagManager.incrementTagUsage(tag.id, note.userId || -1);
-    
-    // Set cursor position after the inserted tag
-    setTimeout(() => {
-      const newCursorPosition = position + tag.name.length + 2; // +2 for # and space
-      textarea.focus();
-      textarea.setSelectionRange(newCursorPosition, newCursorPosition);
-    }, 0);
-  };
-
-  const {
-    suggestionState: taskSuggestionState,
-    handleTextChange: handleTaskTextChange,
-    handleTagSelect: handleTaskTagSelect,
-    closeSuggestions: closeTaskSuggestions,
-  } = useTagSuggestions(taskTextareaRef, note.userId || -1, handleTaskTagInsert);
 
   // Initialize selected tags from note's existing tags
   useEffect(() => {
     if (note.tagIds && note.tagIds.length > 0) {
-      const existingTags = TagManager.getTagsByIds(note.tagIds, note.userId || -1);
+      const existingTags = note.tagIds.map(id => {
+        const allTags = [...TagManager.getAllTags(note.userId || -1)];
+        return allTags.find(tag => tag.id === id);
+      }).filter(Boolean) as Tag[];
       setSelectedTags(existingTags);
     } else {
-      // Fallback: extract existing tags from saved content
-      const extractedTags = TagManager.extractTagsFromText(note.content, note.userId || -1);
-      setSelectedTags(extractedTags);
+      setSelectedTags([]);
     }
-  }, [note.id, note.tagIds, note.content, note.userId]);
+  }, [note.id, note.tagIds, note.userId]);
 
-  // Use selectedTags for display instead of parsing content
+  // Handle tag changes
+  const handleTagsChange = (newTags: Tag[]) => {
+    setSelectedTags(newTags);
+    const newTagIds = newTags.map(tag => tag.id);
+    onUpdate({
+      ...note,
+      tagIds: newTagIds,
+      updatedAt: new Date()
+    });
+  };
+
+  // Use selectedTags for display
   const contentTags = selectedTags;
 
-  // Clean content without tags for display
+  // Clean content for display
   const cleanDisplayContent = useMemo(() => {
-    const currentContent = isEditingContent ? content : note.content;
-    return TagManager.removeTagsFromText(currentContent);
+    return isEditingContent ? content : note.content;
   }, [note.content, content, isEditingContent]);
 
   // Reset state when note changes
@@ -355,7 +286,12 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
               )}
 
               {/* Tags display */}
-              <TagDisplay tags={contentTags} className="mt-2" />
+              <TagDisplay 
+                tags={contentTags} 
+                className="mt-2" 
+                onTagsChange={handleTagsChange}
+                userId={note.userId || -1}
+              />
             </div>
           </div>
           
@@ -514,7 +450,6 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
                     value={newTaskText}
                     onChange={(e) => {
                       setNewTaskText(e.target.value);
-                      handleTaskTextChange(e.target.value, e.target.selectionStart);
                     }}
                     onKeyDown={handleTaskKeyDown}
                     className="w-full bg-transparent border-none outline-none resize-none"
@@ -546,7 +481,6 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
                   value={content}
                   onChange={(e) => {
                     setContent(e.target.value);
-                    handleTextChange(e.target.value, e.target.selectionStart);
                   }}
                   onBlur={handleContentSubmit}
                   onKeyDown={handleContentKeyDown}
@@ -566,26 +500,6 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
           )}
         </div>
       </div>
-      
-      {/* Tag Suggestions */}
-      <TagSuggestion
-        isVisible={suggestionState.isVisible}
-        position={suggestionState.position}
-        query={suggestionState.query}
-        userId={note.userId || -1}
-        onTagSelect={handleTagSelect}
-        onClose={closeSuggestions}
-      />
-
-      {/* Task Tag Suggestions */}
-      <TagSuggestion
-        isVisible={taskSuggestionState.isVisible}
-        position={taskSuggestionState.position}
-        query={taskSuggestionState.query}
-        userId={note.userId || -1}
-        onTagSelect={handleTaskTagSelect}
-        onClose={closeTaskSuggestions}
-      />
     </div>
   );
 };

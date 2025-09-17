@@ -4,8 +4,7 @@ import { Note, Task, Tag } from '@/domains/note';
 import { cn } from '@/styles/utils';
 import { useNoteDrag } from '../hooks/use-note-drag';
 import { useNoteEditing } from '../hooks/use-note-editing';
-import { useTagSuggestions } from '@/hooks/common/use-tag-suggestions';
-import { TagSuggestion, TagDisplay } from '@/components/common';
+import { TagDisplay } from '@/components/common';
 import { TagManager } from '@/helpers/tag-manager';
 import { getContrastTextColor } from '@/helpers/color-generator';
 import { formatDateDisplay } from '@/helpers/date-helper';
@@ -68,85 +67,6 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
     toggleTask
   } = useNoteEditing(note, onUpdate, setSelectedTags);
 
-  // Tag suggestions integration
-  const handleTagInsert = (tag: Tag, position: number) => {
-    if (!textareaRef.current) return;
-    
-    const textarea = textareaRef.current;
-    const currentText = textarea.value;
-    const beforeTag = currentText.substring(0, position);
-    const afterTag = currentText.substring(textarea.selectionStart);
-    
-    // Replace the # and partial text with the complete tag
-    const newText = beforeTag + `#${tag.name} ` + afterTag;
-    setContent(newText);
-    
-    // Immediately add tag to display (if not already present)
-    setSelectedTags(prevTags => {
-      const tagExists = prevTags.some(t => t.id === tag.id);
-      if (!tagExists) {
-        return [...prevTags, tag];
-      }
-      return prevTags;
-    });
-    
-    // Increment tag usage count and update note
-    TagManager.incrementTagUsage(tag.id, note.userId || -1);
-    
-    // Update the note with the new content and tags
-    const detectedTagIds = TagManager.findOrCreateTagsFromText(newText, note.userId || -1);
-    onUpdate({
-      ...note,
-      content: newText,
-      tagIds: detectedTagIds,
-      updatedAt: new Date()
-    });
-    
-    // Set cursor position after the inserted tag
-    setTimeout(() => {
-      const newCursorPosition = position + tag.name.length + 2; // +2 for # and space
-      textarea.focus();
-      textarea.setSelectionRange(newCursorPosition, newCursorPosition);
-    }, 0);
-  };
-
-  const {
-    suggestionState,
-    handleTextChange,
-    handleTagSelect,
-    closeSuggestions,
-  } = useTagSuggestions(textareaRef, note.userId || -1, handleTagInsert);
-
-  // Task tag suggestions
-  const handleTaskTagInsert = (tag: Tag, position: number) => {
-    if (!taskTextareaRef.current) return;
-    
-    const textarea = taskTextareaRef.current;
-    const currentText = textarea.value;
-    const beforeTag = currentText.substring(0, position);
-    const afterTag = currentText.substring(textarea.selectionStart);
-    
-    // Replace the # and partial text with the complete tag
-    const newText = beforeTag + `#${tag.name} ` + afterTag;
-    setNewTaskText(newText);
-    
-    // Increment tag usage count
-    TagManager.incrementTagUsage(tag.id, note.userId || -1);
-    
-    // Set cursor position after the inserted tag
-    setTimeout(() => {
-      const newCursorPosition = position + tag.name.length + 2; // +2 for # and space
-      textarea.focus();
-      textarea.setSelectionRange(newCursorPosition, newCursorPosition);
-    }, 0);
-  };
-
-  const {
-    suggestionState: taskSuggestionState,
-    handleTextChange: handleTaskTextChange,
-    handleTagSelect: handleTaskTagSelect,
-    closeSuggestions: closeTaskSuggestions,
-  } = useTagSuggestions(taskTextareaRef, note.userId || -1, handleTaskTagInsert);
 
   const { isDragging, handleMouseDown } = useNoteDrag(
     (position) => onDrag(note.id, position),
@@ -160,7 +80,10 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
     const isInteractiveElement = target.tagName === 'BUTTON' || 
                                 target.tagName === 'TEXTAREA' || 
                                 target.tagName === 'INPUT' ||
-                                target.closest('button');
+                                target.closest('button') ||
+                                target.closest('.add-task-button') ||
+                                target.closest('.task-item') ||
+                                target.closest('.task-item-container');
     
     if (isInteractiveElement || isEditingTitle || isEditingContent) {
       return;
@@ -221,16 +144,15 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
     return Math.max(100, totalCapacity); // Minimum 100 characters
   };
 
-  // Clean content without tags for display
+  // Clean content for display
   const cleanContent = useMemo(() => {
-    const currentContent = isEditingContent ? content : note.content;
-    return TagManager.removeTagsFromText(currentContent);
+    return isEditingContent ? content : note.content;
   }, [note.content, content, isEditingContent]);
 
   // Dynamic overflow detection based on actual card dimensions and character limits
   useEffect(() => {
     if (isEditingContent) {
-      setDisplayContent(TagManager.removeTagsFromText(content));
+      setDisplayContent(content);
       setIsContentTooLong(false);
       return;
     }
@@ -287,16 +209,28 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
   // Initialize selected tags from note's existing tags
   useEffect(() => {
     if (note.tagIds && note.tagIds.length > 0) {
-      const existingTags = TagManager.getTagsByIds(note.tagIds, note.userId || -1);
+      const existingTags = note.tagIds.map(id => {
+        const allTags = [...TagManager.getAllTags(note.userId || -1)];
+        return allTags.find(tag => tag.id === id);
+      }).filter(Boolean) as Tag[];
       setSelectedTags(existingTags);
     } else {
-      // Fallback: extract existing tags from saved content
-      const extractedTags = TagManager.extractTagsFromText(note.content, note.userId || -1);
-      setSelectedTags(extractedTags);
+      setSelectedTags([]);
     }
-  }, [note.id, note.tagIds, note.content, note.userId]);
+  }, [note.id, note.tagIds, note.userId]);
 
-  // Use selectedTags for display instead of parsing content
+  // Handle tag changes
+  const handleTagsChange = (newTags: Tag[]) => {
+    setSelectedTags(newTags);
+    const newTagIds = newTags.map(tag => tag.id);
+    onUpdate({
+      ...note,
+      tagIds: newTagIds,
+      updatedAt: new Date()
+    });
+  };
+
+  // Use selectedTags for display
   const contentTags = selectedTags;
 
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -478,7 +412,12 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
           )}
 
           {/* Tags display */}
-          <TagDisplay tags={contentTags} className="mt-1 mb-2" />
+          <TagDisplay 
+            tags={contentTags} 
+            className="mt-1 mb-2" 
+            onTagsChange={handleTagsChange}
+            userId={note.userId || -1}
+          />
         </div>
         
         {/* Date display with task progress */}
@@ -550,7 +489,10 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
                       onMouseDown={(e) => e.stopPropagation()}
                     />
                     
-                    <div className="task-item">
+                    <div 
+                      className="task-item"
+                      onMouseDown={(e) => e.stopPropagation()}
+                    >
                       <div className={cn('task-text', task.completed && 'completed')}>
                         {editingTaskId === task.id ? (
                           <textarea
@@ -595,14 +537,16 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
                 ))}
                 
                 {/* Add new task */}
-                <div className="add-task-button">
+                <div 
+                  className="add-task-button"
+                  onMouseDown={(e) => e.stopPropagation()}
+                >
                   <textarea
                     ref={taskTextareaRef}
                     placeholder="Add new task..."
                     value={newTaskText}
                     onChange={(e) => {
                       setNewTaskText(e.target.value);
-                      handleTaskTextChange(e.target.value, e.target.selectionStart);
                     }}
                     onKeyDown={handleTaskKeyDown}
                     onMouseDown={(e) => e.stopPropagation()}
@@ -636,7 +580,6 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
                   value={content}
                   onChange={(e) => {
                     setContent(e.target.value);
-                    handleTextChange(e.target.value, e.target.selectionStart);
                   }}
                   onBlur={handleContentSubmit}
                   onKeyDown={handleContentKeyDown}
@@ -677,26 +620,6 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
         </div>
       </div>
     </div>
-    
-    {/* Tag Suggestions */}
-    <TagSuggestion
-      isVisible={suggestionState.isVisible}
-      position={suggestionState.position}
-      query={suggestionState.query}
-      userId={note.userId || -1}
-      onTagSelect={handleTagSelect}
-      onClose={closeSuggestions}
-    />
-
-    {/* Task Tag Suggestions */}
-    <TagSuggestion
-      isVisible={taskSuggestionState.isVisible}
-      position={taskSuggestionState.position}
-      query={taskSuggestionState.query}
-      userId={note.userId || -1}
-      onTagSelect={handleTaskTagSelect}
-      onClose={closeTaskSuggestions}
-    />
 
     {/* Note Detail Modal */}
     <NoteDetail

@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react';
 import { Search, X, Calendar, FileText, Tag } from 'lucide-react';
 import { Note, Task } from '@/domains/note';
 import { formatDateShort } from '@/helpers/date-helper';
-import { TagManager } from '@/helpers/tag-manager';
 
 interface SearchSidebarProps {
   allNotes: Note[];
@@ -46,14 +45,6 @@ export const SearchSidebar = ({ allNotes, isOpen, onClose, onNoteSelect }: Searc
         if (!matches && note.tasks) {
           matches = note.tasks.some((task: Task) => 
             normalizeText(task.text).includes(normalizedQuery)
-          );
-        }
-        
-        // Search in tags
-        if (!matches && note.tagIds && note.tagIds.length > 0) {
-          const noteTags = TagManager.getTagsByIds(note.tagIds, userId);
-          matches = noteTags.some(tag => 
-            normalizeText(tag.name).includes(normalizedQuery)
           );
         }
         
@@ -112,7 +103,7 @@ export const SearchSidebar = ({ allNotes, isOpen, onClose, onNoteSelect }: Searc
             <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Search notes, tasks, and tags..."
+              placeholder="Search notes and tasks..."
               value={searchQuery}
               onChange={handleSearchChange}
               className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -168,15 +159,6 @@ export const SearchSidebar = ({ allNotes, isOpen, onClose, onNoteSelect }: Searc
                           <Calendar size={12} />
                           <span>{formatDateShort(note.date)}</span>
                         </div>
-                        {note.tagIds && note.tagIds.length > 0 && (
-                          <div className="flex items-center gap-1">
-                            <Tag size={10} className="text-gray-400" />
-                            <span className="text-xs text-gray-400">
-                              {TagManager.getTagsByIds(note.tagIds, -1).slice(0, 2).map(tag => tag.name).join(', ')}
-                              {note.tagIds.length > 2 && '...'}
-                            </span>
-                          </div>
-                        )}
                       </div>
                     </div>
                   ))}
@@ -217,15 +199,6 @@ export const SearchSidebar = ({ allNotes, isOpen, onClose, onNoteSelect }: Searc
                           <Calendar size={12} />
                           <span>{formatDateShort(note.date)}</span>
                         </div>
-                        {note.tagIds && note.tagIds.length > 0 && (
-                          <div className="flex items-center gap-1">
-                            <Tag size={10} className="text-gray-400" />
-                            <span className="text-xs text-gray-400">
-                              {TagManager.getTagsByIds(note.tagIds, -1).slice(0, 2).map(tag => tag.name).join(', ')}
-                              {note.tagIds.length > 2 && '...'}
-                            </span>
-                          </div>
-                        )}
                       </div>
                     </div>
                   ))}
