@@ -84,7 +84,7 @@ export const CalendarSidebar = ({ allNotes, selectedDate, onDateSelect }: Calend
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
-    <div className="absolute left-4 top-20 w-64 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+    <div className="w-full bg-sidebar dark:bg-gray-900 border border-sidebar-border dark:border-gray-700 rounded-lg shadow-lg p-3">
       {/* Month Navigation */}
       <div className="flex items-center justify-between mb-3">
         <button
@@ -149,9 +149,6 @@ export const CalendarSidebar = ({ allNotes, selectedDate, onDateSelect }: Calend
             transform: 'translateY(-100%)'
           }}
         >
-          <div className="text-sm font-semibold mb-2">
-            {formatDateDisplay(hoveredDay.date)}
-          </div>
           <div className="text-xs text-gray-300 mb-2">
             {hoveredDay.noteCount} note{hoveredDay.noteCount !== 1 ? 's' : ''}
           </div>

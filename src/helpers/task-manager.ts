@@ -5,6 +5,8 @@ export const createTask = (text: string): Task => ({
   text: text.trim(),
   completed: false,
   createdAt: new Date(),
+  userId: -1, // Default userId
+  tagIds: [], // Will be set by the calling function
 });
 
 export const toggleTaskCompletion = (task: Task): Task => ({

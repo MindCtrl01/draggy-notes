@@ -49,6 +49,7 @@ export default {
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
+          secondary: "hsl(var(--sidebar-secondary))",
           foreground: "hsl(var(--sidebar-foreground))",
           primary: "hsl(var(--sidebar-primary))",
           "primary-foreground": "hsl(var(--sidebar-primary-foreground))",

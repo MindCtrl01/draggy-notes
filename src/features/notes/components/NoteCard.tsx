@@ -1,9 +1,12 @@
 import { useRef, useState, useMemo, useEffect } from 'react';
 import { Trash2, CheckSquare, Square, Plus, X } from 'lucide-react';
-import { Note, Task } from '@/domains/note';
+import { Note, Task, Tag } from '@/domains/note';
 import { cn } from '@/styles/utils';
 import { useNoteDrag } from '../hooks/use-note-drag';
 import { useNoteEditing } from '../hooks/use-note-editing';
+import { useTagSuggestions } from '@/hooks/common/use-tag-suggestions';
+import { TagSuggestion, TagDisplay } from '@/components/common';
+import { TagManager } from '@/helpers/tag-manager';
 import { getContrastTextColor } from '@/helpers/color-generator';
 import { formatDateDisplay } from '@/helpers/date-helper';
 import { getTaskProgressDisplay, getTaskProgress } from '@/helpers/task-manager';
@@ -39,6 +42,8 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
   const [isHovering, setIsHovering] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const taskTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   
   const {
     isEditingTitle,
@@ -61,7 +66,87 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
     updateTask,
     deleteTask,
     toggleTask
-  } = useNoteEditing(note, onUpdate);
+  } = useNoteEditing(note, onUpdate, setSelectedTags);
+
+  // Tag suggestions integration
+  const handleTagInsert = (tag: Tag, position: number) => {
+    if (!textareaRef.current) return;
+    
+    const textarea = textareaRef.current;
+    const currentText = textarea.value;
+    const beforeTag = currentText.substring(0, position);
+    const afterTag = currentText.substring(textarea.selectionStart);
+    
+    // Replace the # and partial text with the complete tag
+    const newText = beforeTag + `#${tag.name} ` + afterTag;
+    setContent(newText);
+    
+    // Immediately add tag to display (if not already present)
+    setSelectedTags(prevTags => {
+      const tagExists = prevTags.some(t => t.id === tag.id);
+      if (!tagExists) {
+        return [...prevTags, tag];
+      }
+      return prevTags;
+    });
+    
+    // Increment tag usage count and update note
+    TagManager.incrementTagUsage(tag.id, note.userId || -1);
+    
+    // Update the note with the new content and tags
+    const detectedTagIds = TagManager.findOrCreateTagsFromText(newText, note.userId || -1);
+    onUpdate({
+      ...note,
+      content: newText,
+      tagIds: detectedTagIds,
+      updatedAt: new Date()
+    });
+    
+    // Set cursor position after the inserted tag
+    setTimeout(() => {
+      const newCursorPosition = position + tag.name.length + 2; // +2 for # and space
+      textarea.focus();
+      textarea.setSelectionRange(newCursorPosition, newCursorPosition);
+    }, 0);
+  };
+
+  const {
+    suggestionState,
+    handleTextChange,
+    handleTagSelect,
+    closeSuggestions,
+  } = useTagSuggestions(textareaRef, note.userId || -1, handleTagInsert);
+
+  // Task tag suggestions
+  const handleTaskTagInsert = (tag: Tag, position: number) => {
+    if (!taskTextareaRef.current) return;
+    
+    const textarea = taskTextareaRef.current;
+    const currentText = textarea.value;
+    const beforeTag = currentText.substring(0, position);
+    const afterTag = currentText.substring(textarea.selectionStart);
+    
+    // Replace the # and partial text with the complete tag
+    const newText = beforeTag + `#${tag.name} ` + afterTag;
+    setNewTaskText(newText);
+    
+    // Increment tag usage count
+    TagManager.incrementTagUsage(tag.id, note.userId || -1);
+    
+    // Set cursor position after the inserted tag
+    setTimeout(() => {
+      const newCursorPosition = position + tag.name.length + 2; // +2 for # and space
+      textarea.focus();
+      textarea.setSelectionRange(newCursorPosition, newCursorPosition);
+    }, 0);
+  };
+
+  const {
+    suggestionState: taskSuggestionState,
+    handleTextChange: handleTaskTextChange,
+    handleTagSelect: handleTaskTagSelect,
+    closeSuggestions: closeTaskSuggestions,
+  } = useTagSuggestions(taskTextareaRef, note.userId || -1, handleTaskTagInsert);
 
   const { isDragging, handleMouseDown } = useNoteDrag(
     (position) => onDrag(note.id, position),
@@ -136,26 +221,32 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
     return Math.max(100, totalCapacity); // Minimum 100 characters
   };
 
+  // Clean content without tags for display
+  const cleanContent = useMemo(() => {
+    const currentContent = isEditingContent ? content : note.content;
+    return TagManager.removeTagsFromText(currentContent);
+  }, [note.content, content, isEditingContent]);
+
   // Dynamic overflow detection based on actual card dimensions and character limits
   useEffect(() => {
     if (isEditingContent) {
-      setDisplayContent(content);
+      setDisplayContent(TagManager.removeTagsFromText(content));
       setIsContentTooLong(false);
       return;
     }
     
-    if (!note.content || note.content === '') {
+    if (!cleanContent || cleanContent === '') {
       setDisplayContent('Click to add content...');
       setIsContentTooLong(false);
       return;
     }
     
     // Calculate effective length considering line breaks as full line characters
-    const effectiveLength = calculateEffectiveLength(note.content);
+    const effectiveLength = calculateEffectiveLength(cleanContent);
     const maxCharacters = calculateMaxCharacters();
     
     if (effectiveLength <= maxCharacters) {
-      setDisplayContent(note.content);
+      setDisplayContent(cleanContent);
       setIsContentTooLong(false);
     } else {
       // Find truncation point that keeps effective length under limit
@@ -163,8 +254,8 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
       let currentEffectiveLength = 0;
       const avgCharsPerLine = 45; // Average characters per line
       
-      for (let i = 0; i < note.content.length; i++) {
-        const char = note.content[i];
+      for (let i = 0; i < cleanContent.length; i++) {
+        const char = cleanContent[i];
         if (char === '\n') {
           // Line break adds full line worth of characters
           currentEffectiveLength += avgCharsPerLine;
@@ -179,11 +270,11 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
         truncateAt = i + 1;
       }
       
-      const truncatedContent = note.content.substring(0, truncateAt) + '...';
+      const truncatedContent = cleanContent.substring(0, truncateAt) + '...';
       setDisplayContent(truncatedContent);
       setIsContentTooLong(true);
     }
-  }, [note.content, isEditingContent, content]);
+  }, [cleanContent, isEditingContent, content]);
 
   // Truncated title for display
   const displayTitle = useMemo(() => {
@@ -192,6 +283,21 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
     if (note.title.length <= MAX_TITLE_LENGTH) return note.title;
     return note.title.substring(0, MAX_TITLE_LENGTH) + '...';
   }, [note.title, isEditingTitle, title]);
+
+  // Initialize selected tags from note's existing tags
+  useEffect(() => {
+    if (note.tagIds && note.tagIds.length > 0) {
+      const existingTags = TagManager.getTagsByIds(note.tagIds, note.userId || -1);
+      setSelectedTags(existingTags);
+    } else {
+      // Fallback: extract existing tags from saved content
+      const extractedTags = TagManager.extractTagsFromText(note.content, note.userId || -1);
+      setSelectedTags(extractedTags);
+    }
+  }, [note.id, note.tagIds, note.content, note.userId]);
+
+  // Use selectedTags for display instead of parsing content
+  const contentTags = selectedTags;
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -302,9 +408,7 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
         'note-card',
         isDragging && 'dragging',
         isSelected && 'selected',
-        (isEditingTitle || isEditingContent) && 'editing',
-        !isDragging && !(isEditingTitle || isEditingContent) && 'cursor-grab hover:cursor-grab',
-        isDragging && 'cursor-grabbing'
+        (isEditingTitle || isEditingContent) && 'editing'
       )}
       style={{
         position: 'absolute',
@@ -313,7 +417,6 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
         userSelect: isDragging ? 'none' : 'auto',
         backgroundColor: note.color,
         color: textColor,
-        cursor: isDragging ? 'grabbing' : (isEditingTitle || isEditingContent) ? 'default' : isHovering ? 'grab' : 'grab',
         ...(isSelected && {
           boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3)',
           transform: 'scale(1.02)',
@@ -373,6 +476,9 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
               {displayTitle}
             </div>
           )}
+
+          {/* Tags display */}
+          <TagDisplay tags={contentTags} className="mt-1 mb-2" />
         </div>
         
         {/* Date display with task progress */}
@@ -491,9 +597,13 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
                 {/* Add new task */}
                 <div className="add-task-button">
                   <textarea
+                    ref={taskTextareaRef}
                     placeholder="Add new task..."
                     value={newTaskText}
-                    onChange={(e) => setNewTaskText(e.target.value)}
+                    onChange={(e) => {
+                      setNewTaskText(e.target.value);
+                      handleTaskTextChange(e.target.value, e.target.selectionStart);
+                    }}
                     onKeyDown={handleTaskKeyDown}
                     onMouseDown={(e) => e.stopPropagation()}
                     className="w-full bg-transparent border-none outline-none resize-none"
@@ -524,7 +634,10 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
                 <textarea
                   ref={textareaRef}
                   value={content}
-                  onChange={(e) => setContent(e.target.value)}
+                  onChange={(e) => {
+                    setContent(e.target.value);
+                    handleTextChange(e.target.value, e.target.selectionStart);
+                  }}
                   onBlur={handleContentSubmit}
                   onKeyDown={handleContentKeyDown}
                   onPaste={handleContentPaste}
@@ -565,6 +678,26 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
       </div>
     </div>
     
+    {/* Tag Suggestions */}
+    <TagSuggestion
+      isVisible={suggestionState.isVisible}
+      position={suggestionState.position}
+      query={suggestionState.query}
+      userId={note.userId || -1}
+      onTagSelect={handleTagSelect}
+      onClose={closeSuggestions}
+    />
+
+    {/* Task Tag Suggestions */}
+    <TagSuggestion
+      isVisible={taskSuggestionState.isVisible}
+      position={taskSuggestionState.position}
+      query={taskSuggestionState.query}
+      userId={note.userId || -1}
+      onTagSelect={handleTaskTagSelect}
+      onClose={closeTaskSuggestions}
+    />
+
     {/* Note Detail Modal */}
     <NoteDetail
       note={note}

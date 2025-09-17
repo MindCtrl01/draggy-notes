@@ -35,12 +35,16 @@ export const useNoteDrag = (
         y: e.clientY - rect.top
       };
       
+      // Get the canvas container to account for scroll position
+      const canvasContainer = document.querySelector('.canvas-scrollable-area')?.parentElement;
+      const scrollLeft = canvasContainer?.scrollLeft || 0;
+      
       // Set pending state first
       setDragState({
         isDragging: false,
         isPending: true,
         dragOffset,
-        currentPosition: { x: e.clientX - 280, y: e.clientY }
+        currentPosition: { x: e.clientX - 280 + scrollLeft, y: e.clientY }
       });
       
       // Start dragging after 100ms delay
@@ -60,8 +64,12 @@ export const useNoteDrag = (
       
       // Use requestAnimationFrame for smoother dragging
       requestAnimationFrame(() => {
+        // Get the current scroll position of the canvas container
+        const canvasContainer = document.querySelector('.canvas-scrollable-area')?.parentElement;
+        const scrollLeft = canvasContainer?.scrollLeft || 0;
+        
         const newPosition = {
-          x: e.clientX - dragState.dragOffset.x - 280, // Account for left sidebar width
+          x: e.clientX - dragState.dragOffset.x - 280 + scrollLeft, // Account for left sidebar width and scroll position
           y: e.clientY - dragState.dragOffset.y
         };
         
