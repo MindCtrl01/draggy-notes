@@ -58,7 +58,7 @@ export const useNoteDrag = (
       // Use requestAnimationFrame for smoother dragging
       requestAnimationFrame(() => {
         const newPosition = {
-          x: e.clientX - dragState.dragOffset.x,
+          x: e.clientX - dragState.dragOffset.x - 280, // Account for left sidebar width
           y: e.clientY - dragState.dragOffset.y
         };
         
@@ -76,7 +76,7 @@ export const useNoteDrag = (
       if (dragState.isDragging && onDragEnd) {
         // Calculate final position and call onDragEnd
         const finalPosition = {
-          x: window.event ? (window.event as MouseEvent).clientX - dragState.dragOffset.x : 0,
+          x: window.event ? (window.event as MouseEvent).clientX - dragState.dragOffset.x - 280 : 0, // Account for left sidebar width
           y: window.event ? (window.event as MouseEvent).clientY - dragState.dragOffset.y : 0,
         };
         onDragEnd(finalPosition);

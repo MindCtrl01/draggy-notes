@@ -11,4 +11,13 @@ export interface Note {
   };
   createdAt: Date;
   updatedAt: Date;
+  tasks?: Task[];
+  isTaskMode?: boolean;
+}
+
+export interface Task {
+  id: string;
+  text: string;
+  completed: boolean;
+  createdAt: Date;
 }

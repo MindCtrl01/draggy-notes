@@ -43,7 +43,7 @@ export const useNotes = (selectedDate?: Date) => {
     
     const newId = `note-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     
-    const noteContent = content !== undefined ? content.trim() : 'Double-click to add content...';
+    const noteContent = content !== undefined ? content.trim() : 'Click to add content...';
     const randomColor = generateRandomNoteColor(); // Generate random hex color
     const defaultPosition = position || { 
       x: Math.random() * (window.innerWidth - 250), 

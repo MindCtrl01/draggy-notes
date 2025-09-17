@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Note } from '@/domains/note';
+import { Note, Task } from '@/domains/note';
+import { createTask, toggleTaskCompletion, updateTaskText } from '@/helpers/task-manager';
 
 export const useNoteEditing = (
   note: Note,
@@ -22,7 +23,6 @@ export const useNoteEditing = (
   useEffect(() => {
     if (isEditingContent && textareaRef.current) {
       textareaRef.current.focus();
-      // Don't automatically move cursor to end - preserve user's click position
     }
   }, [isEditingContent]);
 
@@ -53,13 +53,6 @@ export const useNoteEditing = (
   };
 
   const handleContentKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && e.shiftKey) {
-      e.preventDefault();
-      handleContentSubmit();
-    }
-    if (e.key === 'Enter') {
-      return; // Allow line breaks with Enter
-    }
     if (e.key === 'Escape') {
       setContent(note.content);
       setIsEditingContent(false);
@@ -73,9 +66,7 @@ export const useNoteEditing = (
     let effectiveLength = 0;
     
     for (const line of lines) {
-      // Each line contributes its character count
       effectiveLength += line.length;
-      // Each line break adds the equivalent of a full line
       if (line !== lines[lines.length - 1]) { // Not the last line
         effectiveLength += avgCharsPerLine;
       }
@@ -88,19 +79,15 @@ export const useNoteEditing = (
     e.preventDefault();
     const pastedText = e.clipboardData.getData('text');
     
-    // Get current cursor position
     const textarea = e.target as HTMLTextAreaElement;
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     
-    // Calculate new content length after paste
     const newContent = content.substring(0, start) + pastedText + content.substring(end);
     
-    // Calculate effective length considering line breaks as full line characters
     const effectiveLength = calculateEffectiveLength(newContent);
     
     // Estimate maximum characters based on card dimensions
-    // This is a simplified calculation - the main logic is in NoteCard component
     const estimatedMaxChars = 500; // Conservative estimate
     
     if (effectiveLength <= estimatedMaxChars) {
@@ -119,13 +106,11 @@ export const useNoteEditing = (
       for (let i = 0; i < newContent.length; i++) {
         const char = newContent[i];
         if (char === '\n') {
-          // Line break adds full line worth of characters
           currentEffectiveLength += avgCharsPerLine;
         } else {
           currentEffectiveLength += 1;
         }
         
-        // Reserve 3 characters for "..."
         if (currentEffectiveLength + 3 > estimatedMaxChars) {
           break;
         }
@@ -164,6 +149,65 @@ export const useNoteEditing = (
     setIsEditingContent(true);
   };
 
+  // Task management functions
+  const toggleTaskMode = () => {
+    onUpdate({
+      ...note,
+      isTaskMode: !note.isTaskMode,
+      tasks: note.tasks || [],
+      updatedAt: new Date()
+    });
+  };
+
+  const addTask = (text: string) => {
+    if (!text.trim()) return;
+    
+    const newTask = createTask(text);
+    const updatedTasks = [...(note.tasks || []), newTask];
+    
+    onUpdate({
+      ...note,
+      tasks: updatedTasks,
+      updatedAt: new Date()
+    });
+  };
+
+  const updateTask = (taskId: string, updates: Partial<Task>) => {
+    if (!note.tasks) return;
+    
+    const updatedTasks = note.tasks.map(task => 
+      task.id === taskId ? { ...task, ...updates } : task
+    );
+    
+    onUpdate({
+      ...note,
+      tasks: updatedTasks,
+      updatedAt: new Date()
+    });
+  };
+
+  const deleteTask = (taskId: string) => {
+    if (!note.tasks) return;
+    
+    const updatedTasks = note.tasks.filter(task => task.id !== taskId);
+    
+    onUpdate({
+      ...note,
+      tasks: updatedTasks,
+      updatedAt: new Date()
+    });
+  };
+
+  const toggleTask = (taskId: string) => {
+    if (!note.tasks) return;
+    
+    const task = note.tasks.find(t => t.id === taskId);
+    if (!task) return;
+    
+    const updatedTask = toggleTaskCompletion(task);
+    updateTask(taskId, updatedTask);
+  };
+
   return {
     isEditingTitle,
     isEditingContent,
@@ -179,6 +223,12 @@ export const useNoteEditing = (
     handleContentPaste,
     handleTitleKeyDown,
     startEditingTitle,
-    startEditingContent
+    startEditingContent,
+    // Task functions
+    toggleTaskMode,
+    addTask,
+    updateTask,
+    deleteTask,
+    toggleTask
   };
 };

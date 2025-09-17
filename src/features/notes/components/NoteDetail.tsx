@@ -1,9 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Edit3, Calendar } from 'lucide-react';
+import { X, Edit3, Calendar, Plus } from 'lucide-react';
 import { DatePicker } from '@mantine/dates';
-import { Note } from '@/domains/note';
+import { Note, Task } from '@/domains/note';
 import { getContrastTextColor } from '@/helpers/color-generator';
 import { formatDateDisplay } from '@/helpers/date-helper';
+import { getTaskProgressDisplay, getTaskProgress } from '@/helpers/task-manager';
+import { getTaskColors } from '@/helpers/task-colors';
+import { useNoteEditing } from '../hooks/use-note-editing';
+import { cn } from '@/styles/utils';
 import '../styles/note-card.css';
 
 interface NoteDetailProps {
@@ -23,28 +27,47 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
   onMoveToDate,
   onRefreshFromStorage,
 }) => {
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [isEditingContent, setIsEditingContent] = useState(false);
-  const [title, setTitle] = useState(note.title);
-  const [content, setContent] = useState(note.content);
   const [selectedDate, setSelectedDate] = useState(note.date);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const titleRef = useRef<HTMLInputElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [newTaskText, setNewTaskText] = useState('');
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const datePickerRef = useRef<HTMLDivElement>(null);
 
   const textColor = getContrastTextColor(note.color);
+  const taskColors = getTaskColors(note.color, textColor);
+
+  // Use the same note editing hooks as NoteCard
+  const {
+    isEditingTitle,
+    isEditingContent,
+    title,
+    content,
+    titleRef,
+    textareaRef,
+    setTitle,
+    setContent,
+    handleTitleSubmit,
+    handleContentSubmit,
+    handleContentKeyDown,
+    handleContentPaste,
+    handleTitleKeyDown,
+    startEditingTitle,
+    startEditingContent,
+    toggleTaskMode,
+    addTask,
+    updateTask,
+    deleteTask,
+    toggleTask
+  } = useNoteEditing(note, onUpdate);
 
   // Reset state when note changes
   useEffect(() => {
-    setTitle(note.title);
-    setContent(note.content);
     setSelectedDate(note.date);
-    setIsEditingTitle(false);
-    setIsEditingContent(false);
     setShowDatePicker(false);
-  }, [note.id, note.title, note.content, note.date]);
+    setNewTaskText('');
+    setEditingTaskId(null);
+  }, [note.id, note.date]);
 
   // Save any remaining unsaved changes when closing
   const saveAllChanges = () => {
@@ -144,35 +167,6 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
     };
   }, [showDatePicker]);
 
-  const handleTitleSubmit = () => {
-    setIsEditingTitle(false);
-    // Save immediately when user finishes editing title
-    if (title !== note.title) {
-      const updatedNote = { ...note, title: title.trim() || 'Untitled', updatedAt: new Date() };
-      onUpdate(updatedNote);
-      // Refresh the note on canvas after update
-      setTimeout(() => {
-        if (onRefreshFromStorage) {
-          onRefreshFromStorage(note.id);
-        }
-      }, 100);
-    }
-  };
-
-  const handleContentSubmit = () => {
-    setIsEditingContent(false);
-    // Save immediately when user finishes editing content
-    if (content !== note.content) {
-      const updatedNote = { ...note, content: content, updatedAt: new Date() };
-      onUpdate(updatedNote);
-      // Refresh the note on canvas after update
-      setTimeout(() => {
-        if (onRefreshFromStorage) {
-          onRefreshFromStorage(note.id);
-        }
-      }, 100);
-    }
-  };
 
   const handleDateChange = (value: string | null) => {
     if (value) {
@@ -183,54 +177,33 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
     }
   };
 
-  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+  // Task handlers
+  const handleAddTask = () => {
+    if (newTaskText.trim()) {
+      addTask(newTaskText);
+      setNewTaskText('');
+    }
+  };
+
+  const handleTaskKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleTitleSubmit();
+      handleAddTask();
+    }
+  };
+
+  const handleEditTask = (taskId: string, newText: string) => {
+    updateTask(taskId, { text: newText.trim() });
+    setEditingTaskId(null);
+  };
+
+  const handleTaskEditKeyDown = (e: React.KeyboardEvent, taskId: string, currentText: string) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      const target = e.target as HTMLTextAreaElement;
+      handleEditTask(taskId, target.value);
     } else if (e.key === 'Escape') {
-      setTitle(note.title);
-      setIsEditingTitle(false);
-    }
-  };
-
-  const handleContentKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      setContent(note.content);
-      setIsEditingContent(false);
-    }
-  };
-
-  const handleContentPaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pastedText = e.clipboardData.getData('text');
-    const MAX_CONTENT_LENGTH = 10000; // Higher limit for detail view
-    
-    // Get current cursor position
-    const textarea = e.target as HTMLTextAreaElement;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    
-    // Calculate new content length after paste
-    const newContent = content.substring(0, start) + pastedText + content.substring(end);
-    
-    // If paste would exceed max length, truncate the pasted text
-    if (newContent.length > MAX_CONTENT_LENGTH) {
-      const availableSpace = MAX_CONTENT_LENGTH - (content.length - (end - start));
-      const truncatedPastedText = pastedText.substring(0, availableSpace);
-      const finalContent = content.substring(0, start) + truncatedPastedText + content.substring(end);
-      setContent(finalContent);
-      
-      // Set cursor position after the pasted text
-      setTimeout(() => {
-        textarea.setSelectionRange(start + truncatedPastedText.length, start + truncatedPastedText.length);
-      }, 0);
-    } else {
-      setContent(newContent);
-      
-      // Set cursor position after the pasted text
-      setTimeout(() => {
-        textarea.setSelectionRange(start + pastedText.length, start + pastedText.length);
-      }, 0);
+      setEditingTaskId(null);
     }
   };
 
@@ -268,7 +241,7 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
                 />
               ) : (
                 <div
-                  onClick={() => setIsEditingTitle(true)}
+                  onClick={() => startEditingTitle()}
                   className="text-xl font-semibold cursor-pointer hover:bg-black/5 rounded px-2 py-1 -mx-2 -my-1"
                 >
                   {note.title || 'Untitled Note'}
@@ -277,8 +250,23 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
             </div>
           </div>
           
-          {/* Date in top right */}
+          {/* Task progress and date in top right */}
           <div className="flex items-center gap-3 flex-shrink-0 mr-4">
+            {note.tasks && note.tasks.length > 0 && !note.isTaskMode && (
+              <span className="text-sm opacity-70">
+                {getTaskProgressDisplay(note.tasks)}
+              </span>
+            )}
+            <button
+              className="task-mode-toggle"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleTaskMode();
+              }}
+              title={note.isTaskMode ? 'Switch to note mode' : 'Switch to task mode'}
+            >
+              {note.isTaskMode ? '📝' : '📋'}
+            </button>
             <Calendar size={20} />
             <div className="relative" ref={datePickerRef}>
               <button
@@ -324,30 +312,142 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
 
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[calc(100vh-140px)] note-detail-content">
-          {/* Content */}
-          <div>
-            {/* <label className="block text-sm font-medium opacity-70 mb-2">Content</label> */}
-            {isEditingContent ? (
-              <textarea
-                ref={textareaRef}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                onBlur={handleContentSubmit}
-                onKeyDown={handleContentKeyDown}
-                onPaste={handleContentPaste}
-                className="w-full h-64 bg-transparent border-2 border-black/20 rounded-lg px-4 py-3 text-base resize-none focus:border-black/40 focus:outline-none note-detail-textarea"
-                placeholder="Enter note content... (Shift+Enter or Ctrl+Enter to save)"
-              />
-            ) : (
-              <div
-                onClick={() => setIsEditingContent(true)}
-                className="w-full min-h-64 px-4 py-3 text-base cursor-pointer hover:bg-black/5 rounded-lg border-2 border-transparent hover:border-black/10 transition-colors whitespace-pre-wrap break-words note-detail-content-view"
-              >
-                {note.content || 'Click to add content...'}
+          {note.isTaskMode ? (
+            // Task Mode
+            <div 
+              className="w-full h-full"
+              style={{
+                ['--task-bg-color' as any]: taskColors.taskBgColor,
+                ['--task-bg-hover-color' as any]: taskColors.taskBgHoverColor,
+                ['--task-border-color' as any]: taskColors.taskBorderColor,
+                ['--add-task-bg-color' as any]: taskColors.addTaskBgColor,
+                ['--add-task-bg-hover-color' as any]: taskColors.addTaskBgHoverColor,
+                ['--add-task-border-color' as any]: taskColors.addTaskBorderColor,
+                ['--add-task-border-hover-color' as any]: taskColors.addTaskBorderHoverColor,
+                ['--progress-bar-bg-color' as any]: taskColors.progressBarBgColor,
+                ['--progress-bar-fill-color' as any]: taskColors.progressBarFillColor,
+              }}
+            >
+              {note.tasks && note.tasks.length > 0 && (
+                <>
+                  <div className="task-header-text mb-3">
+                    <span className="text-lg font-medium">Tasks</span>
+                  </div>
+                  <div className="task-progress-container mb-6">
+                    <div className="task-progress-bar">
+                      <div 
+                        className="task-progress-fill"
+                        style={{ width: `${getTaskProgress(note.tasks).percentage}%` }}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+              
+              <div className="task-list">
+                {note.tasks?.map((task) => (
+                  <div key={task.id} className="task-item-container">
+                    <button
+                      className={cn('task-checkbox', task.completed && 'checked')}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleTask(task.id);
+                      }}
+                    />
+                    
+                    <div className="task-item">
+                      <div className={cn('task-text', task.completed && 'completed')}>
+                        {editingTaskId === task.id ? (
+                          <textarea
+                            defaultValue={task.text}
+                            onBlur={(e) => handleEditTask(task.id, e.target.value)}
+                            onKeyDown={(e) => handleTaskEditKeyDown(e, task.id, task.text)}
+                            autoFocus
+                            rows={1}
+                            onInput={(e) => {
+                              const target = e.target as HTMLTextAreaElement;
+                              target.style.height = 'auto';
+                              target.style.height = Math.min(target.scrollHeight, 1.4 * 16 * 3) + 'px';
+                            }}
+                          />
+                        ) : (
+                          <span
+                            className="cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingTaskId(task.id);
+                            }}
+                            title={task.text.length > 100 ? task.text : undefined}
+                          >
+                            {task.text}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <button
+                      className="task-delete"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteTask(task.id);
+                      }}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+                
+                {/* Add new task */}
+                <div className="add-task-button">
+                  <textarea
+                    placeholder="Add new task..."
+                    value={newTaskText}
+                    onChange={(e) => setNewTaskText(e.target.value)}
+                    onKeyDown={handleTaskKeyDown}
+                    className="w-full bg-transparent border-none outline-none resize-none"
+                    rows={1}
+                    style={{ minHeight: '1.4em', maxHeight: 'calc(1.4em * 3)' }}
+                    onInput={(e) => {
+                      const target = e.target as HTMLTextAreaElement;
+                      target.style.height = 'auto';
+                      target.style.height = Math.min(target.scrollHeight, 1.4 * 16 * 3) + 'px';
+                    }}
+                  />
+                  {newTaskText && (
+                    <button
+                      onClick={handleAddTask}
+                      className="ml-2 p-1 hover:bg-black/10 rounded flex-shrink-0"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  )}
+                </div>
               </div>
-            )}
-          </div>
-
+            </div>
+          ) : (
+            // Normal Mode
+            <div>
+              {isEditingContent ? (
+                <textarea
+                  ref={textareaRef}
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  onBlur={handleContentSubmit}
+                  onKeyDown={handleContentKeyDown}
+                  onPaste={handleContentPaste}
+                  className="w-full h-64 bg-transparent border-2 border-black/20 rounded-lg px-4 py-3 text-base resize-none focus:border-black/40 focus:outline-none note-detail-textarea"
+                  placeholder="Enter note content..."
+                />
+              ) : (
+                <div
+                  onClick={() => startEditingContent()}
+                  className="w-full min-h-64 px-4 py-3 text-base cursor-pointer hover:bg-black/5 rounded-lg border-2 border-transparent hover:border-black/10 transition-colors whitespace-pre-wrap break-words note-detail-content-view"
+                >
+                  {note.content || 'Click to add content...'}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 /* Note Card Component Styles */
 .note-card {
-  @apply relative p-4 rounded-lg shadow-sm cursor-move select-none;
+  @apply relative p-4 rounded-lg shadow-sm select-none;
   min-width: 350px;
   min-height: 200px;
   max-width: 350px;
@@ -11,6 +11,22 @@
   box-shadow: var(--shadow-note);
   transition: var(--transition-smooth);
   border: 1px solid rgba(0, 0, 0, 0.1); /* Subtle border for definition */
+  cursor: grab; /* Default cursor for draggable notes */
+}
+
+/* Ensure all child elements inherit the cursor unless specifically overridden */
+.note-card * {
+  cursor: inherit;
+}
+
+/* Specific cursor overrides for interactive elements */
+.note-card button {
+  cursor: pointer !important;
+}
+
+.note-card input,
+.note-card textarea {
+  cursor: text !important;
 }
 
 /* Custom scroll styles - hide scrollbars but keep functionality */
@@ -79,13 +95,29 @@
 .note-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-floating);
+  cursor: grab !important;
+}
+
+.note-card:active {
+  cursor: grabbing !important;
 }
 
 .note-card.dragging {
   transform: rotate(5deg) scale(1.05);
   box-shadow: var(--shadow-drag);
   z-index: 1000;
+  cursor: grabbing !important;
   transition: none !important; /* Disable transitions during drag for immediate response */
+}
+
+/* When editing, disable grab cursor */
+.note-card.editing {
+  cursor: default !important;
+}
+
+.note-card.editing:hover {
+  cursor: default !important;
+  transform: none !important;
 }
 
 .note-card.selected {
@@ -106,4 +138,141 @@
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3);
     transform: scale(1.02);
   }
+}
+
+/* Task Mode Styles */
+.task-mode-toggle {
+  @apply p-1 rounded-full hover:bg-black/10 transition-colors cursor-pointer;
+  font-size: 14px;
+}
+
+.task-progress-display {
+  @apply text-xs opacity-70 flex items-center gap-1;
+}
+
+.task-list {
+  @apply space-y-4;
+}
+
+.task-item-container {
+  @apply relative flex items-start gap-3;
+}
+
+.task-item {
+  @apply flex-1 p-3 border rounded-lg backdrop-blur-sm;
+  transition: all 0.2s ease;
+  margin-left: 24px; /* Space for external checkbox */
+  margin-right: 24px; /* Space for external delete button */
+  /* Dynamic colors set via CSS custom properties */
+  background-color: var(--task-bg-color);
+  border-color: var(--task-border-color);
+}
+
+.task-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background-color: var(--task-bg-hover-color);
+}
+
+.task-checkbox {
+  @apply w-5 h-5 border-2 border-current rounded cursor-pointer flex-shrink-0;
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: all 0.2s ease;
+}
+
+.task-checkbox.checked {
+  @apply bg-current;
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.task-checkbox.checked::after {
+  content: '✓';
+  @apply absolute inset-0 flex items-center justify-center text-xs;
+  color: var(--note-bg-color, white);
+  font-weight: bold;
+}
+
+.task-text {
+  @apply text-sm leading-relaxed;
+  transition: all 0.2s ease;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+  max-height: calc(1.4em * 3); /* 3 lines max */
+  word-wrap: break-word;
+  hyphens: auto;
+}
+
+.task-text.completed {
+  @apply line-through opacity-60;
+}
+
+.task-text input,
+.task-text textarea {
+  @apply bg-transparent border-none outline-none w-full resize-none;
+  color: inherit;
+  line-height: 1.4;
+  max-height: calc(1.4em * 3);
+  overflow: hidden;
+}
+
+.task-text textarea {
+  min-height: 1.4em;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.task-delete {
+  @apply w-6 h-6 rounded-full hover:bg-black/20 transition-colors cursor-pointer opacity-0 flex-shrink-0;
+  @apply flex items-center justify-center;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.task-item-container:hover .task-delete {
+  @apply opacity-100;
+}
+
+.add-task-button {
+  @apply w-full p-3 border-2 border-dashed rounded-lg text-center cursor-pointer;
+  @apply flex items-start gap-2 text-sm opacity-70 hover:opacity-100;
+  @apply transition-all duration-200;
+  /* Full width - no margins */
+  /* Dynamic colors set via CSS custom properties */
+  background-color: var(--add-task-bg-color);
+  border-color: var(--add-task-border-color);
+}
+
+.add-task-button:hover {
+  background-color: var(--add-task-bg-hover-color);
+  border-color: var(--add-task-border-hover-color);
+}
+
+/* Separate task header and progress styling */
+.task-header-text {
+  @apply mb-2;
+}
+
+.task-progress-container {
+  @apply mb-2;
+}
+
+.task-progress-bar {
+  @apply w-full h-2 rounded-full overflow-hidden;
+  background-color: var(--progress-bar-bg-color);
+}
+
+.task-progress-fill {
+  @apply h-full rounded-full transition-all duration-300;
+  background-color: var(--progress-bar-fill-color);
 }
