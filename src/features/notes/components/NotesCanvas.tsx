@@ -1,10 +1,12 @@
 import '../styles/notes-canvas.css';
-import { Plus, Trash2, Search, User } from 'lucide-react';
+import { Plus, Trash2, Search, User, LogIn } from 'lucide-react';
 import { NoteCard } from './NoteCard';
 import { SearchSidebar } from './SearchSidebar';
 import { CalendarSidebar } from './CalendarSidebar';
 import { ConfirmationDialog } from './ConfirmationDialog';
+import { LoginModal } from '@/components/auth';
 import { useNotes, formatDateKey } from '../hooks/use-notes';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { useState, useEffect } from 'react';
 import { NotesStorage } from '@/helpers/notes-storage';
 import { Note } from '@/domains/note';
@@ -14,10 +16,9 @@ export const NotesCanvas = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showSearchSidebar, setShowSearchSidebar] = useState(false);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   
-  const user = {
-    name: ' Fthu ',
-  };
+  const { user, isAuthenticated, logout } = useAuthContext();
   
   const { 
     notes, 
@@ -138,17 +139,35 @@ export const NotesCanvas = () => {
 
       {/* Main Canvas Area */}
       <div className="flex-1 ml-[280px] relative">
-      {/* Username in top right */}
-      {user && (
-        <div className="absolute top-8 right-8 z-10">
-          <div className="flex items-center gap-2 px-3 py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
-            <User size={16} className="text-gray-600 dark:text-gray-400" />
-            <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-              {user.name}
-            </span>
+      {/* User section in top right */}
+      <div className="absolute top-8 right-8 z-10">
+        {isAuthenticated && user ? (
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 px-3 py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
+              <User size={16} className="text-gray-600 dark:text-gray-400" />
+              <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                {user.name || user.email}
+              </span>
+            </div>
+            <button
+              onClick={logout}
+              className="px-3 py-2 bg-red-500/80 hover:bg-red-600/80 backdrop-blur-sm border border-red-300 dark:border-red-700 rounded-lg shadow-sm text-white text-sm font-medium transition-colors"
+              title="Logout"
+            >
+              Logout
+            </button>
           </div>
-        </div>
-      )}
+        ) : (
+          <button
+            onClick={() => setShowLoginModal(true)}
+            className="flex items-center gap-2 px-3 py-2 bg-blue-500/80 hover:bg-blue-600/80 backdrop-blur-sm border border-blue-300 dark:border-blue-700 rounded-lg shadow-sm text-white text-sm font-medium transition-colors"
+            title="Login to sync your notes"
+          >
+            <LogIn size={16} />
+            <span>Login</span>
+          </button>
+        )}
+      </div>
 
       <div className={showSearchSidebar ? 'pointer-events-none' : ''}>
         {notes.map(note => (
@@ -246,6 +265,12 @@ export const NotesCanvas = () => {
         isOpen={showSearchSidebar}
         onClose={() => setShowSearchSidebar(false)}
         onNoteSelect={handleNoteSelect}
+      />
+
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
       />
       </div>
     </div>

@@ -4,6 +4,7 @@ export interface DragState {
   isDragging: boolean;
   isPending: boolean;
   dragOffset: { x: number; y: number };
+  currentPosition: { x: number; y: number };
 }
 
 export const useNoteDrag = (
@@ -14,7 +15,8 @@ export const useNoteDrag = (
   const [dragState, setDragState] = useState<DragState>({
     isDragging: false,
     isPending: false,
-    dragOffset: { x: 0, y: 0 }
+    dragOffset: { x: 0, y: 0 },
+    currentPosition: { x: 0, y: 0 }
   });
   
   const dragTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -37,7 +39,8 @@ export const useNoteDrag = (
       setDragState({
         isDragging: false,
         isPending: true,
-        dragOffset
+        dragOffset,
+        currentPosition: { x: e.clientX - 280, y: e.clientY }
       });
       
       // Start dragging after 100ms delay
@@ -62,24 +65,23 @@ export const useNoteDrag = (
           y: e.clientY - dragState.dragOffset.y
         };
         
+        setDragState(prev => ({
+          ...prev,
+          currentPosition: newPosition
+        }));
+        
         onDrag(newPosition);
       });
     };
 
     const handleMouseUp = () => {
-      // Clear the timeout if mouse is released before drag starts
       if (dragTimeoutRef.current) {
         clearTimeout(dragTimeoutRef.current);
         dragTimeoutRef.current = null;
       }
       
       if (dragState.isDragging && onDragEnd) {
-        // Calculate final position and call onDragEnd
-        const finalPosition = {
-          x: window.event ? (window.event as MouseEvent).clientX - dragState.dragOffset.x - 280 : 0, // Account for left sidebar width
-          y: window.event ? (window.event as MouseEvent).clientY - dragState.dragOffset.y : 0,
-        };
-        onDragEnd(finalPosition);
+        onDragEnd(dragState.currentPosition);
       }
       
       setDragState(prev => ({ 
@@ -90,7 +92,6 @@ export const useNoteDrag = (
     };
 
     if (dragState.isDragging || dragState.isPending) {
-      // Use passive event listeners for better performance
       document.addEventListener('mousemove', handleMouseMove, { passive: true });
       document.addEventListener('mouseup', handleMouseUp);
     }
@@ -99,7 +100,7 @@ export const useNoteDrag = (
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [dragState.isDragging, dragState.isPending, dragState.dragOffset, onDrag]);
+  }, [dragState.isDragging, dragState.isPending, dragState.dragOffset, dragState.currentPosition, onDrag, onDragEnd]);
 
   // Cleanup timeout on unmount
   useEffect(() => {

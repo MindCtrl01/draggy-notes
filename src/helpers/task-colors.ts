@@ -2,7 +2,6 @@
  * Generate task-related colors that provide good contrast with the note card background
  */
 export const getTaskColors = (noteColor: string, textColor: string) => {
-  // Convert hex to RGB
   const hexToRgb = (hex: string) => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? {
@@ -27,38 +26,30 @@ export const getTaskColors = (noteColor: string, textColor: string) => {
 
   // Generate colors based on whether the background is light or dark
   if (isLightBackground) {
-    // Light background - use darker, more saturated colors
     return {
-      // Task item colors
       taskBgColor: 'rgba(255, 255, 255, 0.4)',
       taskBgHoverColor: 'rgba(255, 255, 255, 0.6)',
       taskBorderColor: 'rgba(0, 0, 0, 0.15)',
       
-      // Add task button colors
       addTaskBgColor: 'rgba(255, 255, 255, 0.2)',
       addTaskBgHoverColor: 'rgba(255, 255, 255, 0.35)',
       addTaskBorderColor: 'rgba(0, 0, 0, 0.25)',
       addTaskBorderHoverColor: 'rgba(0, 0, 0, 0.4)',
       
-      // Progress bar colors
       progressBarBgColor: 'rgba(0, 0, 0, 0.1)',
       progressBarFillColor: 'rgba(34, 197, 94, 0.8)', // Green
     };
   } else {
-    // Dark background - use lighter, softer colors
     return {
-      // Task item colors
       taskBgColor: 'rgba(0, 0, 0, 0.2)',
       taskBgHoverColor: 'rgba(0, 0, 0, 0.3)',
       taskBorderColor: 'rgba(255, 255, 255, 0.15)',
       
-      // Add task button colors
       addTaskBgColor: 'rgba(0, 0, 0, 0.1)',
       addTaskBgHoverColor: 'rgba(0, 0, 0, 0.2)',
       addTaskBorderColor: 'rgba(255, 255, 255, 0.2)',
       addTaskBorderHoverColor: 'rgba(255, 255, 255, 0.35)',
       
-      // Progress bar colors
       progressBarBgColor: 'rgba(255, 255, 255, 0.1)',
       progressBarFillColor: 'rgba(74, 222, 128, 0.9)', // Lighter green
     };

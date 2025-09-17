@@ -84,7 +84,6 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
     handleMouseDown(e, cardRef);
   };
 
-
   const textColor = getContrastTextColor(note.color);
   const taskColors = getTaskColors(note.color, textColor);
 

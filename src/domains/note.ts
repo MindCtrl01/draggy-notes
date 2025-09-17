@@ -13,6 +13,8 @@ export interface Note {
   updatedAt: Date;
   tasks?: Task[];
   isTaskMode?: boolean;
+  userId: number;
+  tagIds: string[];
 }
 
 export interface Task {
@@ -20,4 +22,12 @@ export interface Task {
   text: string;
   completed: boolean;
   createdAt: Date;
+  userId: number;
+  tagIds: string[];
+}
+
+export interface Tag {
+  id: string;
+  name: string;
+  userId: number | null;
 }
