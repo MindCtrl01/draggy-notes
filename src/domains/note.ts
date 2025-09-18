@@ -1,3 +1,5 @@
+import { Task } from "./task";
+
 export interface Note {
   id: string;
   title: string;
@@ -15,20 +17,4 @@ export interface Note {
   isTaskMode?: boolean;
   userId: number;
   tagIds: string[];
-}
-
-export interface Task {
-  id: string;
-  text: string;
-  completed: boolean;
-  createdAt: Date;
-  userId: number;
-  tagIds: string[];
-}
-
-export interface Tag {
-  id: string;
-  name: string;
-  userId: number | null;
-  usageCount: number;
 }

@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Search, X, Calendar, FileText, Tag } from 'lucide-react';
-import { Note, Task } from '@/domains/note';
+import { Note } from '@/domains/note';
+import { Task } from '@/domains/task';
 import { formatDateShort } from '@/helpers/date-helper';
 
 interface SearchSidebarProps {

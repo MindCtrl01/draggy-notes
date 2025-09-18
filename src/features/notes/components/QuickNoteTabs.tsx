@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Note } from '@/domains/note';
-import { getContrastTextColor } from '@/helpers/color-generator';
 import { formatDateDisplay } from '@/helpers/date-helper';
 import { Eye, EyeOff } from 'lucide-react';
 
@@ -47,7 +46,6 @@ export const QuickNoteTabs = ({ notes, onNoteSelect, selectedNoteId }: QuickNote
       {isExpanded && (
         <div className="flex-1 overflow-y-auto">
           {displayedNotes.map((note) => {
-            const textColor = getContrastTextColor(note.color);
             const isSelected = selectedNoteId === note.id;
             
             return (

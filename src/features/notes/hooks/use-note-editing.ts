@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { Note, Task, Tag } from '@/domains/note';
+import { Note } from '@/domains/note';
+import { Task } from '@/domains/task';
+import { Tag } from '@/domains/tag';
 import { createTask, toggleTaskCompletion, updateTaskText } from '@/helpers/task-manager';
 
 export const useNoteEditing = (
@@ -11,6 +13,7 @@ export const useNoteEditing = (
   const [isEditingContent, setIsEditingContent] = useState(false);
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content);
+  const [tags, setTags] = useState<Tag[]>([]);
   const titleRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -29,11 +32,13 @@ export const useNoteEditing = (
 
   const handleTitleSubmit = () => {
     const trimmedTitle = title.trim();
+    const tagIds = tags.map(tag => tag.id);
     
-    if (trimmedTitle !== note.title) {
+    if (trimmedTitle !== note.title || JSON.stringify(tagIds) !== JSON.stringify(note.tagIds)) {
       onUpdate({
         ...note,
         title: trimmedTitle || 'Untitled',
+        tagIds: tagIds,
         updatedAt: new Date()
       });
     }
@@ -42,11 +47,13 @@ export const useNoteEditing = (
 
   const handleContentSubmit = () => {
     const trimmedContent = content.trim();
+    const tagIds = tags.map(tag => tag.id);
     
-    if (trimmedContent !== note.content) {
+    if (trimmedContent !== note.content || JSON.stringify(tagIds) !== JSON.stringify(note.tagIds)) {
       onUpdate({
         ...note,
         content: trimmedContent,
+        tagIds: tagIds,
         updatedAt: new Date()
       });
     }
@@ -215,11 +222,20 @@ export const useNoteEditing = (
     updateTask(taskId, updatedTask);
   };
 
+  // Tag management functions
+  const updateTags = (newTags: Tag[]) => {
+    setTags(newTags);
+    if (onTagsUpdate) {
+      onTagsUpdate(newTags);
+    }
+  };
+
   return {
     isEditingTitle,
     isEditingContent,
     title,
     content,
+    tags,
     titleRef,
     textareaRef,
     setTitle,
@@ -236,6 +252,8 @@ export const useNoteEditing = (
     addTask,
     updateTask,
     deleteTask,
-    toggleTask
+    toggleTask,
+    // Tag functions
+    updateTags
   };
 };

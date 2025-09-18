@@ -1,7 +1,8 @@
 import { useRef, useState, useMemo, useEffect } from 'react';
-import { Trash2, CheckSquare, Square, Plus, X } from 'lucide-react';
-import { Note, Task, Tag } from '@/domains/note';
+import { Trash2, Plus, X } from 'lucide-react';
 import { cn } from '@/styles/utils';
+import { Note } from '@/domains/note';
+import { Tag } from '@/domains/tag';
 import { useNoteDrag } from '../hooks/use-note-drag';
 import { useNoteEditing } from '../hooks/use-note-editing';
 import { TagDisplay } from '@/components/common';
@@ -49,6 +50,7 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
     isEditingContent,
     title,
     content,
+    tags,
     titleRef,
     textareaRef,
     setTitle,
@@ -64,7 +66,8 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
     addTask,
     updateTask,
     deleteTask,
-    toggleTask
+    toggleTask,
+    updateTags
   } = useNoteEditing(note, onUpdate, setSelectedTags);
 
 
@@ -104,9 +107,7 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
     let effectiveLength = 0;
     
     for (const line of lines) {
-      // Each line contributes its character count
       effectiveLength += line.length;
-      // Each line break adds the equivalent of a full line
       if (line !== lines[lines.length - 1]) { // Not the last line
         effectiveLength += avgCharsPerLine;
       }
@@ -214,14 +215,17 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
         return allTags.find(tag => tag.id === id);
       }).filter(Boolean) as Tag[];
       setSelectedTags(existingTags);
+      updateTags(existingTags);
     } else {
       setSelectedTags([]);
+      updateTags([]);
     }
   }, [note.id, note.tagIds, note.userId]);
 
   // Handle tag changes
   const handleTagsChange = (newTags: Tag[]) => {
     setSelectedTags(newTags);
+    updateTags(newTags);
     const newTagIds = newTags.map(tag => tag.id);
     onUpdate({
       ...note,
@@ -230,8 +234,8 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
     });
   };
 
-  // Use selectedTags for display
-  const contentTags = selectedTags;
+  // Use tags from hook for display
+  const contentTags = tags.length > 0 ? tags : selectedTags;
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -376,40 +380,42 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
         }
       }}
     >
-      <button
-        onClick={() => onDelete(note.id)}
-        className="absolute top-2 right-2 p-1 rounded-full hover:bg-black/10 transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <Trash2 size={14} />
-      </button>
-
       <div className="w-full h-full flex flex-col p-1">
         {/* Title section */}
         <div className="mb-2">
-          {isEditingTitle ? (
-            <input
-              ref={titleRef}
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              onBlur={handleTitleSubmit}
-              onKeyDown={handleTitleKeyDown}
-              className="w-full bg-transparent border-none outline-none font-bold text-lg placeholder-gray-400"
-              placeholder="Note title..."
+          <div className="flex items-center justify-between gap-2">
+            {isEditingTitle ? (
+              <input
+                ref={titleRef}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                onBlur={handleTitleSubmit}
+                onKeyDown={handleTitleKeyDown}
+                className="flex-1 bg-transparent border-none outline-none font-bold text-lg placeholder-gray-400"
+                placeholder="Note title..."
+                onMouseDown={(e) => e.stopPropagation()}
+                onDoubleClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <div 
+                className="flex-1 font-bold text-lg hover:bg-black/5 rounded px-1 py-0.5 -mx-1 -my-0.5 cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleStartEditingTitle();
+                }}
+              >
+                {displayTitle}
+              </div>
+            )}
+            
+            <button
+              onClick={() => onDelete(note.id)}
+              className="p-1 rounded-full hover:bg-black/10 transition-colors opacity-0 group-hover:opacity-100 cursor-pointer flex-shrink-0"
               onMouseDown={(e) => e.stopPropagation()}
-              onDoubleClick={(e) => e.stopPropagation()}
-            />
-          ) : (
-            <div 
-              className="font-bold text-lg hover:bg-black/5 rounded px-1 py-0.5 -mx-1 -my-0.5 cursor-pointer"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleStartEditingTitle();
-              }}
             >
-              {displayTitle}
-            </div>
-          )}
+              <Trash2 size={14} />
+            </button>
+          </div>
 
           {/* Tags display */}
           <TagDisplay 

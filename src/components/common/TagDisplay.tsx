@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, X } from 'lucide-react';
-import { Tag } from '@/domains/note';
 import { TagManager } from '@/helpers/tag-manager';
+import { Tag } from '@/domains/tag';
 
 interface TagDisplayProps {
   tags: Tag[];
@@ -36,7 +36,6 @@ export const TagDisplay: React.FC<TagDisplayProps> = ({
   useEffect(() => {
     if (tagInput.trim()) {
       const allSuggestions = TagManager.getTagSuggestions(tagInput.trim(), userId);
-      // Filter out already selected tags
       const filteredSuggestions = allSuggestions.filter(suggestion => 
         !tags.some(tag => tag.id === suggestion.id)
       );
@@ -44,7 +43,6 @@ export const TagDisplay: React.FC<TagDisplayProps> = ({
       setSelectedSuggestionIndex(0);
     } else {
       const defaultSuggestions = TagManager.getTagSuggestions('', userId);
-      // Filter out already selected tags
       const filteredSuggestions = defaultSuggestions.filter(suggestion => 
         !tags.some(tag => tag.id === suggestion.id)
       );
@@ -71,6 +69,13 @@ export const TagDisplay: React.FC<TagDisplayProps> = ({
     if (readOnly) return;
     setIsAddingTag(true);
     setTagInput('');
+
+    const defaultSuggestions = TagManager.getTagSuggestions('', userId);
+    const filteredSuggestions = defaultSuggestions.filter(suggestion => 
+      !tags.some(tag => tag.id === suggestion.id)
+    );
+    setSuggestions(filteredSuggestions);
+    setSelectedSuggestionIndex(0);
   };
 
   const handleCancelAdd = () => {
@@ -105,10 +110,8 @@ export const TagDisplay: React.FC<TagDisplayProps> = ({
     if (e.key === 'Enter') {
       e.preventDefault();
       if (suggestions.length > 0 && selectedSuggestionIndex < suggestions.length) {
-        // Select from suggestions
         selectTag(suggestions[selectedSuggestionIndex]);
       } else if (tagInput.trim()) {
-        // Create new tag
         createAndSelectTag(tagInput.trim());
       }
     }
@@ -144,14 +147,16 @@ export const TagDisplay: React.FC<TagDisplayProps> = ({
       {tags.map((tag) => (
         <span
           key={tag.id}
-          className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full border border-blue-200 dark:border-blue-700 group"
+          className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full border border-blue-200 dark:border-blue-700 group max-w-60"
           title={`Tag: ${tag.name}${tag.usageCount ? ` (used ${tag.usageCount} times)` : ''}`}
         >
-          {tag.name}
+          <span className="truncate">
+            {tag.name}
+          </span>
           {!readOnly && (
             <button
               onClick={() => handleRemoveTag(tag)}
-              className="ml-1 p-0.5 rounded-full hover:bg-blue-200 dark:hover:bg-blue-800 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="ml-1 p-0.5 rounded-full hover:bg-blue-200 dark:hover:bg-blue-800 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
               title="Remove tag"
             >
               <X size={10} />
@@ -171,26 +176,26 @@ export const TagDisplay: React.FC<TagDisplayProps> = ({
                 value={tagInput}
                 onChange={handleTagInputChange}
                 onKeyDown={handleTagInputKeyDown}
-                className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-24"
+                className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-24"
                 placeholder="Add tag..."
               />
               {suggestions.length > 0 && (
-                <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-32 overflow-y-auto min-w-32 z-50 scrollbar-hide">
+                <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-32 overflow-y-auto min-w-32 z-50 scrollbar-hide">
                   {suggestions.map((suggestion, index) => (
                     <div
                       key={suggestion.id}
                       className={`px-3 py-2 cursor-pointer text-xs ${
                         index === selectedSuggestionIndex
-                          ? 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100'
-                          : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                          ? 'bg-blue-100 dark:bg-blue-700 text-blue-900 dark:text-blue-100'
+                          : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-100'
                       }`}
                       onClick={() => handleSuggestionClick(suggestion)}
                       onMouseEnter={() => setSelectedSuggestionIndex(index)}
                     >
                       {suggestion.name}
                       {suggestion.userId === null && (
-                        <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
-                          default
+                        <span className="ml-2 text-xs text-gray-400 dark:text-gray-300">
+                          (default)
                         </span>
                       )}
                     </div>
@@ -201,7 +206,7 @@ export const TagDisplay: React.FC<TagDisplayProps> = ({
           ) : (
             <button
               onClick={handleAddTag}
-              className="inline-flex items-center justify-center w-6 h-6 text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-full border border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              className="inline-flex items-center justify-center w-6 h-6 text-xs font-medium bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-100 rounded-full border border-gray-300 dark:border-gray-400 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
               title="Add tag"
             >
               <Plus size={12} />

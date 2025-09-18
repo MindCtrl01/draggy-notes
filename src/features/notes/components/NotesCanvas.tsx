@@ -61,7 +61,6 @@ export const NotesCanvas = () => {
   }, [notes.length, selectedDate, isLoading, isCreating, isUpdating, isDeleting]);
 
   const handleCanvasDoubleClick = (e: React.MouseEvent) => {
-    // Disable canvas interactions when SearchSidebar is open
     if (showSearchSidebar) {
       return;
     }

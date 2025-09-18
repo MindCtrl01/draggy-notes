@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { X, Edit3, Calendar, Plus } from 'lucide-react';
 import { DatePicker } from '@mantine/dates';
-import { Note, Task, Tag } from '@/domains/note';
+import { Note } from '@/domains/note';
+import { Tag } from '@/domains/tag';
 import { TagDisplay } from '@/components/common';
 import { TagManager } from '@/helpers/tag-manager';
 import { getContrastTextColor } from '@/helpers/color-generator';
@@ -47,6 +48,7 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
     isEditingContent,
     title,
     content,
+    tags,
     titleRef,
     textareaRef,
     setTitle,
@@ -62,7 +64,8 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
     addTask,
     updateTask,
     deleteTask,
-    toggleTask
+    toggleTask,
+    updateTags
   } = useNoteEditing(note, onUpdate, setSelectedTags);
 
 
@@ -74,14 +77,17 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
         return allTags.find(tag => tag.id === id);
       }).filter(Boolean) as Tag[];
       setSelectedTags(existingTags);
+      updateTags(existingTags);
     } else {
       setSelectedTags([]);
+      updateTags([]);
     }
   }, [note.id, note.tagIds, note.userId]);
 
   // Handle tag changes
   const handleTagsChange = (newTags: Tag[]) => {
     setSelectedTags(newTags);
+    updateTags(newTags);
     const newTagIds = newTags.map(tag => tag.id);
     onUpdate({
       ...note,
@@ -90,8 +96,8 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
     });
   };
 
-  // Use selectedTags for display
-  const contentTags = selectedTags;
+  // Use tags from hook for display
+  const contentTags = tags.length > 0 ? tags : selectedTags;
 
   // Clean content for display
   const cleanDisplayContent = useMemo(() => {
@@ -108,14 +114,19 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
 
   // Save any remaining unsaved changes when closing
   const saveAllChanges = () => {
-    // Check for unsaved changes in title, content, and date
-    const hasUnsavedChanges = title !== note.title || content !== note.content || selectedDate.getTime() !== note.date.getTime();
+    // Check for unsaved changes in title, content, tags, and date
+    const tagIds = tags.map(tag => tag.id);
+    const hasUnsavedChanges = title !== note.title || 
+                             content !== note.content || 
+                             selectedDate.getTime() !== note.date.getTime() ||
+                             JSON.stringify(tagIds) !== JSON.stringify(note.tagIds);
     
     if (hasUnsavedChanges) {
       const updatedNote = {
         ...note,
         title: title.trim() || 'Untitled',
         content: content,
+        tagIds: tagIds,
         date: selectedDate,
         updatedAt: new Date()
       };
@@ -125,16 +136,14 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
         if (onMoveToDate) {
           onMoveToDate(note.id, selectedDate);
         }
-        // Also update other fields if they changed
-        if (title !== note.title || content !== note.content) {
+        if (title !== note.title || content !== note.content || JSON.stringify(tagIds) !== JSON.stringify(note.tagIds)) {
           onUpdate({ ...updatedNote, date: note.date }); // Keep original date for onUpdate
         }
       } else {
-        // Only title/content changed
+        // Only title/content/tags changed
         onUpdate(updatedNote);
       }
       
-      // Refresh the note on canvas after update
       setTimeout(() => {
         if (onRefreshFromStorage) {
           onRefreshFromStorage(note.id);
@@ -170,7 +179,7 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen, onClose, isEditingTitle, isEditingContent, title, content, selectedDate, note, onUpdate, onMoveToDate, onRefreshFromStorage]);
+  }, [isOpen, onClose, isEditingTitle, isEditingContent, title, content, tags, selectedDate, note, onUpdate, onMoveToDate, onRefreshFromStorage]);
 
   // Auto-focus when starting to edit
   useEffect(() => {
@@ -183,7 +192,6 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
   useEffect(() => {
     if (isEditingContent && textareaRef.current) {
       textareaRef.current.focus();
-      // Don't automatically move cursor to end - preserve user's click position
     }
   }, [isEditingContent]);
 

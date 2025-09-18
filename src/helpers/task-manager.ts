@@ -1,13 +1,17 @@
-import { Task } from '@/domains/note';
+import { Task } from '@/domains/task';
 
-export const createTask = (text: string): Task => ({
-  id: crypto.randomUUID(),
-  text: text.trim(),
-  completed: false,
-  createdAt: new Date(),
-  userId: -1, // Default userId
-  tagIds: [], // Will be set by the calling function
-});
+export const createTask = (text: string): Task => {
+  const id = crypto.randomUUID();
+  return {
+    id,
+    taskId: id, // Use the same ID for taskId
+    text: text.trim(),
+    completed: false,
+    createdAt: new Date(),
+    userId: -1, // Default userId
+    tagIds: [], // Will be set by the calling function
+  };
+};
 
 export const toggleTaskCompletion = (task: Task): Task => ({
   ...task,
