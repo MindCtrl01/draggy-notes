@@ -10,7 +10,7 @@ import { ThemeToggle } from '@/components/common';
 import { useNotes, formatDateKey } from '../hooks/use-notes';
 import { useCanvasDrag } from '../hooks/use-canvas-drag';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { NotesStorage } from '@/helpers/notes-storage';
 import { Note } from '@/domains/note';
 import { isSameDay, formatHeaderDate } from '@/helpers/date-helper';
@@ -139,6 +139,43 @@ export const NotesCanvas = () => {
 
   const displayedNotesCount = notes.filter(note => note.isDisplayed).length;
 
+  // Calculate dynamic canvas dimensions based on note positions
+  const calculateCanvasDimensions = useCallback(() => {
+    if (notes.length === 0) {
+      return {
+        width: '80vw', // Default width when no notes
+        height: '100vh' // Default height when no notes
+      };
+    }
+
+    // Calculate the farthest note positions
+    const noteWidth = 350; // From note-card.css min-width
+    const noteHeight = 200; // From note-card.css min-height
+    const padding = 100; // Extra padding around notes
+
+    let maxX = 0;
+    let maxY = 0;
+
+    notes.forEach(note => {
+      const noteRightEdge = note.position.x + noteWidth;
+      const noteBottomEdge = note.position.y + noteHeight;
+      
+      maxX = Math.max(maxX, noteRightEdge);
+      maxY = Math.max(maxY, noteBottomEdge);
+    });
+
+    // Ensure minimum size and add padding
+    const minWidth = window.innerWidth - 280; // Subtract sidebar width
+    const minHeight = window.innerHeight;
+    
+    return {
+      width: Math.max(maxX + padding, minWidth) + 'px',
+      height: Math.max(maxY + padding, minHeight) + 'px'
+    };
+  }, [notes]);
+
+  const canvasDimensions = calculateCanvasDimensions();
+
   if (isLoading) {
     return (
       <div className="canvas-container flex items-center justify-center">
@@ -187,7 +224,7 @@ export const NotesCanvas = () => {
       <div 
         ref={containerRef}
         className={`flex-1 ml-[280px] relative overflow-x-auto overflow-y-hidden`}
-        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+        style={{ cursor: notes.length === 0 ? 'default' : (isDragging ? 'grabbing' : 'grab') }}
       >
         {/* Fixed Header Buttons */}
         <div className="fixed top-8 right-8 z-[9999] flex items-center gap-2">
@@ -246,8 +283,14 @@ export const NotesCanvas = () => {
         <div 
           className="canvas-scrollable-area relative" 
           onDoubleClick={handleCanvasDoubleClick}
-          onMouseDown={handleMouseDown}
-          style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+          onMouseDown={notes.length > 0 ? handleMouseDown : undefined}
+          style={{ 
+            cursor: notes.length === 0 ? 'default' : (isDragging ? 'grabbing' : 'grab'),
+            width: canvasDimensions.width,
+            height: canvasDimensions.height,
+            minWidth: canvasDimensions.width,
+            minHeight: canvasDimensions.height
+          }}
         >
 
           <div className={showSearchSidebar ? 'pointer-events-none' : ''}>
@@ -309,8 +352,8 @@ export const NotesCanvas = () => {
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="text-center text-muted-foreground">
                 <div className="text-6xl mb-4">📝</div>
-                <h2 className="text-2xl font-semibold mb-2">No notes yet</h2>
-                <p className="text-lg">Double-click anywhere to create your first note!</p>
+                <h2 className="text-2xl font-semibold mb-2">No notes for {formatDateKey(selectedDate)}</h2>
+                <p className="text-lg">Double-click anywhere to add a note!</p>
               </div>
             </div>
           )}

@@ -6,9 +6,8 @@
 
 /* Main canvas area with horizontal scroll only */
 .canvas-scrollable-area {
-  @apply w-full min-h-screen;
-  /* Set large minimum width to allow horizontal scrolling only */
-  min-width: 200vw;
+  @apply relative;
+  /* Dynamic width and height will be set via inline styles */
   /* Ensure smooth scrolling */
   scroll-behavior: smooth;
   /* Add subtle background pattern for better visual distinction */
