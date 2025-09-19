@@ -1,12 +1,17 @@
 /* Notes Canvas Component Styles */
 .canvas-container {
-  @apply relative w-full min-h-screen overflow-hidden;
+  @apply relative w-full min-h-screen overflow-hidden select-none;
   background: var(--gradient-background);
+  /* Prevent text selection on double-click */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 /* Main canvas area with horizontal scroll only */
 .canvas-scrollable-area {
-  @apply relative;
+  @apply relative select-none;
   /* Dynamic width and height will be set via inline styles */
   /* Ensure smooth scrolling */
   scroll-behavior: smooth;
@@ -17,6 +22,11 @@
   background-size: 40px 40px, 100% 100%;
   /* Ensure grab cursor is properly applied */
   cursor: grab !important;
+  /* Prevent text selection on double-click */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 /* Dark mode canvas background pattern */

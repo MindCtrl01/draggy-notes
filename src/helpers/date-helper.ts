@@ -81,7 +81,7 @@ export const generateCalendarDays = (currentMonth: Date, selectedDate: Date) => 
 };
 
 export const formatHeaderDate = (date: Date): string => {
-  const dayName = date.toLocaleDateString('vi-VN', { weekday: 'long' });
+  const dayName = date.toLocaleDateString('us-US', { weekday: 'long' });
   const formattedDate = formatDateDisplay(date); // DD-MM-YYYY
   return `${dayName}, ${formattedDate}`;
 };

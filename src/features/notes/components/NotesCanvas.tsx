@@ -61,8 +61,20 @@ export const NotesCanvas = () => {
   }, [notes.length, selectedDate, isLoading, isCreating, isUpdating, isDeleting]);
 
   const handleCanvasDoubleClick = (e: React.MouseEvent) => {
+    // Prevent default double-click behavior (text selection)
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (showSearchSidebar) {
       return;
+    }
+    
+    // Clear any existing text selection that might have occurred
+    if (window.getSelection) {
+      const selection = window.getSelection();
+      if (selection) {
+        selection.removeAllRanges();
+      }
     }
     
     // Note: No need to prevent note creation in left region since the canvas area 

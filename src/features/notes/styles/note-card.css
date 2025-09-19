@@ -27,6 +27,11 @@
 .note-card input,
 .note-card textarea {
   cursor: text !important;
+  /* Re-enable text selection for editable elements */
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
 }
 
 /* Custom scroll styles - hide scrollbars but keep functionality */
@@ -56,6 +61,11 @@
   overflow: auto;
   word-wrap: break-word;
   white-space: pre-wrap;
+  /* Allow text selection when hovering over content to edit */
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
 }
 
 .note-content-view::-webkit-scrollbar {
