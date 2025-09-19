@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Tag } from '@/domains/note';
+import { Tag } from '@/domains/tag';
 
 interface TagSuggestionState {
   isVisible: boolean;

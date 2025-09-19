@@ -63,7 +63,7 @@ export const useNotes = (selectedDate?: Date) => {
       userId: -1, // Temporary userId
       tagIds: [], // Empty tagIds initially
       isTaskMode: true, // Default to task mode
-      tasks: [], // Initialize empty tasks array
+      noteTasks: [], // Initialize empty tasks array
     };
 
     NotesStorage.saveNote(newNote);

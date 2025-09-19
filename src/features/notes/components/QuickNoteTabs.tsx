@@ -73,9 +73,9 @@ export const QuickNoteTabs = ({ notes, onNoteSelect, selectedNoteId }: QuickNote
                     {/* Task/Note indicator and date */}
                     <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                       <span>{note.isTaskMode ? '📋' : '📝'}</span>
-                      {note.tasks && note.tasks.length > 0 && (
+                      {note.noteTasks && note.noteTasks.length > 0 && (
                         <span>
-                          {note.tasks.filter(t => t.completed).length}/{note.tasks.length}
+                          {note.noteTasks.filter(t => t.completed).length}/{note.noteTasks.length}
                         </span>
                       )}
                       <span className="truncate">{formatDateDisplay(note.date)}</span>

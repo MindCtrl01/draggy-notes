@@ -1,4 +1,5 @@
-import { Note, NoteColor } from '@/domains/note';
+import { Note } from '@/domains/note';
+import { NoteTask } from '@/domains/noteTask';
 import { API_CONFIG } from '@/services/config/api';
 
 // API request helper
@@ -33,7 +34,7 @@ async function apiRequest<T>(
 // Note API interface for backend communication
 export interface CreateNoteRequest {
   content: string;
-  color: NoteColor;
+  color: string;
   position: {
     x: number;
     y: number;
@@ -42,7 +43,7 @@ export interface CreateNoteRequest {
 
 export interface UpdateNoteRequest {
   content?: string;
-  color?: NoteColor;
+  color?: string;
   position?: {
     x: number;
     y: number;
@@ -52,7 +53,14 @@ export interface UpdateNoteRequest {
 export interface NoteApiResponse {
   id: string;
   content: string;
-  color: NoteColor;
+  color: string;
+  userId: number;
+  tagIds: string[];
+  isDisplayed: boolean;
+  isTaskMode: boolean;
+  noteTasks: NoteTask[];
+  title: string;
+  date: Date;
   position: {
     x: number;
     y: number;
@@ -99,6 +107,11 @@ export const notesApi = {
 function apiNoteToNote(apiNote: NoteApiResponse): Note {
   return {
     id: apiNote.id,
+    title: '',
+    date: apiNote.date,
+    isDisplayed: true,
+    userId: apiNote.userId,
+    tagIds: [],
     content: apiNote.content,
     color: apiNote.color,
     position: apiNote.position,

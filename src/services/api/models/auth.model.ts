@@ -2,7 +2,7 @@ export interface ApiErrorResponse {
     message: string;
     status: number;
     code?: string;
-    details?: Record<string, any>;
+    details?: Record<string, unknown>;
   }
   
   // Authentication types

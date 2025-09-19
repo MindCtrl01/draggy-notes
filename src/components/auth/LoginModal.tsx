@@ -46,10 +46,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       setEmail('');
       setPassword('');
       setName('');
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Please try again.";
       toast({
         title: mode === 'login' ? "Login failed" : "Registration failed",
-        description: error.message || "Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -70,10 +71,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       // TODO: Implement Google OAuth integration
       // Example: window.location.href = '/api/auth/google';
       
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Please try again.";
       toast({
         title: "Gmail login failed",
-        description: error.message || "Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

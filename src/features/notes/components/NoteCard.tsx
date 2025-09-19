@@ -220,7 +220,7 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
       setSelectedTags([]);
       updateTags([]);
     }
-  }, [note.id, note.tagIds, note.userId]);
+  }, [note.id, note.tagIds, note.userId, updateTags]);
 
   // Handle tag changes
   const handleTagsChange = (newTags: Tag[]) => {
@@ -430,9 +430,9 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
         <div className="flex items-center justify-between text-xs opacity-70 mb-2">
           <span>{formatDateDisplay(note.date)}</span>
           <div className="flex items-center gap-2">
-            {note.tasks && note.tasks.length > 0 && !note.isTaskMode && (
+            {note.noteTasks && note.noteTasks.length > 0 && !note.isTaskMode && (
               <span className="task-progress-display">
-                {getTaskProgressDisplay(note.tasks)}
+                {getTaskProgressDisplay(note.noteTasks)}
               </span>
             )}
             <button
@@ -456,18 +456,18 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
             <div 
               className="w-full h-full"
               style={{
-                ['--task-bg-color' as any]: taskColors.taskBgColor,
-                ['--task-bg-hover-color' as any]: taskColors.taskBgHoverColor,
-                ['--task-border-color' as any]: taskColors.taskBorderColor,
-                ['--add-task-bg-color' as any]: taskColors.addTaskBgColor,
-                ['--add-task-bg-hover-color' as any]: taskColors.addTaskBgHoverColor,
-                ['--add-task-border-color' as any]: taskColors.addTaskBorderColor,
-                ['--add-task-border-hover-color' as any]: taskColors.addTaskBorderHoverColor,
-                ['--progress-bar-bg-color' as any]: taskColors.progressBarBgColor,
-                ['--progress-bar-fill-color' as any]: taskColors.progressBarFillColor,
-              }}
+                '--task-bg-color': taskColors.taskBgColor,
+                '--task-bg-hover-color': taskColors.taskBgHoverColor,
+                '--task-border-color': taskColors.taskBorderColor,
+                '--add-task-bg-color': taskColors.addTaskBgColor,
+                '--add-task-bg-hover-color': taskColors.addTaskBgHoverColor,
+                '--add-task-border-color': taskColors.addTaskBorderColor,
+                '--add-task-border-hover-color': taskColors.addTaskBorderHoverColor,
+                '--progress-bar-bg-color': taskColors.progressBarBgColor,
+                '--progress-bar-fill-color': taskColors.progressBarFillColor,
+              } as React.CSSProperties}
             >
-              {note.tasks && note.tasks.length > 0 && (
+              {note.noteTasks && note.noteTasks.length > 0 && (
                 <>
                   <div className="task-header-text">
                     <span className="text-sm font-medium">Progress</span>
@@ -476,7 +476,7 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
                     <div className="task-progress-bar">
                       <div 
                         className="task-progress-fill"
-                        style={{ width: `${getTaskProgress(note.tasks).percentage}%` }}
+                        style={{ width: `${getTaskProgress(note.noteTasks).percentage}%` }}
                       />
                     </div>
                   </div>
@@ -484,7 +484,7 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
               )}
               
               <div className="task-list">
-                {note.tasks?.map((task) => (
+                {note.noteTasks?.map((task) => (
                   <div key={task.id} className="task-item-container">
                     <button
                       className={cn('task-checkbox', task.completed && 'checked')}

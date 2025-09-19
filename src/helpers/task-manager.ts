@@ -1,4 +1,4 @@
-import { Task } from '@/domains/task';
+import { Task } from '@/domains/noteTask';
 
 export const createTask = (text: string): Task => {
   const id = crypto.randomUUID();

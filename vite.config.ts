@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import checker from 'vite-plugin-checker';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode, command }) => ({
@@ -10,7 +11,16 @@ export default defineConfig(({ mode, command }) => ({
     host: "::",
     port: 7000,
   },
-  plugins: [react()],
+  plugins: [
+    react(),
+    checker({
+      typescript: true,
+      overlay: {
+        initialIsOpen: false,
+      },
+      terminal: true,
+    })
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

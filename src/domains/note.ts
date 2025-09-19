@@ -1,4 +1,4 @@
-import { Task } from "./task";
+import { NoteTask } from "./noteTask";
 
 export interface Note {
   id: string;
@@ -13,7 +13,7 @@ export interface Note {
   };
   createdAt: Date;
   updatedAt: Date;
-  tasks?: Task[];
+  noteTasks?: NoteTask[];
   isTaskMode?: boolean;
   userId: number;
   tagIds: string[];

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Search, X, Calendar, FileText, Tag } from 'lucide-react';
 import { Note } from '@/domains/note';
-import { Task } from '@/domains/task';
+import { NoteTask } from '@/domains/noteTask';
 import { formatDateShort } from '@/helpers/date-helper';
 
 interface SearchSidebarProps {
@@ -43,8 +43,8 @@ export const SearchSidebar = ({ allNotes, isOpen, onClose, onNoteSelect }: Searc
                      normalizedContent.includes(normalizedQuery);
         
         // Search in tasks if available
-        if (!matches && note.tasks) {
-          matches = note.tasks.some((task: Task) => 
+        if (!matches && note.noteTasks) {
+          matches = note.noteTasks.some((task: NoteTask) => 
             normalizeText(task.text).includes(normalizedQuery)
           );
         }

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { X, Edit3, Calendar, Plus } from 'lucide-react';
 import { DatePicker } from '@mantine/dates';
 import { Note } from '@/domains/note';
@@ -82,7 +82,7 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
       setSelectedTags([]);
       updateTags([]);
     }
-  }, [note.id, note.tagIds, note.userId]);
+  }, [note.id, note.tagIds, note.userId, updateTags]);
 
   // Handle tag changes
   const handleTagsChange = (newTags: Tag[]) => {
@@ -113,7 +113,7 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
   }, [note.id, note.date]);
 
   // Save any remaining unsaved changes when closing
-  const saveAllChanges = () => {
+  const saveAllChanges = useCallback(() => {
     // Check for unsaved changes in title, content, tags, and date
     const tagIds = tags.map(tag => tag.id);
     const hasUnsavedChanges = title !== note.title || 
@@ -150,7 +150,7 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
         }
       }, 100);
     }
-  };
+  }, [title, content, selectedDate, tags, note, onUpdate, onMoveToDate, onRefreshFromStorage]);
 
   // Handle escape key and click outside
   useEffect(() => {
@@ -179,7 +179,7 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen, onClose, isEditingTitle, isEditingContent, title, content, tags, selectedDate, note, onUpdate, onMoveToDate, onRefreshFromStorage]);
+  }, [isOpen, onClose, isEditingTitle, isEditingContent, title, content, tags, selectedDate, note, onUpdate, onMoveToDate, onRefreshFromStorage, saveAllChanges]);
 
   // Auto-focus when starting to edit
   useEffect(() => {
@@ -187,13 +187,13 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
       titleRef.current.focus();
       titleRef.current.select();
     }
-  }, [isEditingTitle]);
+  }, [isEditingTitle, titleRef]);
 
   useEffect(() => {
     if (isEditingContent && textareaRef.current) {
       textareaRef.current.focus();
     }
-  }, [isEditingContent]);
+  }, [isEditingContent, textareaRef]);
 
   // Handle click outside datepicker to close it
   useEffect(() => {
@@ -305,9 +305,9 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
           
           {/* Task progress and date in top right */}
           <div className="flex items-center gap-3 flex-shrink-0 mr-4">
-            {note.tasks && note.tasks.length > 0 && !note.isTaskMode && (
+            {note.noteTasks && note.noteTasks.length > 0 && !note.isTaskMode && (
               <span className="text-sm opacity-70">
-                {getTaskProgressDisplay(note.tasks)}
+                {getTaskProgressDisplay(note.noteTasks)}
               </span>
             )}
             <button
@@ -370,18 +370,18 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
             <div 
               className="w-full h-full"
               style={{
-                ['--task-bg-color' as any]: taskColors.taskBgColor,
-                ['--task-bg-hover-color' as any]: taskColors.taskBgHoverColor,
-                ['--task-border-color' as any]: taskColors.taskBorderColor,
-                ['--add-task-bg-color' as any]: taskColors.addTaskBgColor,
-                ['--add-task-bg-hover-color' as any]: taskColors.addTaskBgHoverColor,
-                ['--add-task-border-color' as any]: taskColors.addTaskBorderColor,
-                ['--add-task-border-hover-color' as any]: taskColors.addTaskBorderHoverColor,
-                ['--progress-bar-bg-color' as any]: taskColors.progressBarBgColor,
-                ['--progress-bar-fill-color' as any]: taskColors.progressBarFillColor,
-              }}
+                '--task-bg-color': taskColors.taskBgColor,
+                '--task-bg-hover-color': taskColors.taskBgHoverColor,
+                '--task-border-color': taskColors.taskBorderColor,
+                '--add-task-bg-color': taskColors.addTaskBgColor,
+                '--add-task-bg-hover-color': taskColors.addTaskBgHoverColor,
+                '--add-task-border-color': taskColors.addTaskBorderColor,
+                '--add-task-border-hover-color': taskColors.addTaskBorderHoverColor,
+                '--progress-bar-bg-color': taskColors.progressBarBgColor,
+                '--progress-bar-fill-color': taskColors.progressBarFillColor,
+              } as React.CSSProperties}
             >
-              {note.tasks && note.tasks.length > 0 && (
+              {note.noteTasks && note.noteTasks.length > 0 && (
                 <>
                   <div className="task-header-text mb-3">
                     <span className="text-lg font-medium">Tasks</span>
@@ -390,7 +390,7 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
                     <div className="task-progress-bar">
                       <div 
                         className="task-progress-fill"
-                        style={{ width: `${getTaskProgress(note.tasks).percentage}%` }}
+                        style={{ width: `${getTaskProgress(note.noteTasks).percentage}%` }}
                       />
                     </div>
                   </div>
@@ -398,7 +398,7 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
               )}
               
               <div className="task-list">
-                {note.tasks?.map((task) => (
+                {note.noteTasks?.map((task) => (
                   <div key={task.id} className="task-item-container">
                     <button
                       className={cn('task-checkbox', task.completed && 'checked')}

@@ -1,4 +1,4 @@
-import { Tag } from '@/domains/note';
+import { Tag } from '@/domains/tag';
 
 // Storage keys
 const STORAGE_PREFIX = 'draggy-notes';
@@ -42,8 +42,10 @@ export class TagManager {
       const tags = tagsData ? JSON.parse(tagsData) : [];
       
       // Ensure all tags have usageCount property (migration for existing tags)
-      return tags.map((tag: any) => ({
-        ...tag,
+      return tags.map((tag: Partial<Tag>) => ({
+        id: tag.id || '',
+        name: tag.name || '',
+        userId: tag.userId || null,
         usageCount: tag.usageCount || 0
       }));
     } catch (error) {

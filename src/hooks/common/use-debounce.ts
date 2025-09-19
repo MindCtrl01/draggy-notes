@@ -6,7 +6,7 @@ import { useCallback, useRef } from 'react';
  * @param delay - The debounce delay in milliseconds
  * @returns A debounced version of the callback function
  */
-export const useDebounce = <T extends (...args: any[]) => any>(
+export const useDebounce = <T extends (...args: unknown[]) => unknown>(
   callback: T,
   delay: number
 ): T => {
@@ -35,7 +35,7 @@ export const useDebounce = <T extends (...args: any[]) => any>(
  * @param immediate - If true, execute immediately on first call
  * @returns A debounced version of the callback function
  */
-export const useDebounceImmediate = <T extends (...args: any[]) => any>(
+export const useDebounceImmediate = <T extends (...args: unknown[]) => unknown>(
   callback: T,
   delay: number,
   immediate: boolean = false

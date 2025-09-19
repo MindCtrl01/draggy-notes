@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Note } from '@/domains/note';
-import { Task } from '@/domains/task';
+import { NoteTask } from '@/domains/noteTask';
 import { Tag } from '@/domains/tag';
 import { createTask, toggleTaskCompletion, updateTaskText } from '@/helpers/task-manager';
 
@@ -162,7 +162,7 @@ export const useNoteEditing = (
     onUpdate({
       ...note,
       isTaskMode: !note.isTaskMode,
-      tasks: note.tasks || [],
+      noteTasks: note.noteTasks || [],
       updatedAt: new Date()
     });
   };
@@ -174,19 +174,19 @@ export const useNoteEditing = (
       ...createTask(text),
       userId: note.userId,
     };
-    const updatedTasks = [...(note.tasks || []), newTask];
+    const updatedTasks = [...(note.noteTasks || []), newTask];
     
     onUpdate({
       ...note,
-      tasks: updatedTasks,
+      noteTasks: updatedTasks,
       updatedAt: new Date()
     });
   };
 
-  const updateTask = (taskId: string, updates: Partial<Task>) => {
-    if (!note.tasks) return;
+  const updateTask = (taskId: string, updates: Partial<NoteTask>) => {
+    if (!note.noteTasks) return;
     
-    const updatedTasks = note.tasks.map(task => {
+    const updatedTasks = note.noteTasks.map(task => {
       if (task.id === taskId) {
         return { ...task, ...updates };
       }
@@ -195,27 +195,27 @@ export const useNoteEditing = (
     
     onUpdate({
       ...note,
-      tasks: updatedTasks,
+      noteTasks: updatedTasks,
       updatedAt: new Date()
     });
   };
 
   const deleteTask = (taskId: string) => {
-    if (!note.tasks) return;
+    if (!note.noteTasks) return;
     
-    const updatedTasks = note.tasks.filter(task => task.id !== taskId);
+    const updatedTasks = note.noteTasks.filter(task => task.id !== taskId);
     
     onUpdate({
       ...note,
-      tasks: updatedTasks,
+      noteTasks: updatedTasks,
       updatedAt: new Date()
     });
   };
 
   const toggleTask = (taskId: string) => {
-    if (!note.tasks) return;
+    if (!note.noteTasks) return;
     
-    const task = note.tasks.find(t => t.id === taskId);
+    const task = note.noteTasks.find(t => t.id === taskId);
     if (!task) return;
     
     const updatedTask = toggleTaskCompletion(task);
@@ -223,12 +223,12 @@ export const useNoteEditing = (
   };
 
   // Tag management functions
-  const updateTags = (newTags: Tag[]) => {
+  const updateTags = useCallback((newTags: Tag[]) => {
     setTags(newTags);
     if (onTagsUpdate) {
       onTagsUpdate(newTags);
     }
-  };
+  }, [onTagsUpdate]);
 
   return {
     isEditingTitle,
