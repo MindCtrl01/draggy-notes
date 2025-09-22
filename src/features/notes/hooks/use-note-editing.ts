@@ -183,7 +183,7 @@ export const useNoteEditing = (
     });
   };
 
-  const updateTask = (taskId: string, updates: Partial<NoteTask>) => {
+  const updateTask = (taskId: number, updates: Partial<NoteTask>) => {
     if (!note.noteTasks) return;
     
     const updatedTasks = note.noteTasks.map(task => {
@@ -200,7 +200,7 @@ export const useNoteEditing = (
     });
   };
 
-  const deleteTask = (taskId: string) => {
+  const deleteTask = (taskId: number) => {
     if (!note.noteTasks) return;
     
     const updatedTasks = note.noteTasks.filter(task => task.id !== taskId);
@@ -212,7 +212,7 @@ export const useNoteEditing = (
     });
   };
 
-  const toggleTask = (taskId: string) => {
+  const toggleTask = (taskId: number) => {
     if (!note.noteTasks) return;
     
     const task = note.noteTasks.find(t => t.id === taskId);
@@ -220,6 +220,15 @@ export const useNoteEditing = (
     
     const updatedTask = toggleTaskCompletion(task);
     updateTask(taskId, updatedTask);
+  };
+
+  // Pin management function
+  const togglePin = () => {
+    onUpdate({
+      ...note,
+      isPinned: !note.isPinned,
+      updatedAt: new Date()
+    });
   };
 
   // Tag management functions
@@ -253,6 +262,8 @@ export const useNoteEditing = (
     updateTask,
     deleteTask,
     toggleTask,
+    // Pin functions
+    togglePin,
     // Tag functions
     updateTags
   };

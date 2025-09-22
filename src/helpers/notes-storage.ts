@@ -24,6 +24,7 @@ export class NotesStorage {
         updatedAt: note.updatedAt.toISOString(),
         userId: note.userId || -1, // Default to -1 if not set
         tagIds: note.tagIds || [], // Default to empty array if not set
+        isPinned: note.isPinned || false, // Default to false if not set
       };
       localStorage.setItem(key, JSON.stringify(noteData));
       
@@ -54,6 +55,7 @@ export class NotesStorage {
         updatedAt: new Date(parsed.updatedAt),
         userId: parsed.userId || -1, // Default to -1 if not set
         tagIds: parsed.tagIds || [], // Default to empty array if not set
+        isPinned: parsed.isPinned || false, // Default to false if not set
       };
     } catch (error) {
       console.error('Failed to retrieve note from localStorage:', error);

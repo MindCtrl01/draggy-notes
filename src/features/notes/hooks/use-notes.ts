@@ -33,7 +33,9 @@ export const useNotes = (selectedDate?: Date) => {
   }, []);
 
   const notes = selectedDate
-    ? allNotes.filter(note => isSameDay(note.date, selectedDate))
+    ? allNotes.filter(note => 
+        isSameDay(note.date, selectedDate) || note.isPinned
+      )
     : allNotes;
 
   const [draggedNotes, setDraggedNotes] = useState<Record<string, { x: number; y: number }>>({});

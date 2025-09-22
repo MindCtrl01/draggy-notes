@@ -7,6 +7,7 @@ export interface Note {
   date: Date;
   color: string;
   isDisplayed: boolean;
+  isPinned?: boolean;
   position: {
     x: number;
     y: number;

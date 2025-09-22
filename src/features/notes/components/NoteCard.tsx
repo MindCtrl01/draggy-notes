@@ -1,5 +1,5 @@
 import { useRef, useState, useMemo, useEffect } from 'react';
-import { Trash2, Plus, X } from 'lucide-react';
+import { Trash2, Plus, X, Pin } from 'lucide-react';
 import { cn } from '@/styles/utils';
 import { Note } from '@/domains/note';
 import { Tag } from '@/domains/tag';
@@ -41,7 +41,7 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
   const [isContentTooLong, setIsContentTooLong] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
-  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const taskTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   
@@ -67,6 +67,7 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
     updateTask,
     deleteTask,
     toggleTask,
+    togglePin,
     updateTags
   } = useNoteEditing(note, onUpdate, setSelectedTags);
 
@@ -305,12 +306,12 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
     }
   };
 
-  const handleEditTask = (taskId: string, newText: string) => {
+  const handleEditTask = (taskId: number, newText: string) => {
     updateTask(taskId, { text: newText.trim() });
     setEditingTaskId(null);
   };
 
-  const handleTaskEditKeyDown = (e: React.KeyboardEvent, taskId: string, currentText: string) => {
+  const handleTaskEditKeyDown = (e: React.KeyboardEvent, taskId: number) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       const target = e.target as HTMLTextAreaElement;
@@ -360,6 +361,10 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
           transform: 'scale(1.02)',
           zIndex: 1000
         }),
+        ...(note.isPinned && !isSelected && {
+          boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.3), 0 4px 12px rgba(59, 130, 246, 0.15)',
+          zIndex: 100
+        }),
         // Preserve dimensions when editing
         ...(currentDimensions && (isEditingTitle || isEditingContent) && {
           width: currentDimensions.width,
@@ -408,13 +413,31 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
               </div>
             )}
             
-            <button
-              onClick={() => onDelete(note.id)}
-              className="p-1 rounded-full hover:bg-black/10 transition-colors opacity-0 group-hover:opacity-100 cursor-pointer flex-shrink-0"
-              onMouseDown={(e) => e.stopPropagation()}
-            >
-              <Trash2 size={14} />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  togglePin();
+                }}
+                className={`p-1 rounded-full transition-colors cursor-pointer flex-shrink-0 ${
+                  note.isPinned 
+                    ? 'text-blue-600 dark:text-blue-400 opacity-100 hover:bg-blue-100 dark:hover:bg-blue-900/30' 
+                    : 'opacity-0 group-hover:opacity-100 hover:bg-black/10'
+                }`}
+                onMouseDown={(e) => e.stopPropagation()}
+                title={note.isPinned ? 'Unpin note' : 'Pin note'}
+              >
+                <Pin size={14} />
+              </button>
+              
+              <button
+                onClick={() => onDelete(note.id)}
+                className="p-1 rounded-full hover:bg-black/10 transition-colors opacity-0 group-hover:opacity-100 cursor-pointer flex-shrink-0"
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
           </div>
 
           {/* Tags display */}
@@ -504,7 +527,7 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
                           <textarea
                             defaultValue={task.text}
                             onBlur={(e) => handleEditTask(task.id, e.target.value)}
-                            onKeyDown={(e) => handleTaskEditKeyDown(e, task.id, task.text)}
+                            onKeyDown={(e) => handleTaskEditKeyDown(e, task.id)}
                             onMouseDown={(e) => e.stopPropagation()}
                             autoFocus
                             rows={1}
