@@ -20,6 +20,7 @@ export const NotesCanvas = () => {
   const [showSearchSidebar, setShowSearchSidebar] = useState(false);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [isAnyNoteDetailOpen, setIsAnyNoteDetailOpen] = useState(false);
   
   const { user, isAuthenticated, logout } = useAuthContext();
   
@@ -43,7 +44,10 @@ export const NotesCanvas = () => {
   const { containerRef, isDragging, handleMouseDown } = useCanvasDrag();
 
   const [showClearConfirmation, setShowClearConfirmation] = useState(false);
-
+  
+  // Z-index management
+  const [noteZIndices, setNoteZIndices] = useState<Record<string, number>>({});
+  const [maxZIndex, setMaxZIndex] = useState(1);
 
   const handleSearchToggle = () => {
     setShowSearchSidebar(!showSearchSidebar);
@@ -65,7 +69,7 @@ export const NotesCanvas = () => {
     e.preventDefault();
     e.stopPropagation();
     
-    if (showSearchSidebar) {
+    if (showSearchSidebar || isAnyNoteDetailOpen) {
       return;
     }
     
@@ -148,6 +152,38 @@ export const NotesCanvas = () => {
       }
     }, 100);
   };
+
+  const handleNoteDetailStateChange = useCallback((noteId: string, isOpen: boolean) => {
+    setIsAnyNoteDetailOpen(isOpen);
+  }, []);
+
+  // Initialize z-indices for notes when notes list changes
+  useEffect(() => {
+    const newZIndices: Record<string, number> = {};
+    let currentZIndex = 1;
+    
+    notes.forEach((note) => {
+      // Keep existing z-index if note already has one, otherwise assign new incremental z-index
+      if (noteZIndices[note.id]) {
+        newZIndices[note.id] = noteZIndices[note.id];
+        currentZIndex = Math.max(currentZIndex, noteZIndices[note.id] + 1);
+      } else {
+        newZIndices[note.id] = currentZIndex++;
+      }
+    });
+    
+    setNoteZIndices(newZIndices);
+    setMaxZIndex(currentZIndex);
+  }, [notes]);
+
+  // Function to bring a note to the front
+  const bringNoteToFront = useCallback((noteId: string) => {
+    setNoteZIndices(prev => ({
+      ...prev,
+      [noteId]: maxZIndex
+    }));
+    setMaxZIndex(prev => prev + 1);
+  }, [maxZIndex]);
 
   const displayedNotesCount = notes.filter(note => note.isDisplayed).length;
 
@@ -318,6 +354,9 @@ export const NotesCanvas = () => {
                 onRefreshFromStorage={refreshNoteFromStorage}
                 isSelected={selectedNoteId === note.id}
                 onClearSelection={() => setSelectedNoteId(null)}
+                onNoteDetailStateChange={handleNoteDetailStateChange}
+                zIndex={noteZIndices[note.id] || 1}
+                onBringToFront={() => bringNoteToFront(note.id)}
               />
             ))}
           </div>

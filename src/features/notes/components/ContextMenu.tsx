@@ -57,10 +57,11 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   return (
     <div
       ref={menuRef}
-      className="fixed bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-2 z-50 min-w-[180px]"
+      className="fixed bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-2 min-w-[180px]"
       style={{
         left: adjustedX,
         top: adjustedY,
+        zIndex: 10001, // Always higher than any note
       }}
     >
       {showViewDetail && onViewDetail && (

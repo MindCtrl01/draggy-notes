@@ -33,7 +33,7 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
   const [selectedDate, setSelectedDate] = useState(note.date);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
-  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const taskTextareaRef = useRef<HTMLTextAreaElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
@@ -237,12 +237,12 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
     }
   };
 
-  const handleEditTask = (taskId: string, newText: string) => {
+  const handleEditTask = (taskId: number, newText: string) => {
     updateTask(taskId, { text: newText.trim() });
     setEditingTaskId(null);
   };
 
-  const handleTaskEditKeyDown = (e: React.KeyboardEvent, taskId: string, currentText: string) => {
+  const handleTaskEditKeyDown = (e: React.KeyboardEvent, taskId: number, currentText: string) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       const target = e.target as HTMLTextAreaElement;
@@ -255,14 +255,14 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-[10001] flex items-center justify-center">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-xs" />
       
       {/* Modal */}
       <div
         ref={modalRef}
-        className="relative w-[60%] max-w-4xl max-h-[100vh] rounded-xl shadow-2xl overflow-hidden"
+        className="relative w-[60%] h-[85%] rounded-xl shadow-2xl overflow-hidden"
         style={{
           backgroundColor: note.color,
           color: textColor,
@@ -364,7 +364,7 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(100vh-140px)] note-detail-content">
+        <div className="p-6 overflow-y-auto h-[calc(100%-140px)] note-detail-content">
           {note.isTaskMode ? (
             // Task Mode
             <div 
@@ -482,7 +482,7 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
             </div>
           ) : (
             // Normal Mode
-            <div>
+            <div className="h-full">
               {isEditingContent ? (
                 <textarea
                   ref={textareaRef}
@@ -493,13 +493,13 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
                   onBlur={handleContentSubmit}
                   onKeyDown={handleContentKeyDown}
                   onPaste={handleContentPaste}
-                  className="w-full h-64 bg-transparent border-2 border-black/20 rounded-lg px-4 py-3 text-base resize-none focus:border-black/40 focus:outline-none note-detail-textarea"
+                  className="w-full h-full min-h-96 bg-transparent border-2 border-black/20 rounded-lg px-4 py-3 text-base resize-none focus:border-black/40 focus:outline-none note-detail-textarea"
                   placeholder="Enter note content..."
                 />
               ) : (
                 <div
                   onClick={() => startEditingContent()}
-                  className="w-full min-h-64 px-4 py-3 text-base cursor-pointer hover:bg-black/5 rounded-lg border-2 border-transparent hover:border-black/10 transition-colors whitespace-pre-wrap break-words note-detail-content-view"
+                  className="w-full h-full min-h-96 px-4 py-3 text-base cursor-pointer hover:bg-black/5 rounded-lg border-2 border-transparent hover:border-black/10 transition-colors whitespace-pre-wrap break-words note-detail-content-view"
                 >
                   {cleanDisplayContent || 'Click to add content...'}
                 </div>

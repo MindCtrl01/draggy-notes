@@ -14,6 +14,12 @@
   cursor: grab; /* Default cursor for draggable notes */
 }
 
+/* Allow dynamic height when editing */
+.note-card.editing {
+  max-height: none;
+  height: auto;
+}
+
 /* Ensure all child elements inherit the cursor unless specifically overridden */
 .note-card * {
   cursor: inherit;
@@ -96,6 +102,7 @@
   -ms-overflow-style: none;
   max-height: 100%;
   overflow-y: auto;
+  height: 100%;
 }
 
 .note-detail-content-view::-webkit-scrollbar {
@@ -115,7 +122,6 @@
 .note-card.dragging {
   transform: rotate(5deg) scale(1.05);
   box-shadow: var(--shadow-drag);
-  z-index: 1000;
   cursor: grabbing !important;
   transition: none !important; /* Disable transitions during drag for immediate response */
 }

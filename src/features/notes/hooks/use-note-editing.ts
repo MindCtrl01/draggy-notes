@@ -16,6 +16,10 @@ export const useNoteEditing = (
   const [tags, setTags] = useState<Tag[]>([]);
   const titleRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Undo functionality for content
+  const [contentHistory, setContentHistory] = useState<string[]>([note.content]);
+  const [historyIndex, setHistoryIndex] = useState(0);
 
   useEffect(() => {
     if (isEditingTitle && titleRef.current) {
@@ -60,10 +64,35 @@ export const useNoteEditing = (
     setIsEditingContent(false);
   };
 
+  // Add content to history for undo functionality
+  const addToContentHistory = useCallback((newContent: string) => {
+    setContentHistory(prev => {
+      const newHistory = prev.slice(0, historyIndex + 1);
+      newHistory.push(newContent);
+      return newHistory.slice(-50); // Keep last 50 changes
+    });
+    setHistoryIndex(prev => Math.min(prev + 1, 49));
+  }, [historyIndex]);
+
+  // Handle undo functionality
+  const handleContentUndo = useCallback(() => {
+    if (historyIndex > 0) {
+      const previousIndex = historyIndex - 1;
+      setHistoryIndex(previousIndex);
+      setContent(contentHistory[previousIndex]);
+    }
+  }, [historyIndex, contentHistory]);
+
   const handleContentKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       setContent(note.content);
       setIsEditingContent(false);
+      // Reset history when canceling
+      setContentHistory([note.content]);
+      setHistoryIndex(0);
+    } else if (e.key === 'z' && (e.ctrlKey || e.metaKey) && !e.shiftKey) {
+      e.preventDefault();
+      handleContentUndo();
     }
   };
 
@@ -83,6 +112,14 @@ export const useNoteEditing = (
     return effectiveLength;
   };
 
+  // Custom setContent that tracks history
+  const setContentWithHistory = useCallback((newContent: string) => {
+    if (newContent !== content) {
+      addToContentHistory(newContent);
+    }
+    setContent(newContent);
+  }, [content, addToContentHistory]);
+
   const handleContentPaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
     const pastedText = e.clipboardData.getData('text');
@@ -93,46 +130,13 @@ export const useNoteEditing = (
     
     const newContent = content.substring(0, start) + pastedText + content.substring(end);
     
-    const effectiveLength = calculateEffectiveLength(newContent);
+    // No truncation during editing - allow full content
+    setContentWithHistory(newContent);
     
-    // Estimate maximum characters based on card dimensions
-    const estimatedMaxChars = 500; // Conservative estimate
-    
-    if (effectiveLength <= estimatedMaxChars) {
-      setContent(newContent);
-      
-      // Set cursor position after the pasted text
-      setTimeout(() => {
-        textarea.setSelectionRange(start + pastedText.length, start + pastedText.length);
-      }, 0);
-    } else {
-      // Find truncation point that keeps effective length under limit
-      let truncateAt = 0;
-      let currentEffectiveLength = 0;
-      const avgCharsPerLine = 45; // Average characters per line
-      
-      for (let i = 0; i < newContent.length; i++) {
-        const char = newContent[i];
-        if (char === '\n') {
-          currentEffectiveLength += avgCharsPerLine;
-        } else {
-          currentEffectiveLength += 1;
-        }
-        
-        if (currentEffectiveLength + 3 > estimatedMaxChars) {
-          break;
-        }
-        truncateAt = i + 1;
-      }
-      
-      const truncatedContent = newContent.substring(0, truncateAt);
-      setContent(truncatedContent);
-      
-      // Set cursor position at the end
-      setTimeout(() => {
-        textarea.setSelectionRange(truncateAt, truncateAt);
-      }, 0);
-    }
+    // Set cursor position after the pasted text
+    setTimeout(() => {
+      textarea.setSelectionRange(start + pastedText.length, start + pastedText.length);
+    }, 0);
   };
 
   const handleTitleKeyDown = (e: React.KeyboardEvent) => {
@@ -151,8 +155,14 @@ export const useNoteEditing = (
   };
 
   const startEditingContent = () => {
+    // Initialize history with current content
+    setContentHistory([note.content]);
+    setHistoryIndex(0);
+    
     if (note.content === 'Click to add content...' || note.content === 'Double-click to add content...') {
       setContent('');
+    } else {
+      setContent(note.content);
     }
     setIsEditingContent(true);
   };
@@ -248,7 +258,7 @@ export const useNoteEditing = (
     titleRef,
     textareaRef,
     setTitle,
-    setContent,
+    setContent: setContentWithHistory,
     handleTitleSubmit,
     handleContentSubmit,
     handleContentKeyDown,

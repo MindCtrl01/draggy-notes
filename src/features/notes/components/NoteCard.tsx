@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo, useEffect } from 'react';
+import { useRef, useState, useMemo, useEffect, useCallback } from 'react';
 import { Trash2, Plus, X, Pin } from 'lucide-react';
 import { cn } from '@/styles/utils';
 import { Note } from '@/domains/note';
@@ -25,9 +25,12 @@ interface NoteCardProps {
   onRefreshFromStorage?: (noteId: string) => void;
   isSelected?: boolean;
   onClearSelection?: () => void;
+  onNoteDetailStateChange?: (noteId: string, isOpen: boolean) => void;
+  zIndex: number;
+  onBringToFront: () => void;
 }
 
-export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveToDate, onRefreshFromStorage, isSelected, onClearSelection }: NoteCardProps) => {
+export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveToDate, onRefreshFromStorage, isSelected, onClearSelection, onNoteDetailStateChange, zIndex, onBringToFront }: NoteCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; isOpen: boolean }>({
@@ -36,7 +39,6 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
     isOpen: false,
   });
   const [showNoteDetail, setShowNoteDetail] = useState(false);
-  const [currentDimensions, setCurrentDimensions] = useState<{ width: number; height: number } | null>(null);
   const [displayContent, setDisplayContent] = useState(note.content);
   const [isContentTooLong, setIsContentTooLong] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
@@ -79,6 +81,9 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
   );
 
   const onMouseDown = (e: React.MouseEvent) => {
+    // Bring note to front when clicked
+    onBringToFront();
+    
     // Only prevent dragging if clicking on interactive elements or input fields
     const target = e.target as HTMLElement;
     const isInteractiveElement = target.tagName === 'BUTTON' || 
@@ -126,11 +131,11 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
     
     const rect = cardElement.getBoundingClientRect();
     const cardWidth = rect.width;
-    const cardHeight = rect.height;
+    const cardHeight = 600;
     
     // Account for padding (p-4 = 16px on each side)
     const contentWidth = cardWidth - 32; // 16px padding on each side
-    const contentHeight = cardHeight - 100; // Account for title, date, and padding
+    const contentHeight = cardHeight - 100; // Account for title, date, and padding with max fixed height of 600px in css
     
     // Estimate characters per line based on card width
     const avgCharWidth = 8; // Average character width in pixels
@@ -176,7 +181,7 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
       // Find truncation point that keeps effective length under limit
       let truncateAt = 0;
       let currentEffectiveLength = 0;
-      const avgCharsPerLine = 45; // Average characters per line
+      const avgCharsPerLine = 15; // Average characters per line
       
       for (let i = 0; i < cleanContent.length; i++) {
         const char = cleanContent[i];
@@ -266,30 +271,49 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
   };
 
   const handleViewDetail = () => {
+    onBringToFront();
     setShowNoteDetail(true);
+    onNoteDetailStateChange?.(note.id, true);
   };
 
-  // Capture current dimensions when starting to edit
-  const captureCurrentDimensions = () => {
-    if (cardRef.current) {
-      const rect = cardRef.current.getBoundingClientRect();
-      setCurrentDimensions({
-        width: rect.width,
-        height: rect.height
-      });
+  const handleCloseNoteDetail = () => {
+    setShowNoteDetail(false);
+    onNoteDetailStateChange?.(note.id, false);
+  };
+
+  // Auto-resize textarea to fit content
+  const autoResizeTextarea = useCallback(() => {
+    if (textareaRef.current && isEditingContent) {
+      const textarea = textareaRef.current;
+      // Reset height to auto to get the correct scrollHeight
+      textarea.style.height = 'auto';
+      // Set height to scrollHeight to fit content, with min and max constraints
+      const minHeight = 100; // Minimum height
+      const maxHeight = 500; // Maximum height before scrolling
+      const newHeight = Math.max(minHeight, Math.min(textarea.scrollHeight, maxHeight));
+      textarea.style.height = `${newHeight}px`;
     }
-  };
+  }, [isEditingContent]);
 
-  // Custom edit handlers that preserve dimensions
+  // Custom edit handlers
   const handleStartEditingTitle = () => {
-    captureCurrentDimensions();
+    onBringToFront();
     startEditingTitle();
   };
 
   const handleStartEditingContent = () => {
-    captureCurrentDimensions();
+    onBringToFront();
     startEditingContent();
   };
+
+  // Auto-resize textarea when content changes or editing starts
+  useEffect(() => {
+    if (isEditingContent) {
+      // Small delay to ensure DOM is updated
+      const timer = setTimeout(autoResizeTextarea, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [isEditingContent, content, autoResizeTextarea]);
 
   // Task handlers
   const handleAddTask = () => {
@@ -321,12 +345,6 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
     }
   };
 
-  // Clear dimensions when editing finishes
-  useEffect(() => {
-    if (!isEditingTitle && !isEditingContent) {
-      setCurrentDimensions(null);
-    }
-  }, [isEditingTitle, isEditingContent]);
 
   return (
     <>
@@ -356,22 +374,14 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
         userSelect: isDragging ? 'none' : 'auto',
         backgroundColor: note.color,
         color: textColor,
+        zIndex: zIndex,
         ...(isSelected && {
           boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3)',
           transform: 'scale(1.02)',
-          zIndex: 1000
         }),
         ...(note.isPinned && !isSelected && {
           boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.3), 0 4px 12px rgba(59, 130, 246, 0.15)',
-          zIndex: 100
         }),
-        // Preserve dimensions when editing
-        ...(currentDimensions && (isEditingTitle || isEditingContent) && {
-          width: currentDimensions.width,
-          height: currentDimensions.height,
-          minWidth: currentDimensions.width,
-          minHeight: currentDimensions.height
-        })
       }}
       onMouseDown={onMouseDown}
       onMouseEnter={() => setIsHovering(true)}
@@ -610,13 +620,15 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
                   onChange={(e) => {
                     setContent(e.target.value);
                   }}
+                  onInput={autoResizeTextarea}
                   onBlur={handleContentSubmit}
                   onKeyDown={handleContentKeyDown}
                   onPaste={handleContentPaste}
-                  className="w-full h-full bg-transparent border-none outline-none resize-none text-sm note-content-textarea"
+                  className="w-full bg-transparent border-none outline-none resize-none text-sm note-content-textarea"
                   placeholder="Note content..."
                   onMouseDown={(e) => e.stopPropagation()}
                   onDoubleClick={(e) => e.stopPropagation()}
+                  style={{ minHeight: '100px', overflow: 'hidden' }}
                 />
               ) : (
                 <div 
@@ -654,7 +666,7 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
     <NoteDetail
       note={note}
       isOpen={showNoteDetail}
-      onClose={() => setShowNoteDetail(false)}
+      onClose={handleCloseNoteDetail}
       onUpdate={onUpdate}
       onMoveToDate={onMoveToDate}
       onRefreshFromStorage={onRefreshFromStorage}
