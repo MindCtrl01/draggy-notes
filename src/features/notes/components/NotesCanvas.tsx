@@ -14,6 +14,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { NotesStorage } from '@/helpers/notes-storage';
 import { Note } from '@/domains/note';
 import { isSameDay, formatHeaderDate } from '@/helpers/date-helper';
+import { LAYOUT, DRAG, NOTE_CARD, Z_INDEX, ANIMATION } from '@/constants/ui-constants';
 
 export const NotesCanvas = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -47,7 +48,7 @@ export const NotesCanvas = () => {
   
   // Z-index management
   const [noteZIndices, setNoteZIndices] = useState<Record<string, number>>({});
-  const [maxZIndex, setMaxZIndex] = useState(1);
+  const [maxZIndex, setMaxZIndex] = useState<number>(Z_INDEX.NOTE_BASE);
 
   const handleSearchToggle = () => {
     setShowSearchSidebar(!showSearchSidebar);
@@ -85,8 +86,8 @@ export const NotesCanvas = () => {
     // now starts at 280px from left due to ml-[280px] class
     const rect = e.currentTarget.getBoundingClientRect();
     const position = {
-      x: e.clientX - rect.left - 100, // Center the note
-      y: e.clientY - rect.top - 75
+      x: e.clientX - rect.left - DRAG.CENTER_NOTE_X_OFFSET, // Center the note
+      y: e.clientY - rect.top - DRAG.CENTER_NOTE_Y_OFFSET
     };
     createNote(position);
   };
@@ -122,7 +123,7 @@ export const NotesCanvas = () => {
           inline: 'center'
         });
       }
-    }, 100);
+    }, ANIMATION.SCROLL_TO_NOTE_DELAY);
   };
 
   const handleQuickNoteSelect = (note: Note) => {
@@ -150,7 +151,7 @@ export const NotesCanvas = () => {
           behavior: 'smooth'
         });
       }
-    }, 100);
+    }, ANIMATION.SCROLL_TO_NOTE_DELAY);
   };
 
   const handleNoteDetailStateChange = useCallback((noteId: string, isOpen: boolean) => {
@@ -160,13 +161,13 @@ export const NotesCanvas = () => {
   // Initialize z-indices for notes when notes list changes
   useEffect(() => {
     const newZIndices: Record<string, number> = {};
-    let currentZIndex = 1;
+    let currentZIndex: number = Z_INDEX.NOTE_BASE;
     
     notes.forEach((note) => {
       // Keep existing z-index if note already has one, otherwise assign new incremental z-index
       if (noteZIndices[note.id]) {
         newZIndices[note.id] = noteZIndices[note.id];
-        currentZIndex = Math.max(currentZIndex, noteZIndices[note.id] + 1);
+        currentZIndex = Math.max(currentZIndex, (noteZIndices[note.id] || Z_INDEX.NOTE_BASE) + 1);
       } else {
         newZIndices[note.id] = currentZIndex++;
       }
@@ -191,15 +192,15 @@ export const NotesCanvas = () => {
   const calculateCanvasDimensions = useCallback(() => {
     if (notes.length === 0) {
       return {
-        width: '80vw', // Default width when no notes
-        height: '100vh' // Default height when no notes
+        width: LAYOUT.DEFAULT_CANVAS_WIDTH, // Default width when no notes
+        height: LAYOUT.DEFAULT_CANVAS_HEIGHT // Default height when no notes
       };
     }
 
     // Calculate the farthest note positions
-    const noteWidth = 350; // From note-card.css min-width
-    const noteHeight = 200; // From note-card.css min-height
-    const padding = 100; // Extra padding around notes
+    const noteWidth = NOTE_CARD.MIN_WIDTH; // From note-card.css min-width
+    const noteHeight = NOTE_CARD.MIN_HEIGHT; // From note-card.css min-height
+    const padding = LAYOUT.CANVAS_PADDING; // Extra padding around notes
 
     let maxX = 0;
     let maxY = 0;
@@ -213,7 +214,7 @@ export const NotesCanvas = () => {
     });
 
     // Ensure minimum size and add padding
-    const minWidth = window.innerWidth - 280; // Subtract sidebar width
+    const minWidth = window.innerWidth - LAYOUT.SIDEBAR_WIDTH; // Subtract sidebar width
     const minHeight = window.innerHeight;
     
     return {

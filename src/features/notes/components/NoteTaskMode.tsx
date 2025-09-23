@@ -3,6 +3,7 @@ import { Plus, X } from 'lucide-react';
 import { cn } from '@/styles/utils';
 import { NoteTask } from '@/domains/noteTask';
 import { getTaskProgress } from '@/helpers/task-manager';
+import { TASK_MODE, TEXT } from '@/constants/ui-constants';
 
 interface NoteTaskModeProps {
   tasks: NoteTask[];
@@ -124,7 +125,7 @@ export const NoteTaskMode: React.FC<NoteTaskModeProps> = ({
                     onInput={(e) => {
                       const target = e.target as HTMLTextAreaElement;
                       target.style.height = 'auto';
-                      target.style.height = Math.min(target.scrollHeight, 1.4 * 16 * 3) + 'px';
+                      target.style.height = Math.min(target.scrollHeight, TASK_MODE.INPUT_LINE_HEIGHT_PX * TASK_MODE.INPUT_MAX_HEIGHT_MULTIPLIER * TASK_MODE.INPUT_MIN_HEIGHT) + 'px';
                     }}
                   />
                 ) : (
@@ -134,7 +135,7 @@ export const NoteTaskMode: React.FC<NoteTaskModeProps> = ({
                       e.stopPropagation();
                       onStartEditingTask(task.id);
                     }}
-                    title={task.text.length > 100 ? task.text : undefined}
+                    title={task.text.length > TEXT.MAX_TASK_TEXT_LENGTH ? task.text : undefined}
                   >
                     {task.text}
                   </div>
@@ -150,7 +151,7 @@ export const NoteTaskMode: React.FC<NoteTaskModeProps> = ({
               }}
               onMouseDown={(e) => e.stopPropagation()}
             >
-              <X size={14} />
+              <X size={TASK_MODE.TOGGLE_FONT_SIZE} />
             </button>
           </div>
         ))}
@@ -171,11 +172,11 @@ export const NoteTaskMode: React.FC<NoteTaskModeProps> = ({
             onMouseDown={(e) => e.stopPropagation()}
             className="w-full bg-transparent border-none outline-none resize-none"
             rows={1}
-            style={{ minHeight: '1.4em', maxHeight: 'calc(1.4em * 3)' }}
+            style={{ minHeight: `${TASK_MODE.INPUT_MIN_HEIGHT}em`, maxHeight: `calc(${TASK_MODE.INPUT_MIN_HEIGHT}em * ${TASK_MODE.INPUT_MAX_HEIGHT_MULTIPLIER})` }}
             onInput={(e) => {
               const target = e.target as HTMLTextAreaElement;
               target.style.height = 'auto';
-              target.style.height = Math.min(target.scrollHeight, 1.4 * 16 * 3) + 'px';
+              target.style.height = Math.min(target.scrollHeight, TASK_MODE.INPUT_LINE_HEIGHT_PX * TASK_MODE.INPUT_MAX_HEIGHT_MULTIPLIER * TASK_MODE.INPUT_MIN_HEIGHT) + 'px';
             }}
           />
           {newTaskText && (
@@ -184,7 +185,7 @@ export const NoteTaskMode: React.FC<NoteTaskModeProps> = ({
               onMouseDown={(e) => e.stopPropagation()}
               className="ml-2 p-1 hover:bg-black/10 rounded flex-shrink-0"
             >
-              <Plus size={14} />
+              <Plus size={TASK_MODE.TOGGLE_FONT_SIZE} />
             </button>
           )}
         </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { DRAG, LAYOUT } from '@/constants/ui-constants';
 
 export interface DragState {
   isDragging: boolean;
@@ -45,19 +46,19 @@ export const useNoteDrag = (
         isPending: true,
         dragOffset,
         currentPosition: { 
-          x: e.clientX - dragOffset.x - 280 + scrollLeft, 
+          x: e.clientX - dragOffset.x - LAYOUT.SIDEBAR_WIDTH + scrollLeft, 
           y: e.clientY - dragOffset.y 
         }
       });
       
-      // Start dragging after 100ms delay
+      // Start dragging after delay
       dragTimeoutRef.current = setTimeout(() => {
         setDragState(prev => ({
           ...prev,
           isDragging: true,
           isPending: false
         }));
-      }, 100);
+      }, DRAG.START_DELAY);
     }
   }, [isEditing]);
 
@@ -72,7 +73,7 @@ export const useNoteDrag = (
         const scrollLeft = canvasContainer?.scrollLeft || 0;
         
         const newPosition = {
-          x: e.clientX - dragState.dragOffset.x - 280 + scrollLeft, // Account for left sidebar width and scroll position
+          x: e.clientX - dragState.dragOffset.x - LAYOUT.SIDEBAR_WIDTH + scrollLeft, // Account for left sidebar width and scroll position
           y: e.clientY - dragState.dragOffset.y
         };
         

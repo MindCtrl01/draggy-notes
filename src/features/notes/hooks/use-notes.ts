@@ -5,6 +5,7 @@ import { useDebounce } from '@/hooks/common/use-debounce';
 import { NotesStorage } from '@/helpers/notes-storage';
 import { generateRandomNoteColor } from '@/helpers/color-generator';
 import { formatDateKey, formatDateDisplay, formatDateInput, formatDateShort, isSameDay } from '@/helpers/date-helper';
+import { LIMITS, ANIMATION } from '@/constants/ui-constants';
 
 
 export const useNotes = (selectedDate?: Date) => {
@@ -48,8 +49,8 @@ export const useNotes = (selectedDate?: Date) => {
     const noteContent = content !== undefined ? content.trim() : 'Click to add content...';
     const randomColor = generateRandomNoteColor(); // Generate random hex color
     const defaultPosition = position || { 
-      x: Math.random() * (window.innerWidth - 250), 
-      y: Math.random() * (window.innerHeight - 200) + 100 
+      x: Math.random() * (window.innerWidth - LIMITS.DEFAULT_POSITION_RANGE.X_MAX_OFFSET), 
+      y: Math.random() * (window.innerHeight - LIMITS.DEFAULT_POSITION_RANGE.Y_MAX_OFFSET) + LIMITS.DEFAULT_POSITION_RANGE.Y_MIN_OFFSET 
     };
 
     const newNote: Note = {
@@ -74,7 +75,7 @@ export const useNotes = (selectedDate?: Date) => {
     // Simulate API delay
     setTimeout(() => {
       setIsCreating(false);
-    }, 300);
+    }, ANIMATION.CREATE_NOTE_DELAY);
   }, [selectedDate]);
 
   const updateNote = useCallback((updatedNote: Note) => {
@@ -93,7 +94,7 @@ export const useNotes = (selectedDate?: Date) => {
     // Simulate API delay
     setTimeout(() => {
       setIsUpdating(false);
-    }, 200);
+    }, ANIMATION.UPDATE_NOTE_DELAY);
   }, []);
 
   const deleteNote = useCallback((id: string) => {
@@ -106,7 +107,7 @@ export const useNotes = (selectedDate?: Date) => {
     // Simulate API delay
     setTimeout(() => {
       setIsDeleting(false);
-    }, 200);
+    }, ANIMATION.UPDATE_NOTE_DELAY);
   }, []);
 
   const clearAllDisplayedNotes = useCallback(() => {
@@ -123,7 +124,7 @@ export const useNotes = (selectedDate?: Date) => {
     // Simulate API delay
     setTimeout(() => {
       setIsDeleting(false);
-    }, 300);
+    }, ANIMATION.CREATE_NOTE_DELAY);
   }, [notes]);
 
   const dragNote = useCallback((id: string, position: { x: number; y: number }) => {
@@ -171,7 +172,7 @@ export const useNotes = (selectedDate?: Date) => {
     // Simulate API delay
     setTimeout(() => {
       setIsUpdating(false);
-    }, 200);
+    }, ANIMATION.UPDATE_NOTE_DELAY);
   }, []);
 
   // Function to refresh a specific note from localStorage

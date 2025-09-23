@@ -14,6 +14,7 @@ import { NoteDetail } from './NoteDetail';
 import { NoteTitle } from './NoteTitle';
 import { NoteTaskMode } from './NoteTaskMode';
 import { NoteContentMode } from './NoteContentMode';
+import { TEXT, NOTE_CARD, LIMITS, COLORS } from '@/constants/ui-constants';
 import '../styles/note-card.css';
 
 interface NoteCardProps {
@@ -105,12 +106,12 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
   const textColor = getContrastTextColor(note.color);
   const taskColors = getTaskColors(note.color, textColor);
 
-  const MAX_TITLE_LENGTH = 50;
+  const MAX_TITLE_LENGTH = TEXT.MAX_TITLE_LENGTH;
 
   // Calculate effective content length considering line breaks as full lines
   const calculateEffectiveLength = (text: string) => {
     const lines = text.split('\n');
-    const avgCharsPerLine = 40; // Average characters per line in the card
+    const avgCharsPerLine = TEXT.AVG_CHARS_PER_LINE; // Average characters per line in the card
     let effectiveLength = 0;
     
     for (const line of lines) {
@@ -125,31 +126,31 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
 
   // Calculate maximum characters based on current card dimensions
   const calculateMaxCharacters = () => {
-    if (!contentRef.current) return 1000; // Fallback limit
+    if (!contentRef.current) return TEXT.FALLBACK_CHAR_LIMIT; // Fallback limit
     
     const cardElement = contentRef.current.closest('.note-card');
-    if (!cardElement) return 1000;
+    if (!cardElement) return TEXT.FALLBACK_CHAR_LIMIT;
     
     const rect = cardElement.getBoundingClientRect();
     const cardWidth = rect.width;
-    const cardHeight = 600;
+    const cardHeight = NOTE_CARD.MAX_HEIGHT;
     
     // Account for padding (p-4 = 16px on each side)
-    const contentWidth = cardWidth - 32; // 16px padding on each side
-    const contentHeight = cardHeight - 100; // Account for title, date, and padding with max fixed height of 600px in css
+    const contentWidth = cardWidth - NOTE_CARD.TOTAL_HORIZONTAL_PADDING; // 16px padding on each side
+    const contentHeight = cardHeight - NOTE_CARD.CONTENT_HEIGHT_OFFSET; // Account for title, date, and padding with max fixed height of 600px in css
     
     // Estimate characters per line based on card width
-    const avgCharWidth = 8; // Average character width in pixels
+    const avgCharWidth = TEXT.AVG_CHAR_WIDTH; // Average character width in pixels
     const charsPerLine = Math.floor(contentWidth / avgCharWidth);
     
     // Estimate lines based on card height
-    const lineHeight = 21; // Line height in pixels
+    const lineHeight = TEXT.LINE_HEIGHT; // Line height in pixels
     const maxLines = Math.floor(contentHeight / lineHeight);
     
     // Calculate total character capacity
     const totalCapacity = charsPerLine * maxLines;
     
-    return Math.max(100, totalCapacity); // Minimum 100 characters
+    return Math.max(TEXT.MIN_CHAR_LIMIT, totalCapacity); // Minimum 100 characters
   };
 
   // Clean content for display
@@ -182,7 +183,7 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
       // Find truncation point that keeps effective length under limit
       let truncateAt = 0;
       let currentEffectiveLength = 0;
-      const avgCharsPerLine = 15; // Average characters per line
+      const avgCharsPerLine = TEXT.AVG_CHARS_PER_LINE_TRUNCATION; // Average characters per line
       
       for (let i = 0; i < cleanContent.length; i++) {
         const char = cleanContent[i];
@@ -289,8 +290,8 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
       // Reset height to auto to get the correct scrollHeight
       textarea.style.height = 'auto';
       // Set height to scrollHeight to fit content, with min and max constraints
-      const minHeight = 100; // Minimum height
-      const maxHeight = 500; // Maximum height before scrolling
+      const minHeight = LIMITS.MIN_CONTENT_HEIGHT; // Minimum height
+      const maxHeight = LIMITS.MAX_CONTENT_HEIGHT; // Maximum height before scrolling
       const newHeight = Math.max(minHeight, Math.min(textarea.scrollHeight, maxHeight));
       textarea.style.height = `${newHeight}px`;
     }

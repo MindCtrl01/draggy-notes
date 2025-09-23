@@ -12,6 +12,7 @@ import { useNoteEditing } from '../hooks/use-note-editing';
 import { NoteTitle } from './NoteTitle';
 import { NoteTaskMode } from './NoteTaskMode';
 import { NoteContentMode } from './NoteContentMode';
+import { ANIMATION, NOTE_DETAIL, Z_INDEX } from '@/constants/ui-constants';
 import '../styles/note-card.css';
 
 interface NoteDetailProps {
@@ -149,7 +150,7 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
         if (onRefreshFromStorage) {
           onRefreshFromStorage(note.id);
         }
-      }, 100);
+      }, ANIMATION.SCROLL_TO_NOTE_DELAY);
     }
   }, [title, content, selectedDate, tags, note, onUpdate, onMoveToDate, onRefreshFromStorage]);
 
