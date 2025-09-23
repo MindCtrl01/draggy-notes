@@ -1,35 +1,113 @@
-export interface ApiErrorResponse {
-    message: string;
-    status: number;
-    code?: string;
-    details?: Record<string, unknown>;
-  }
-  
-  // Authentication types
-  export interface AuthTokens {
-    accessToken: string;
-    refreshToken: string;
-  }
-  
-  export interface LoginRequest {
-    email: string;
-    password: string;
-  }
-  
-  export interface RegisterRequest {
-    email: string;
-    password: string;
-    name?: string;
-  }
-  
-  export interface AuthUser {
-    id: string;
-    email: string;
-    name?: string;
-    roles?: string[];
-  }
-  
-  export interface AuthResponse {
-    user: AuthUser;
-    tokens: AuthTokens;
-  }
+// Authentication Request Models
+export interface LoginRequest {
+  username: string | null;
+  password: string | null;
+}
+
+export interface RegisterRequest {
+  username: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  email: string | null;
+  password: string | null;
+  phoneNumber?: string | null;
+}
+
+export interface GoogleLoginRequest {
+  idToken: string | null;
+}
+
+export interface LogoutRequest {
+  token: string | null;
+}
+
+export interface ForgotPasswordRequest {
+  email: string | null;
+}
+
+export interface ResetPasswordRequest {
+  email: string | null;
+  resetToken: string | null;
+  newPassword: string | null;
+}
+
+export interface RefreshTokenRequest {
+  refreshToken: string | null;
+}
+
+// Authentication Response Models
+export interface UserInfo {
+  id: number;
+  username: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  email: string | null;
+  roles: string[] | null;
+}
+
+export interface AuthenticationResponse {
+  token: string | null;
+  refreshToken: string | null;
+  expiresAt: string; // ISO date string format
+  user: UserInfo;
+}
+
+// User Models
+export interface UserResponse {
+  id: number;
+  firstName: string | null;
+  lastName: string | null;
+  email: string | null;
+  phoneNumber: string | null;
+  isActive: boolean;
+  createdAt: string; // ISO date string format
+  updatedAt: string; // ISO date string format
+}
+
+export interface CreateUserRequest {
+  username: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  email: string | null;
+  phoneNumber?: string | null;
+}
+
+export interface UpdateUserRequest {
+  id: number;
+  username: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  email: string | null;
+  phoneNumber: string | null;
+  isActive: boolean;
+}
+
+export interface GetUserByIdRequest {
+  id: number;
+}
+
+export interface DeleteUserRequest {
+  id: number;
+}
+
+// Legacy types for backward compatibility
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+}
+
+export interface AuthUser {
+  id: number;
+  username: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber?: string;
+  isActive: boolean;
+  roles: string[];
+}
+
+export interface AuthResponse {
+  user: AuthUser;
+  tokens: AuthTokens;
+}

@@ -1,29 +1,16 @@
 import { API_CONFIG } from '@/services/config/api';
 import { TokenManager } from '@/helpers/token-manager';
-import { authApi } from './auth-api';
-import { ApiError } from './models/api.model';
+import { ApiError, ApiResponse } from './models/api.model';
 
-// Enhanced API request helper with JWT authentication
-async function apiRequest<T>(
+// Enhanced API request helper with JWT authentication and OpenAPI response format
+export async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
-): Promise<T> {
+): Promise<ApiResponse<T>> {
   const url = `${API_CONFIG.BASE_URL}${endpoint}`;
   
-  // Get and validate token
-  let token = TokenManager.getToken();
-  
-  // Check if token is expired and try to refresh
-  if (token && TokenManager.isTokenExpired(token)) {
-    try {
-      token = await authApi.refreshAuthToken();
-    } catch (error) {
-      // If refresh fails, clear tokens and redirect to login
-      TokenManager.clearTokens();
-      // You might want to dispatch a logout action or redirect to login page here
-      throw new Error('Authentication expired. Please login again.');
-    }
-  }
+  // Get token
+  const token = TokenManager.getToken();
   
   const config: RequestInit = {
     headers: {
@@ -40,7 +27,7 @@ async function apiRequest<T>(
     // Handle authentication errors
     if (response.status === 401) {
       TokenManager.clearTokens();
-      throw new Error('Authentication failed. Please login again.');
+      throw new ApiError('Authentication failed. Please login again.', 401);
     }
     
     if (!response.ok) {
@@ -55,48 +42,90 @@ async function apiRequest<T>(
     
     // Handle 204 No Content responses
     if (response.status === 204) {
-      return undefined as T;
+      return {
+        success: true,
+        message: null,
+        data: undefined as T,
+        errors: null
+      };
     }
     
     return await response.json();
   } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
     console.error('API Request failed:', error);
-    throw error;
+    throw new ApiError('Network error occurred', 500);
   }
+}
+
+// Legacy API request helper for backward compatibility
+export async function legacyApiRequest<T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const response = await apiRequest<T>(endpoint, options);
+  return response.data as T;
 }
 
 export class BaseApi<TEntity, TCreateRequest, TUpdateRequest> {
   constructor(private resourcePath: string) {}
 
+  // Helper method to make requests with proper response handling
+  protected async makeRequest<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<ApiResponse<T>> {
+    return apiRequest<T>(`/${this.resourcePath}${endpoint}`, options);
+  }
+
   // GET /resource - List all entities
   async getAll(): Promise<TEntity[]> {
-    return apiRequest<TEntity[]>(`/${this.resourcePath}`);
+    const response = await this.makeRequest<TEntity[]>('', {
+      method: 'GET'
+    });
+    return response.data || [];
   }
 
   // GET /resource/{id} - Get single entity by ID
   async getById(id: string): Promise<TEntity> {
-    return apiRequest<TEntity>(`/${this.resourcePath}/${id}`);
+    const response = await this.makeRequest<TEntity>(`/${id}`, {
+      method: 'GET'
+    });
+    if (!response.data) {
+      throw new ApiError('Entity not found', 404);
+    }
+    return response.data;
   }
 
   // POST /resource - Create new entity
   async create(data: TCreateRequest): Promise<TEntity> {
-    return apiRequest<TEntity>(`/${this.resourcePath}`, {
+    const response = await this.makeRequest<TEntity>('', {
       method: 'POST',
       body: JSON.stringify(data),
     });
+    if (!response.data) {
+      throw new ApiError('No data returned from create', 500);
+    }
+    return response.data;
   }
 
   // PUT /resource/{id} - Update entity
   async update(id: string, data: TUpdateRequest): Promise<TEntity> {
-    return apiRequest<TEntity>(`/${this.resourcePath}/${id}`, {
+    const response = await this.makeRequest<TEntity>(`/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
+    if (!response.data) {
+      throw new ApiError('No data returned from update', 500);
+    }
+    return response.data;
   }
 
   // DELETE /resource/{id} - Delete entity
   async delete(id: string): Promise<void> {
-    return apiRequest<void>(`/${this.resourcePath}/${id}`, {
+    await this.makeRequest<void>(`/${id}`, {
       method: 'DELETE',
     });
   }
@@ -106,7 +135,8 @@ export class BaseApi<TEntity, TCreateRequest, TUpdateRequest> {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<TResponse> {
-    return apiRequest<TResponse>(`/${this.resourcePath}${endpoint}`, options);
+    const response = await this.makeRequest<TResponse>(endpoint, options);
+    return response.data as TResponse;
   }
 }
 

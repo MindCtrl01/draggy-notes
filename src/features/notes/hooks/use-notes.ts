@@ -1,7 +1,6 @@
 import { useCallback, useState, useEffect } from 'react';
 import { Note } from '@/domains/note';
 // import { useNotesApi } from './use-notes-api'; // Temporarily disabled
-import { useDebounce } from '@/hooks/common/use-debounce';
 import { NotesStorage } from '@/helpers/notes-storage';
 import { generateRandomNoteColor } from '@/helpers/color-generator';
 import { formatDateKey, formatDateDisplay, formatDateInput, formatDateShort, isSameDay } from '@/helpers/date-helper';
@@ -44,8 +43,6 @@ export const useNotes = (selectedDate?: Date) => {
   const createNote = useCallback((position?: { x: number; y: number }, content?: string) => {
     setIsCreating(true);
     
-    const newId = `note-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
-    
     const noteContent = content !== undefined ? content.trim() : 'Click to add content...';
     const randomColor = generateRandomNoteColor(); // Generate random hex color
     const defaultPosition = position || { 
@@ -54,7 +51,6 @@ export const useNotes = (selectedDate?: Date) => {
     };
 
     const newNote: Note = {
-      id: newId,
       title: 'New Note',
       content: noteContent,
       date: selectedDate || new Date(),
@@ -97,7 +93,7 @@ export const useNotes = (selectedDate?: Date) => {
     }, ANIMATION.UPDATE_NOTE_DELAY);
   }, []);
 
-  const deleteNote = useCallback((id: string) => {
+  const deleteNote = useCallback((id: number) => {
     setIsDeleting(true);
     
     NotesStorage.deleteNote(id);
@@ -127,7 +123,7 @@ export const useNotes = (selectedDate?: Date) => {
     }, ANIMATION.CREATE_NOTE_DELAY);
   }, [notes]);
 
-  const dragNote = useCallback((id: string, position: { x: number; y: number }) => {
+  const dragNote = useCallback((id: number, position: { x: number; y: number }) => {
     // Optimistic update for smooth dragging
     setDraggedNotes(prev => ({
       ...prev,
@@ -135,7 +131,7 @@ export const useNotes = (selectedDate?: Date) => {
     }));
   }, []);
 
-  const finalizeDrag = useCallback((id: string, position: { x: number; y: number }) => {
+  const finalizeDrag = useCallback((id: number, position: { x: number; y: number }) => {
     setAllNotes(prevNotes => {
       const updatedNotes = prevNotes.map(note => {
         if (note.id === id) {
@@ -154,7 +150,7 @@ export const useNotes = (selectedDate?: Date) => {
     });
   }, []);
 
-  const moveNoteToDate = useCallback((id: string, newDate: Date) => {
+  const moveNoteToDate = useCallback((id: number, newDate: Date) => {
     setIsUpdating(true);
     
     setAllNotes(prevNotes => {
@@ -176,7 +172,7 @@ export const useNotes = (selectedDate?: Date) => {
   }, []);
 
   // Function to refresh a specific note from localStorage
-  const refreshNoteFromStorage = useCallback((noteId: string) => {
+  const refreshNoteFromStorage = useCallback((noteId: number) => {
     try {
       const updatedNote = NotesStorage.getNote(noteId);
       if (updatedNote) {

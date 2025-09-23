@@ -20,14 +20,14 @@ import '../styles/note-card.css';
 interface NoteCardProps {
   note: Note;
   onUpdate: (note: Note) => void;
-  onDelete: (id: string) => void;
-  onDrag: (id: string, position: { x: number; y: number }) => void;
-  onDragEnd?: (id: string, position: { x: number; y: number }) => void;
-  onMoveToDate?: (noteId: string, newDate: Date) => void;
-  onRefreshFromStorage?: (noteId: string) => void;
+  onDelete: (id: number) => void;
+  onDrag: (id: number, position: { x: number; y: number }) => void;
+  onDragEnd?: (id: number, position: { x: number; y: number }) => void;
+  onMoveToDate?: (noteId: number, newDate: Date) => void;
+  onRefreshFromStorage?: (noteId: number) => void;
   isSelected?: boolean;
   onClearSelection?: () => void;
-  onNoteDetailStateChange?: (noteId: string, isOpen: boolean) => void;
+  onNoteDetailStateChange?: (noteId: number, isOpen: boolean) => void;
   zIndex: number;
   onBringToFront: () => void;
 }
@@ -43,7 +43,6 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
   const [showNoteDetail, setShowNoteDetail] = useState(false);
   const [displayContent, setDisplayContent] = useState(note.content);
   const [isContentTooLong, setIsContentTooLong] = useState(false);
-  const [isHovering, setIsHovering] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const taskTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -386,8 +385,6 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
         }),
       }}
       onMouseDown={onMouseDown}
-      onMouseEnter={() => setIsHovering(true)}
-      onMouseLeave={() => setIsHovering(false)}
       onContextMenu={handleContextMenu}
       onDoubleClick={(e) => e.stopPropagation()}
       onClick={(e) => {

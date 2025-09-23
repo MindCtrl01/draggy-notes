@@ -1,7 +1,7 @@
+import { BaseEntity } from './base-entity';
 import { NoteTask } from "./noteTask";
 
-export interface Note {
-  id: string;
+export interface Note extends BaseEntity {
   title: string;
   content: string;
   date: Date;
@@ -12,10 +12,8 @@ export interface Note {
     x: number;
     y: number;
   };
-  createdAt: Date;
-  updatedAt: Date;
   noteTasks?: NoteTask[];
   isTaskMode?: boolean;
   userId: number;
-  tagIds: string[];
+  tagIds: number[];
 }

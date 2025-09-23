@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Note } from '@/domains/note';
 import { NoteTask } from '@/domains/noteTask';
 import { Tag } from '@/domains/tag';
-import { createTask, toggleTaskCompletion, updateTaskText } from '@/helpers/task-manager';
+import { createTask, toggleTaskCompletion } from '@/helpers/task-manager';
 
 export const useNoteEditing = (
   note: Note,
@@ -94,22 +94,6 @@ export const useNoteEditing = (
       e.preventDefault();
       handleContentUndo();
     }
-  };
-
-  // Calculate effective content length considering line breaks as full lines
-  const calculateEffectiveLength = (text: string) => {
-    const lines = text.split('\n');
-    const avgCharsPerLine = 45; // Average characters per line in the card
-    let effectiveLength = 0;
-    
-    for (const line of lines) {
-      effectiveLength += line.length;
-      if (line !== lines[lines.length - 1]) { // Not the last line
-        effectiveLength += avgCharsPerLine;
-      }
-    }
-    
-    return effectiveLength;
   };
 
   // Custom setContent that tracks history

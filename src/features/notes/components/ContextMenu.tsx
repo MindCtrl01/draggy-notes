@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Calendar, ChevronUp, ChevronDown, ChevronRightIcon, ChevronLeftIcon, Eye } from 'lucide-react';
+import { ChevronRightIcon, ChevronLeftIcon, Eye } from 'lucide-react';
 
 interface ContextMenuProps {
   x: number;

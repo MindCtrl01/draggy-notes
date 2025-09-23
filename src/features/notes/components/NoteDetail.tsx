@@ -12,7 +12,7 @@ import { useNoteEditing } from '../hooks/use-note-editing';
 import { NoteTitle } from './NoteTitle';
 import { NoteTaskMode } from './NoteTaskMode';
 import { NoteContentMode } from './NoteContentMode';
-import { ANIMATION, NOTE_DETAIL, Z_INDEX } from '@/constants/ui-constants';
+import { ANIMATION } from '@/constants/ui-constants';
 import '../styles/note-card.css';
 
 interface NoteDetailProps {
@@ -20,8 +20,8 @@ interface NoteDetailProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdate: (note: Note) => void;
-  onMoveToDate?: (noteId: string, newDate: Date) => void;
-  onRefreshFromStorage?: (noteId: string) => void;
+  onMoveToDate?: (noteId: number, newDate: Date) => void;
+  onRefreshFromStorage?: (noteId: number) => void;
 }
 
 export const NoteDetail: React.FC<NoteDetailProps> = ({

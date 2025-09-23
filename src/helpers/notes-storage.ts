@@ -40,7 +40,7 @@ export class NotesStorage {
    * @param noteId - The ID of the note to retrieve
    * @returns The note or null if not found
    */
-  static getNote(noteId: string): Note | null {
+  static getNote(noteId: number): Note | null {
     try {
       const key = `${STORAGE_PREFIX}-${noteId}`;
       const noteData = localStorage.getItem(key);
@@ -91,7 +91,7 @@ export class NotesStorage {
    * Delete a note from localStorage
    * @param noteId - The ID of the note to delete
    */
-  static deleteNote(noteId: string): void {
+  static deleteNote(noteId: number): void {
     try {
       const key = `${STORAGE_PREFIX}-${noteId}`;
       localStorage.removeItem(key);
@@ -127,7 +127,7 @@ export class NotesStorage {
    * Get the list of note IDs from localStorage
    * @returns Array of note IDs
    */
-  private static getNotesList(): string[] {
+  private static getNotesList(): number[] {
     try {
       const listData = localStorage.getItem(NOTES_LIST_KEY);
       return listData ? JSON.parse(listData) : [];
@@ -142,7 +142,7 @@ export class NotesStorage {
    * @param noteId - The note ID to add or remove
    * @param action - Whether to add or remove the note ID
    */
-  private static updateNotesList(noteId: string, action: 'add' | 'remove'): void {
+  private static updateNotesList(noteId: number, action: 'add' | 'remove'): void {
     try {
       let noteIds = this.getNotesList();
       

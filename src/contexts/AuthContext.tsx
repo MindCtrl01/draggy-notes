@@ -1,9 +1,8 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useAuth } from '@/hooks/auth/use-auth';
-import { AuthUser, LoginRequest, RegisterRequest, AuthResponse } from '@/services/api';
 
 interface AuthContextType {
-  user: AuthUser | null;
+  user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (credentials: LoginRequest) => Promise<AuthResponse>;

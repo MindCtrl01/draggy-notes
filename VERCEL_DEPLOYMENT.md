@@ -98,8 +98,8 @@ const getApiBaseUrl = () => {
     return import.meta.env.VITE_API_BASE_URL || 'https://your-api-domain.vercel.app/api';
   }
   
-  // Development: Use local server
-  return import.meta.env.VITE_API_BASE_URL || 'http://localhost:5231/api';
+  // Development: Use local HTTPS server
+  return import.meta.env.VITE_API_BASE_URL || 'https://localhost:7060/api';
 };
 
 export const API_CONFIG = {
@@ -128,8 +128,8 @@ export const API_CONFIG = {
 
 ### **Development (.env.local)**
 ```bash
-VITE_API_BASE_URL=http://localhost:5231/api
-VITE_API_TIMEOUT=5000
+VITE_API_BASE_URL=https://localhost:7060/api
+VITE_API_TIMEOUT=10000
 ```
 
 ### **Production (Vercel Dashboard)**

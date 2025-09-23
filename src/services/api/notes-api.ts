@@ -1,121 +1,165 @@
-import { Note } from '@/domains/note';
-import { NoteTask } from '@/domains/noteTask';
 import { API_CONFIG } from '@/services/config/api';
-
-// API request helper
-async function apiRequest<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const url = `${API_CONFIG.BASE_URL}${endpoint}`;
-  
-  const config: RequestInit = {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    ...options,
-  };
-
-  try {
-    const response = await fetch(url, config);
-    
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status} ${response.statusText}`);
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('API Request failed:', error);
-    throw error;
-  }
-}
-
-// Note API interface for backend communication
-export interface CreateNoteRequest {
-  content: string;
-  color: string;
-  position: {
-    x: number;
-    y: number;
-  };
-}
-
-export interface UpdateNoteRequest {
-  content?: string;
-  color?: string;
-  position?: {
-    x: number;
-    y: number;
-  };
-}
-
-export interface NoteApiResponse {
-  id: string;
-  content: string;
-  color: string;
-  userId: number;
-  tagIds: string[];
-  isDisplayed: boolean;
-  isTaskMode: boolean;
-  noteTasks: NoteTask[];
-  title: string;
-  date: Date;
-  position: {
-    x: number;
-    y: number;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
+import { TokenManager } from '@/helpers/token-manager';
+import { ApiError, ApiResponse } from './models/api.model';
+import {
+  CreateNoteRequest,
+  UpdateNoteRequest,
+  GetNoteByIdRequest,
+  DeleteNoteRequest,
+  DuplicateNoteRequest,
+  GetNotesByColorRequest,
+  SearchNotesRequest,
+  BulkDeleteRequest,
+  NoteResponse,
+  HealthResponse
+} from './models/notes.model';
 
 // Notes API service
-export const notesApi = {
-  // GET /notes - Fetch all notes
-  async getAllNotes(): Promise<Note[]> {
-    const response = await apiRequest<NoteApiResponse[]>('/notes');
-    return response.map(apiNoteToNote);
-  },
+class NotesApi {
+  private readonly basePath = '/api/notes';
 
-  // POST /note - Create a new note
-  async createNote(noteData: CreateNoteRequest): Promise<Note> {
-    const response = await apiRequest<NoteApiResponse>('/note', {
+  // Helper method to make authenticated API requests
+  private async makeRequest<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<ApiResponse<T>> {
+    const token = TokenManager.getToken();
+    const url = `${API_CONFIG.BASE_URL}${endpoint}`;
+    
+    const config: RequestInit = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    try {
+      const response = await fetch(url, config);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new ApiError(
+          errorData.message || `API Error: ${response.status} ${response.statusText}`,
+          response.status,
+          errorData.code,
+          errorData.details
+        );
+      }
+      
+      return await response.json();
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      console.error('API Request failed:', error);
+      throw new ApiError('Network error occurred', 500);
+    }
+  }
+
+  // GET /api/notes - Fetch all notes
+  async getAllNotes(): Promise<NoteResponse[]> {
+    const response = await this.makeRequest<NoteResponse[]>(this.basePath, {
+      method: 'GET'
+    });
+    return response.data || [];
+  }
+
+  // POST /api/notes - Create a new note
+  async createNote(noteData: CreateNoteRequest): Promise<NoteResponse> {
+    const response = await this.makeRequest<NoteResponse>(this.basePath, {
       method: 'POST',
       body: JSON.stringify(noteData),
     });
-    return apiNoteToNote(response);
-  },
+    if (!response.data) {
+      throw new ApiError('No data returned from create note', 500);
+    }
+    return response.data;
+  }
 
-  // PUT /note/{id} - Update an existing note
-  async updateNote(id: string, noteData: UpdateNoteRequest): Promise<Note> {
-    const response = await apiRequest<NoteApiResponse>(`/note/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(noteData),
+  // GET /api/notes/{id} - Get note by ID
+  async getNoteById(request: GetNoteByIdRequest): Promise<NoteResponse> {
+    const response = await this.makeRequest<NoteResponse>(`${this.basePath}/${request.id}`, {
+      method: 'GET',
     });
-    return apiNoteToNote(response);
-  },
+    if (!response.data) {
+      throw new ApiError('Note not found', 404);
+    }
+    return response.data;
+  }
 
-  // DELETE /note/{id} - Delete a note
-  async deleteNote(id: string): Promise<void> {
-    await apiRequest<void>(`/note/${id}`, {
+  // PUT /api/notes/{id} - Update an existing note
+  async updateNote(request: UpdateNoteRequest): Promise<NoteResponse> {
+    const response = await this.makeRequest<NoteResponse>(`${this.basePath}/${request.id}`, {
+      method: 'PUT',
+      body: JSON.stringify(request),
+    });
+    if (!response.data) {
+      throw new ApiError('No data returned from update note', 500);
+    }
+    return response.data;
+  }
+
+  // DELETE /api/notes/{id} - Delete a note
+  async deleteNote(request: DeleteNoteRequest): Promise<void> {
+    await this.makeRequest<void>(`${this.basePath}/${request.id}`, {
       method: 'DELETE',
     });
-  },
-};
+  }
 
-// Helper function to convert API response to Note type
-function apiNoteToNote(apiNote: NoteApiResponse): Note {
-  return {
-    id: apiNote.id,
-    title: '',
-    date: apiNote.date,
-    isDisplayed: true,
-    userId: apiNote.userId,
-    tagIds: [],
-    content: apiNote.content,
-    color: apiNote.color,
-    position: apiNote.position,
-    createdAt: new Date(apiNote.createdAt),
-    updatedAt: new Date(apiNote.updatedAt),
-  };
+  // POST /api/notes/{id}/duplicate - Duplicate a note
+  async duplicateNote(request: DuplicateNoteRequest): Promise<NoteResponse> {
+    const response = await this.makeRequest<NoteResponse>(`${this.basePath}/${request.id}/duplicate`, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+    if (!response.data) {
+      throw new ApiError('No data returned from duplicate note', 500);
+    }
+    return response.data;
+  }
+
+  // GET /api/notes/color/{color} - Get notes by color
+  async getNotesByColor(request: GetNotesByColorRequest): Promise<NoteResponse[]> {
+    const response = await this.makeRequest<NoteResponse[]>(`${this.basePath}/color/${request.color}`, {
+      method: 'GET',
+    });
+    return response.data || [];
+  }
+
+  // GET /api/notes/search - Search notes
+  async searchNotes(request: SearchNotesRequest): Promise<NoteResponse[]> {
+    const queryParams = new URLSearchParams();
+    if (request.q) {
+      queryParams.append('q', request.q);
+    }
+    
+    const response = await this.makeRequest<NoteResponse[]>(`${this.basePath}/search?${queryParams}`, {
+      method: 'GET',
+    });
+    return response.data || [];
+  }
+
+  // DELETE /api/notes/bulk-delete - Bulk delete notes
+  async bulkDeleteNotes(request: BulkDeleteRequest): Promise<void> {
+    await this.makeRequest<void>(`${this.basePath}/bulk-delete`, {
+      method: 'DELETE',
+      body: JSON.stringify(request),
+    });
+  }
+
+  // GET /health - Health check
+  async getHealth(): Promise<HealthResponse> {
+    const response = await this.makeRequest<HealthResponse>('/health', {
+      method: 'GET'
+    });
+    if (!response.data) {
+      throw new ApiError('No health data returned', 500);
+    }
+    return response.data;
+  }
 }
+
+// Export singleton instance
+export const notesApi = new NotesApi();

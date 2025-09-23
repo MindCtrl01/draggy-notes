@@ -19,7 +19,7 @@ import { LAYOUT, DRAG, NOTE_CARD, Z_INDEX, ANIMATION } from '@/constants/ui-cons
 export const NotesCanvas = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showSearchSidebar, setShowSearchSidebar] = useState(false);
-  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+  const [selectedNoteId, setSelectedNoteId] = useState<number | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isAnyNoteDetailOpen, setIsAnyNoteDetailOpen] = useState(false);
   
@@ -154,7 +154,7 @@ export const NotesCanvas = () => {
     }, ANIMATION.SCROLL_TO_NOTE_DELAY);
   };
 
-  const handleNoteDetailStateChange = useCallback((noteId: string, isOpen: boolean) => {
+  const handleNoteDetailStateChange = useCallback((noteId: number, isOpen: boolean) => {
     setIsAnyNoteDetailOpen(isOpen);
   }, []);
 
@@ -178,7 +178,7 @@ export const NotesCanvas = () => {
   }, [notes]);
 
   // Function to bring a note to the front
-  const bringNoteToFront = useCallback((noteId: string) => {
+  const bringNoteToFront = useCallback((noteId: number) => {
     setNoteZIndices(prev => ({
       ...prev,
       [noteId]: maxZIndex

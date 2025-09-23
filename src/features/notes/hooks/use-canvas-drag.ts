@@ -37,7 +37,6 @@ export const useCanvasDrag = () => {
     // Only allow horizontal dragging, ignore vertical
     containerRef.current.scrollLeft = startScrollPosition.x - deltaX;
     // Keep vertical scroll position unchanged
-    // containerRef.current.scrollTop = startScrollPosition.y - deltaY;
   }, [isDragging, startPosition, startScrollPosition]);
 
   const handleMouseUp = useCallback(() => {

@@ -1,82 +1,145 @@
 import { API_CONFIG } from '@/services/config/api';
 import { TokenManager } from '@/helpers/token-manager';
-import { AuthResponse, LoginRequest, RegisterRequest, AuthUser } from './models/auth.model';
-import { ApiError } from './models/api.model';
+import { ApiError, ApiResponse } from './models/api.model';
+import {
+  LoginRequest,
+  RegisterRequest,
+  GoogleLoginRequest,
+  LogoutRequest,
+  ForgotPasswordRequest,
+  ResetPasswordRequest,
+  RefreshTokenRequest,
+  AuthenticationResponse,
+  UserResponse,
+  CreateUserRequest,
+  UpdateUserRequest,
+  GetUserByIdRequest,
+  DeleteUserRequest,
+  AuthResponse,
+  AuthUser
+} from './models/auth.model';
 
 // Authentication API service
 class AuthApi {
-  private readonly basePath = '/auth';
+  private readonly authBasePath = '/api/auth';
+  private readonly usersBasePath = '/api/users';
 
-  // Login user
-  async login(credentials: LoginRequest): Promise<AuthResponse> {
-    const response = await fetch(`${API_CONFIG.BASE_URL}${this.basePath}/login`, {
-      method: 'POST',
+  // Helper method to make API requests
+  private async makeRequest<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<ApiResponse<T>> {
+    const token = TokenManager.getToken();
+    const url = `${API_CONFIG.BASE_URL}${endpoint}`;
+    
+    const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+        ...options.headers,
       },
+      ...options,
+    };
+
+    try {
+      const response = await fetch(url, config);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new ApiError(
+          errorData.message || `API Error: ${response.status} ${response.statusText}`,
+          response.status,
+          errorData.code,
+          errorData.details
+        );
+      }
+      
+      return await response.json();
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      console.error('API Request failed:', error);
+      throw new ApiError('Network error occurred', 500);
+    }
+  }
+
+  // POST /api/auth/login - Login user
+  async login(credentials: LoginRequest): Promise<AuthenticationResponse> {
+    const response = await this.makeRequest<AuthenticationResponse>(`${this.authBasePath}/login`, {
+      method: 'POST',
       body: JSON.stringify(credentials),
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new ApiError(
-        errorData.message || 'Login failed',
-        response.status,
-        errorData.code,
-        errorData.details
-      );
+    if (!response.data) {
+      throw new ApiError('No authentication data returned', 500);
     }
 
-    const authResponse: AuthResponse = await response.json();
-    
     // Store tokens
-    TokenManager.setToken(authResponse.tokens.accessToken);
-    TokenManager.setRefreshToken(authResponse.tokens.refreshToken);
+    if (response.data.token) {
+      TokenManager.setToken(response.data.token);
+    }
+    if (response.data.refreshToken) {
+      TokenManager.setRefreshToken(response.data.refreshToken);
+    }
 
-    return authResponse;
+    return response.data;
   }
 
-  // Register new user
-  async register(userData: RegisterRequest): Promise<AuthResponse> {
-    const response = await fetch(`${API_CONFIG.BASE_URL}${this.basePath}/register`, {
+  // POST /api/auth/register - Register new user
+  async register(userData: RegisterRequest): Promise<AuthenticationResponse> {
+    const response = await this.makeRequest<AuthenticationResponse>(`${this.authBasePath}/register`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify(userData),
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new ApiError(
-        errorData.message || 'Registration failed',
-        response.status,
-        errorData.code,
-        errorData.details
-      );
+    if (!response.data) {
+      throw new ApiError('No authentication data returned', 500);
     }
 
-    const authResponse: AuthResponse = await response.json();
-    
     // Store tokens
-    TokenManager.setToken(authResponse.tokens.accessToken);
-    TokenManager.setRefreshToken(authResponse.tokens.refreshToken);
+    if (response.data.token) {
+      TokenManager.setToken(response.data.token);
+    }
+    if (response.data.refreshToken) {
+      TokenManager.setRefreshToken(response.data.refreshToken);
+    }
 
-    return authResponse;
+    return response.data;
   }
 
-  // Logout user
+  // POST /api/auth/google - Google login
+  async googleLogin(request: GoogleLoginRequest): Promise<AuthenticationResponse> {
+    const response = await this.makeRequest<AuthenticationResponse>(`${this.authBasePath}/google`, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+
+    if (!response.data) {
+      throw new ApiError('No authentication data returned', 500);
+    }
+
+    // Store tokens
+    if (response.data.token) {
+      TokenManager.setToken(response.data.token);
+    }
+    if (response.data.refreshToken) {
+      TokenManager.setRefreshToken(response.data.refreshToken);
+    }
+
+    return response.data;
+  }
+
+  // POST /api/auth/logout - Logout user
   async logout(): Promise<void> {
-    const refreshToken = TokenManager.getRefreshToken();
+    const token = TokenManager.getToken();
     
-    if (refreshToken) {
+    if (token) {
       try {
-        await fetch(`${API_CONFIG.BASE_URL}${this.basePath}/logout`, {
+        const request: LogoutRequest = { token };
+        await this.makeRequest<void>(`${this.authBasePath}/logout`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ refreshToken }),
+          body: JSON.stringify(request),
         });
       } catch (error) {
         // Even if logout request fails, clear local tokens
@@ -88,36 +151,99 @@ class AuthApi {
     TokenManager.clearTokens();
   }
 
-  // Get current user profile
-  async getCurrentUser(): Promise<AuthUser> {
-    const token = TokenManager.getToken();
-    
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
+  // POST /api/auth/forgot-password - Request password reset
+  async forgotPassword(request: ForgotPasswordRequest): Promise<void> {
+    await this.makeRequest<void>(`${this.authBasePath}/forgot-password`, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
 
-    const response = await fetch(`${API_CONFIG.BASE_URL}${this.basePath}/me`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
+  // POST /api/auth/reset-password - Reset password with token
+  async resetPassword(request: ResetPasswordRequest): Promise<void> {
+    await this.makeRequest<void>(`${this.authBasePath}/reset-password`, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  // POST /api/auth/refresh-token - Refresh authentication token
+  async refreshToken(request: RefreshTokenRequest): Promise<AuthenticationResponse> {
+    const response = await this.makeRequest<AuthenticationResponse>(`${this.authBasePath}/refresh-token`, {
+      method: 'POST',
+      body: JSON.stringify(request),
     });
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        TokenManager.clearTokens();
-        throw new Error('Authentication expired. Please login again.');
-      }
-      
-      const errorData = await response.json().catch(() => ({}));
-      throw new ApiError(
-        errorData.message || 'Failed to get user profile',
-        response.status,
-        errorData.code,
-        errorData.details
-      );
+    if (!response.data) {
+      throw new ApiError('No authentication data returned', 500);
     }
 
-    return await response.json();
+    // Store new tokens
+    if (response.data.token) {
+      TokenManager.setToken(response.data.token);
+    }
+    if (response.data.refreshToken) {
+      TokenManager.setRefreshToken(response.data.refreshToken);
+    }
+
+    return response.data;
+  }
+
+  // POST /api/users - Create user
+  async createUser(request: CreateUserRequest): Promise<UserResponse> {
+    const response = await this.makeRequest<UserResponse>(this.usersBasePath, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+
+    if (!response.data) {
+      throw new ApiError('No user data returned', 500);
+    }
+
+    return response.data;
+  }
+
+  // GET /api/users - Get all users
+  async getUsers(): Promise<UserResponse[]> {
+    const response = await this.makeRequest<UserResponse[]>(this.usersBasePath, {
+      method: 'GET',
+    });
+
+    return response.data || [];
+  }
+
+  // GET /api/users/{id} - Get user by ID
+  async getUserById(request: GetUserByIdRequest): Promise<UserResponse> {
+    const response = await this.makeRequest<UserResponse>(`${this.usersBasePath}/${request.id}`, {
+      method: 'GET',
+    });
+
+    if (!response.data) {
+      throw new ApiError('User not found', 404);
+    }
+
+    return response.data;
+  }
+
+  // PUT /api/users/{id} - Update user
+  async updateUser(request: UpdateUserRequest): Promise<UserResponse> {
+    const response = await this.makeRequest<UserResponse>(`${this.usersBasePath}/${request.id}`, {
+      method: 'PUT',
+      body: JSON.stringify(request),
+    });
+
+    if (!response.data) {
+      throw new ApiError('No user data returned', 500);
+    }
+
+    return response.data;
+  }
+
+  // DELETE /api/users/{id} - Delete user
+  async deleteUser(request: DeleteUserRequest): Promise<void> {
+    await this.makeRequest<void>(`${this.usersBasePath}/${request.id}`, {
+      method: 'DELETE',
+    });
   }
 
   // Check if user is authenticated
@@ -138,8 +264,12 @@ class AuthApi {
       const payload = JSON.parse(atob(token.split('.')[1]));
       return {
         id: payload.sub || payload.userId,
+        username: payload.username || payload.name,
+        firstName: payload.firstName || '',
+        lastName: payload.lastName || '',
         email: payload.email,
-        name: payload.name,
+        phoneNumber: payload.phoneNumber,
+        isActive: payload.isActive !== false,
         roles: payload.roles || [],
       };
     } catch {
@@ -147,76 +277,7 @@ class AuthApi {
     }
   }
 
-  // Change password
-  async changePassword(oldPassword: string, newPassword: string): Promise<void> {
-    const token = TokenManager.getToken();
-    
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-
-    const response = await fetch(`${API_CONFIG.BASE_URL}${this.basePath}/change-password`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ oldPassword, newPassword }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new ApiError(
-        errorData.message || 'Failed to change password',
-        response.status,
-        errorData.code,
-        errorData.details
-      );
-    }
-  }
-
-  // Request password reset
-  async requestPasswordReset(email: string): Promise<void> {
-    const response = await fetch(`${API_CONFIG.BASE_URL}${this.basePath}/forgot-password`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new ApiError(
-        errorData.message || 'Failed to request password reset',
-        response.status,
-        errorData.code,
-        errorData.details
-      );
-    }
-  }
-
-  // Reset password with token
-  async resetPassword(token: string, newPassword: string): Promise<void> {
-    const response = await fetch(`${API_CONFIG.BASE_URL}${this.basePath}/reset-password`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ token, newPassword }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new ApiError(
-        errorData.message || 'Failed to reset password',
-        response.status,
-        errorData.code,
-        errorData.details
-      );
-    }
-  }
-
+  // Legacy method for backward compatibility
   async refreshAuthToken(): Promise<string> {
     const refreshToken = TokenManager.getRefreshToken();
     
@@ -224,26 +285,16 @@ class AuthApi {
       throw new Error('No refresh token available');
     }
   
-    const response = await fetch(`${API_CONFIG.BASE_URL}/auth/refresh`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ refreshToken }),
-    });
-  
-    if (!response.ok) {
-      throw new Error('Failed to refresh token');
-    }
-  
-    const data = await response.json();
-    TokenManager.setToken(data.accessToken);
+    const request: RefreshTokenRequest = { refreshToken };
+    const authResponse = await this.refreshToken(request);
     
-    if (data.refreshToken) {
-      TokenManager.setRefreshToken(data.refreshToken);
-    }
-  
-    return data.accessToken;
+    return authResponse.token || '';
+  }
+
+  // Legacy methods for backward compatibility
+  async requestPasswordReset(email: string): Promise<void> {
+    const request: ForgotPasswordRequest = { email };
+    await this.forgotPassword(request);
   }
 }
 

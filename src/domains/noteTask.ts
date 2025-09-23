@@ -1,10 +1,10 @@
-export interface NoteTask {
-    id: number;
+import { BaseEntity } from './base-entity';
+
+export interface NoteTask extends BaseEntity {
     taskId: string;
     text: string;
     completed: boolean;
-    createdAt: Date;
     userId: number;
     noteId: number;
-    tagIds: string[];
-  }
+    tagIds: number[];
+}

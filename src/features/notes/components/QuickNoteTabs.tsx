@@ -6,7 +6,7 @@ import { Eye, EyeOff } from 'lucide-react';
 interface QuickNoteTabsProps {
   notes: Note[];
   onNoteSelect: (note: Note) => void;
-  selectedNoteId?: string | null;
+  selectedNoteId?: number | null;
 }
 
 export const QuickNoteTabs = ({ notes, onNoteSelect, selectedNoteId }: QuickNoteTabsProps) => {

@@ -1,14 +1,12 @@
-// API Configuration for Vercel deployment
-// Note: API calls are temporarily disabled
+// API Configuration for local development and deployment
 const getApiBaseUrl = () => {
-  // Return a placeholder URL since API is disabled
   if (import.meta.env.PROD) {
-    // Production: Use environment variable or placeholder
-    return import.meta.env.VITE_API_BASE_URL || 'https://api.placeholder.com/api';
+    // Production: Use environment variable
+    return import.meta.env.VITE_API_BASE_URL || 'https://your-production-api.com/api';
   }
   
-  // Development: Use local development server or placeholder
-  return import.meta.env.VITE_API_BASE_URL || 'http://localhost:5231/api';
+  // Development: Use local HTTPS development server
+  return import.meta.env.VITE_API_BASE_URL || 'https://localhost:7060/api';
 };
 
 export const API_CONFIG = {
