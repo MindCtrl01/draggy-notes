@@ -19,7 +19,7 @@ import { LAYOUT, DRAG, NOTE_CARD, Z_INDEX, ANIMATION } from '@/constants/ui-cons
 export const NotesCanvas = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showSearchSidebar, setShowSearchSidebar] = useState(false);
-  const [selectedNoteId, setSelectedNoteId] = useState<number | null>(null);
+  const [selectedNoteUuid, setSelectedNoteUuid] = useState<string | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isAnyNoteDetailOpen, setIsAnyNoteDetailOpen] = useState(false);
   
@@ -110,12 +110,12 @@ export const NotesCanvas = () => {
       setSelectedDate(new Date(note.date));
     }
     
-    setSelectedNoteId(note.id);
+    setSelectedNoteUuid(note.uuid);
     
     setShowSearchSidebar(false);
     
     setTimeout(() => {
-      const noteElement = document.querySelector(`[data-note-id="${note.id}"]`);
+      const noteElement = document.querySelector(`[data-note-uuid="${note.uuid}"]`);
       if (noteElement) {
         noteElement.scrollIntoView({ 
           behavior: 'smooth', 
@@ -132,11 +132,11 @@ export const NotesCanvas = () => {
       setSelectedDate(new Date(note.date));
     }
     
-    setSelectedNoteId(note.id);
+    setSelectedNoteUuid(note.uuid);
     
     // Use setTimeout to ensure the date change has been processed
     setTimeout(() => {
-      const noteElement = document.querySelector(`[data-note-id="${note.id}"]`);
+      const noteElement = document.querySelector(`[data-note-uuid="${note.uuid}"]`);
       if (noteElement && containerRef.current) {
         // Get the note's position relative to the canvas
         const noteRect = noteElement.getBoundingClientRect();
@@ -154,7 +154,7 @@ export const NotesCanvas = () => {
     }, ANIMATION.SCROLL_TO_NOTE_DELAY);
   };
 
-  const handleNoteDetailStateChange = useCallback((noteId: number, isOpen: boolean) => {
+  const handleNoteDetailStateChange = useCallback((noteUuid: string, isOpen: boolean) => {
     setIsAnyNoteDetailOpen(isOpen);
   }, []);
 
@@ -165,11 +165,11 @@ export const NotesCanvas = () => {
     
     notes.forEach((note) => {
       // Keep existing z-index if note already has one, otherwise assign new incremental z-index
-      if (noteZIndices[note.id]) {
-        newZIndices[note.id] = noteZIndices[note.id];
-        currentZIndex = Math.max(currentZIndex, (noteZIndices[note.id] || Z_INDEX.NOTE_BASE) + 1);
+      if (noteZIndices[note.uuid]) {
+        newZIndices[note.uuid] = noteZIndices[note.uuid];
+        currentZIndex = Math.max(currentZIndex, (noteZIndices[note.uuid] || Z_INDEX.NOTE_BASE) + 1);
       } else {
-        newZIndices[note.id] = currentZIndex++;
+        newZIndices[note.uuid] = currentZIndex++;
       }
     });
     
@@ -178,10 +178,10 @@ export const NotesCanvas = () => {
   }, [notes]);
 
   // Function to bring a note to the front
-  const bringNoteToFront = useCallback((noteId: number) => {
+  const bringNoteToFront = useCallback((noteUuid: string) => {
     setNoteZIndices(prev => ({
       ...prev,
-      [noteId]: maxZIndex
+      [noteUuid]: maxZIndex
     }));
     setMaxZIndex(prev => prev + 1);
   }, [maxZIndex]);
@@ -264,7 +264,7 @@ export const NotesCanvas = () => {
           <QuickNoteTabs
             notes={notes}
             onNoteSelect={handleQuickNoteSelect}
-            selectedNoteId={selectedNoteId}
+            selectedNoteUuid={selectedNoteUuid}
           />
         </div>
       </div>
@@ -345,7 +345,7 @@ export const NotesCanvas = () => {
           <div className={showSearchSidebar ? 'pointer-events-none' : ''}>
             {notes.map(note => (
               <NoteCard
-                key={note.id}
+                key={note.uuid}
                 note={note}
                 onUpdate={updateNote}
                 onDelete={deleteNote}
@@ -353,11 +353,11 @@ export const NotesCanvas = () => {
                 onDragEnd={showSearchSidebar ? undefined : finalizeDrag}
                 onMoveToDate={moveNoteToDate}
                 onRefreshFromStorage={refreshNoteFromStorage}
-                isSelected={selectedNoteId === note.id}
-                onClearSelection={() => setSelectedNoteId(null)}
+                isSelected={selectedNoteUuid === note.uuid}
+                onClearSelection={() => setSelectedNoteUuid(null)}
                 onNoteDetailStateChange={handleNoteDetailStateChange}
-                zIndex={noteZIndices[note.id] || 1}
-                onBringToFront={() => bringNoteToFront(note.id)}
+                zIndex={noteZIndices[note.uuid] || 1}
+                onBringToFront={() => bringNoteToFront(note.uuid)}
               />
             ))}
           </div>

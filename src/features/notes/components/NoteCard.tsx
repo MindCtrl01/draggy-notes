@@ -20,14 +20,14 @@ import '../styles/note-card.css';
 interface NoteCardProps {
   note: Note;
   onUpdate: (note: Note) => void;
-  onDelete: (id: number) => void;
-  onDrag: (id: number, position: { x: number; y: number }) => void;
-  onDragEnd?: (id: number, position: { x: number; y: number }) => void;
-  onMoveToDate?: (noteId: number, newDate: Date) => void;
-  onRefreshFromStorage?: (noteId: number) => void;
+  onDelete: (uuid: string) => void;
+  onDrag: (uuid: string, position: { x: number; y: number }) => void;
+  onDragEnd?: (uuid: string, position: { x: number; y: number }) => void;
+  onMoveToDate?: (noteUuid: string, newDate: Date) => void;
+  onRefreshFromStorage?: (noteUuid: string) => void;
   isSelected?: boolean;
   onClearSelection?: () => void;
-  onNoteDetailStateChange?: (noteId: number, isOpen: boolean) => void;
+  onNoteDetailStateChange?: (noteUuid: string, isOpen: boolean) => void;
   zIndex: number;
   onBringToFront: () => void;
 }
@@ -44,7 +44,7 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
   const [displayContent, setDisplayContent] = useState(note.content);
   const [isContentTooLong, setIsContentTooLong] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
-  const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const taskTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   
@@ -76,8 +76,8 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
 
 
   const { isDragging, handleMouseDown } = useNoteDrag(
-    (position) => onDrag(note.id, position),
-    (position) => onDragEnd?.(note.id, position),
+    (position) => onDrag(note.uuid, position),
+    (position) => onDragEnd?.(note.uuid, position),
     isEditingTitle || isEditingContent
   );
 
@@ -216,10 +216,10 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
 
   // Initialize selected tags from note's existing tags
   useEffect(() => {
-    if (note.tagIds && note.tagIds.length > 0) {
-      const existingTags = note.tagIds.map(id => {
+    if (note.tagUuids && note.tagUuids.length > 0) {
+      const existingTags = note.tagUuids.map(uuid => {
         const allTags = [...TagManager.getAllTags(note.userId || -1)];
-        return allTags.find(tag => tag.id === id);
+        return allTags.find(tag => tag.uuid === uuid);
       }).filter(Boolean) as Tag[];
       setSelectedTags(existingTags);
       updateTags(existingTags);
@@ -227,16 +227,16 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
       setSelectedTags([]);
       updateTags([]);
     }
-  }, [note.id, note.tagIds, note.userId, updateTags]);
+  }, [note.uuid, note.tagUuids, note.userId, updateTags]);
 
   // Handle tag changes
   const handleTagsChange = (newTags: Tag[]) => {
     setSelectedTags(newTags);
     updateTags(newTags);
-    const newTagIds = newTags.map(tag => tag.id);
+    const newTagUuids = newTags.map(tag => tag.uuid);
     onUpdate({
       ...note,
-      tagIds: newTagIds,
+      tagUuids: newTagUuids,
       updatedAt: new Date()
     });
   };
@@ -259,7 +259,7 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
     if (onMoveToDate) {
       const currentDate = new Date(note.date);
       currentDate.setDate(currentDate.getDate() + 1);
-      onMoveToDate(note.id, currentDate);
+      onMoveToDate(note.uuid, currentDate);
     }
   };
 
@@ -267,19 +267,19 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
     if (onMoveToDate) {
       const currentDate = new Date(note.date);
       currentDate.setDate(currentDate.getDate() - 1);
-      onMoveToDate(note.id, currentDate);
+      onMoveToDate(note.uuid, currentDate);
     }
   };
 
   const handleViewDetail = () => {
     onBringToFront();
     setShowNoteDetail(true);
-    onNoteDetailStateChange?.(note.id, true);
+    onNoteDetailStateChange?.(note.uuid, true);
   };
 
   const handleCloseNoteDetail = () => {
     setShowNoteDetail(false);
-    onNoteDetailStateChange?.(note.id, false);
+    onNoteDetailStateChange?.(note.uuid, false);
   };
 
   // Auto-resize textarea to fit content
@@ -331,16 +331,16 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
     }
   };
 
-  const handleEditTask = (taskId: number, newText: string) => {
-    updateTask(taskId, { text: newText.trim() });
+  const handleEditTask = (taskUuid: string, newText: string) => {
+    updateTask(taskUuid, { text: newText.trim() });
     setEditingTaskId(null);
   };
 
-  const handleTaskEditKeyDown = (e: React.KeyboardEvent, taskId: number) => {
+  const handleTaskEditKeyDown = (e: React.KeyboardEvent, taskUuid: string) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       const target = e.target as HTMLTextAreaElement;
-      handleEditTask(taskId, target.value);
+      handleEditTask(taskUuid, target.value);
     } else if (e.key === 'Escape') {
       setEditingTaskId(null);
     }
@@ -361,7 +361,7 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
       />
     <div
       ref={cardRef}
-      data-note-id={note.id}
+      data-note-uuid={note.uuid}
       className={cn(
         'note-card',
         isDragging && 'dragging',
@@ -409,7 +409,7 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
           onTitleKeyDown={handleTitleKeyDown}
           onStartEditingTitle={handleStartEditingTitle}
           onTogglePin={togglePin}
-          onDelete={() => onDelete(note.id)}
+          onDelete={() => onDelete(note.uuid)}
           onTagsChange={handleTagsChange}
         />
         

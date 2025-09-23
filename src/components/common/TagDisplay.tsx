@@ -37,14 +37,14 @@ export const TagDisplay: React.FC<TagDisplayProps> = ({
     if (tagInput.trim()) {
       const allSuggestions = TagManager.getTagSuggestions(tagInput.trim(), userId);
       const filteredSuggestions = allSuggestions.filter(suggestion => 
-        !tags.some(tag => tag.id === suggestion.id)
+        !tags.some(tag => tag.uuid === suggestion.uuid)
       );
       setSuggestions(filteredSuggestions);
       setSelectedSuggestionIndex(0);
     } else {
       const defaultSuggestions = TagManager.getTagSuggestions('', userId);
       const filteredSuggestions = defaultSuggestions.filter(suggestion => 
-        !tags.some(tag => tag.id === suggestion.id)
+        !tags.some(tag => tag.uuid === suggestion.uuid)
       );
       setSuggestions(filteredSuggestions);
       setSelectedSuggestionIndex(0);
@@ -72,7 +72,7 @@ export const TagDisplay: React.FC<TagDisplayProps> = ({
 
     const defaultSuggestions = TagManager.getTagSuggestions('', userId);
     const filteredSuggestions = defaultSuggestions.filter(suggestion => 
-      !tags.some(tag => tag.id === suggestion.id)
+      !tags.some(tag => tag.uuid === suggestion.uuid)
     );
     setSuggestions(filteredSuggestions);
     setSelectedSuggestionIndex(0);
@@ -120,7 +120,7 @@ export const TagDisplay: React.FC<TagDisplayProps> = ({
   const selectTag = (tag: Tag) => {
     const newTags = [...tags, tag];
     onTagsChange?.(newTags);
-    TagManager.incrementTagUsage(tag.id, userId);
+    TagManager.incrementTagUsage(tag.uuid, userId);
     handleCancelAdd();
   };
 
@@ -133,7 +133,7 @@ export const TagDisplay: React.FC<TagDisplayProps> = ({
 
   const handleRemoveTag = (tagToRemove: Tag) => {
     if (readOnly) return;
-    const newTags = tags.filter(tag => tag.id !== tagToRemove.id);
+    const newTags = tags.filter(tag => tag.uuid !== tagToRemove.uuid);
     onTagsChange?.(newTags);
   };
 
@@ -146,7 +146,7 @@ export const TagDisplay: React.FC<TagDisplayProps> = ({
       {/* Existing tags */}
       {tags.map((tag) => (
         <span
-          key={tag.id}
+          key={tag.uuid}
           className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full border border-blue-200 dark:border-blue-700 group max-w-60"
           title={`Tag: ${tag.name}${tag.usageCount ? ` (used ${tag.usageCount} times)` : ''}`}
         >

@@ -1,15 +1,15 @@
 import { Task } from '@/domains/noteTask';
 
 export const createTask = (text: string): Task => {
-  const id = crypto.randomUUID();
+  const uuid = crypto.randomUUID();
   return {
-    id,
-    taskId: id, // Use the same ID for taskId
+    uuid,
+    taskId: uuid, // Use the same UUID for taskId
     text: text.trim(),
     completed: false,
     createdAt: new Date(),
     userId: -1, // Default userId
-    tagIds: [], // Will be set by the calling function
+    tagUuids: [], // Will be set by the calling function
   };
 };
 

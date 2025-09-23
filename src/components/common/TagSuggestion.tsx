@@ -90,7 +90,7 @@ export const TagSuggestion = ({
       <div className="p-1">
         {suggestions.map((tag, index) => (
           <div
-            key={tag.id}
+            key={tag.uuid}
             className={`px-3 py-2 cursor-pointer rounded text-sm flex items-center gap-2 ${
               index === selectedIndex
                 ? 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100'

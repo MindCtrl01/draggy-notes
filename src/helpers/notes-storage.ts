@@ -16,33 +16,33 @@ export class NotesStorage {
    */
   static saveNote(note: Note): void {
     try {
-      const key = `${STORAGE_PREFIX}-${note.id}`;
+      const key = `${STORAGE_PREFIX}-${note.uuid}`;
       const noteData = {
         ...note,
         date: note.date.toISOString(),
         createdAt: note.createdAt.toISOString(),
         updatedAt: note.updatedAt.toISOString(),
         userId: note.userId || -1, // Default to -1 if not set
-        tagIds: note.tagIds || [], // Default to empty array if not set
+        tagUuids: note.tagUuids || [], // Default to empty array if not set
         isPinned: note.isPinned || false, // Default to false if not set
       };
       localStorage.setItem(key, JSON.stringify(noteData));
       
       // Update the notes list
-      this.updateNotesList(note.id, 'add');
+      this.updateNotesList(note.uuid, 'add');
     } catch (error) {
       console.error('Failed to save note to localStorage:', error);
     }
   }
 
   /**
-   * Retrieve a note from localStorage by ID
-   * @param noteId - The ID of the note to retrieve
+   * Retrieve a note from localStorage by UUID
+   * @param noteUuid - The UUID of the note to retrieve
    * @returns The note or null if not found
    */
-  static getNote(noteId: number): Note | null {
+  static getNote(noteUuid: string): Note | null {
     try {
-      const key = `${STORAGE_PREFIX}-${noteId}`;
+      const key = `${STORAGE_PREFIX}-${noteUuid}`;
       const noteData = localStorage.getItem(key);
       
       if (!noteData) return null;
@@ -54,7 +54,7 @@ export class NotesStorage {
         createdAt: new Date(parsed.createdAt),
         updatedAt: new Date(parsed.updatedAt),
         userId: parsed.userId || -1, // Default to -1 if not set
-        tagIds: parsed.tagIds || [], // Default to empty array if not set
+        tagUuids: parsed.tagUuids || [], // Default to empty array if not set
         isPinned: parsed.isPinned || false, // Default to false if not set
       };
     } catch (error) {
@@ -69,11 +69,11 @@ export class NotesStorage {
    */
   static getAllNotes(): Note[] {
     try {
-      const noteIds = this.getNotesList();
+      const noteUuids = this.getNotesList();
       const notes: Note[] = [];
       
-      for (const noteId of noteIds) {
-        const note = this.getNote(noteId);
+      for (const noteUuid of noteUuids) {
+        const note = this.getNote(noteUuid);
         if (note) {
           notes.push(note);
         }
@@ -89,15 +89,15 @@ export class NotesStorage {
 
   /**
    * Delete a note from localStorage
-   * @param noteId - The ID of the note to delete
+   * @param noteUuid - The UUID of the note to delete
    */
-  static deleteNote(noteId: number): void {
+  static deleteNote(noteUuid: string): void {
     try {
-      const key = `${STORAGE_PREFIX}-${noteId}`;
+      const key = `${STORAGE_PREFIX}-${noteUuid}`;
       localStorage.removeItem(key);
       
       // Update the notes list
-      this.updateNotesList(noteId, 'remove');
+      this.updateNotesList(noteUuid, 'remove');
     } catch (error) {
       console.error('Failed to delete note from localStorage:', error);
     }
@@ -108,11 +108,11 @@ export class NotesStorage {
    */
   static clearAllNotes(): void {
     try {
-      const noteIds = this.getNotesList();
+      const noteUuids = this.getNotesList();
       
       // Remove each note
-      for (const noteId of noteIds) {
-        const key = `${STORAGE_PREFIX}-${noteId}`;
+      for (const noteUuid of noteUuids) {
+        const key = `${STORAGE_PREFIX}-${noteUuid}`;
         localStorage.removeItem(key);
       }
       
@@ -124,10 +124,10 @@ export class NotesStorage {
   }
 
   /**
-   * Get the list of note IDs from localStorage
-   * @returns Array of note IDs
+   * Get the list of note UUIDs from localStorage
+   * @returns Array of note UUIDs
    */
-  private static getNotesList(): number[] {
+  private static getNotesList(): string[] {
     try {
       const listData = localStorage.getItem(NOTES_LIST_KEY);
       return listData ? JSON.parse(listData) : [];
@@ -139,22 +139,22 @@ export class NotesStorage {
 
   /**
    * Update the notes list in localStorage
-   * @param noteId - The note ID to add or remove
-   * @param action - Whether to add or remove the note ID
+   * @param noteUuid - The note UUID to add or remove
+   * @param action - Whether to add or remove the note UUID
    */
-  private static updateNotesList(noteId: number, action: 'add' | 'remove'): void {
+  private static updateNotesList(noteUuid: string, action: 'add' | 'remove'): void {
     try {
-      let noteIds = this.getNotesList();
+      let noteUuids = this.getNotesList();
       
       if (action === 'add') {
-        if (!noteIds.includes(noteId)) {
-          noteIds.push(noteId);
+        if (!noteUuids.includes(noteUuid)) {
+          noteUuids.push(noteUuid);
         }
       } else if (action === 'remove') {
-        noteIds = noteIds.filter(id => id !== noteId);
+        noteUuids = noteUuids.filter(uuid => uuid !== noteUuid);
       }
       
-      localStorage.setItem(NOTES_LIST_KEY, JSON.stringify(noteIds));
+      localStorage.setItem(NOTES_LIST_KEY, JSON.stringify(noteUuids));
     } catch (error) {
       console.error('Failed to update notes list in localStorage:', error);
     }

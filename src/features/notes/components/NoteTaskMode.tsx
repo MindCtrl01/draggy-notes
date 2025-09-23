@@ -8,7 +8,7 @@ import { TASK_MODE, TEXT } from '@/constants/ui-constants';
 interface NoteTaskModeProps {
   tasks: NoteTask[];
   newTaskText: string;
-  editingTaskId: number | null;
+  editingTaskId: string | null;
   taskTextareaRef: React.RefObject<HTMLTextAreaElement>;
   taskColors: {
     taskBgColor: string;
@@ -24,11 +24,11 @@ interface NoteTaskModeProps {
   onNewTaskTextChange: (value: string) => void;
   onAddTask: () => void;
   onTaskKeyDown: (e: React.KeyboardEvent) => void;
-  onToggleTask: (taskId: number) => void;
-  onEditTask: (taskId: number, newText: string) => void;
-  onDeleteTask: (taskId: number) => void;
-  onStartEditingTask: (taskId: number) => void;
-  onTaskEditKeyDown: (e: React.KeyboardEvent, taskId: number) => void;
+  onToggleTask: (taskUuid: string) => void;
+  onEditTask: (taskUuid: string, newText: string) => void;
+  onDeleteTask: (taskUuid: string) => void;
+  onStartEditingTask: (taskUuid: string) => void;
+  onTaskEditKeyDown: (e: React.KeyboardEvent, taskUuid: string) => void;
   isDetail?: boolean;
   className?: string;
 }
@@ -99,12 +99,12 @@ export const NoteTaskMode: React.FC<NoteTaskModeProps> = ({
         }}
       >
         {tasks?.map((task) => (
-          <div key={task.id} className="task-item-container">
+          <div key={task.uuid} className="task-item-container">
             <button
               className={cn('task-checkbox', task.completed && 'checked')}
               onClick={(e) => {
                 e.stopPropagation();
-                onToggleTask(task.id);
+                onToggleTask(task.uuid);
               }}
               onMouseDown={(e) => e.stopPropagation()}
             />
@@ -114,11 +114,11 @@ export const NoteTaskMode: React.FC<NoteTaskModeProps> = ({
               onMouseDown={(e) => e.stopPropagation()}
             >
               <div className={cn('task-text', task.completed && 'completed')}>
-                {editingTaskId === task.id ? (
+                {editingTaskId === task.uuid ? (
                   <textarea
                     defaultValue={task.text}
-                    onBlur={(e) => onEditTask(task.id, e.target.value)}
-                    onKeyDown={(e) => onTaskEditKeyDown(e, task.id)}
+                    onBlur={(e) => onEditTask(task.uuid, e.target.value)}
+                    onKeyDown={(e) => onTaskEditKeyDown(e, task.uuid)}
                     onMouseDown={(e) => e.stopPropagation()}
                     autoFocus
                     rows={1}
@@ -133,7 +133,7 @@ export const NoteTaskMode: React.FC<NoteTaskModeProps> = ({
                     className="cursor-pointer"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onStartEditingTask(task.id);
+                      onStartEditingTask(task.uuid);
                     }}
                     title={task.text.length > TEXT.MAX_TASK_TEXT_LENGTH ? task.text : undefined}
                   >
@@ -147,7 +147,7 @@ export const NoteTaskMode: React.FC<NoteTaskModeProps> = ({
               className="task-delete"
               onClick={(e) => {
                 e.stopPropagation();
-                onDeleteTask(task.id);
+                onDeleteTask(task.uuid);
               }}
               onMouseDown={(e) => e.stopPropagation()}
             >

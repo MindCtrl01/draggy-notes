@@ -20,8 +20,8 @@ interface NoteDetailProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdate: (note: Note) => void;
-  onMoveToDate?: (noteId: number, newDate: Date) => void;
-  onRefreshFromStorage?: (noteId: number) => void;
+  onMoveToDate?: (noteUuid: string, newDate: Date) => void;
+  onRefreshFromStorage?: (noteUuid: string) => void;
 }
 
 export const NoteDetail: React.FC<NoteDetailProps> = ({
@@ -35,7 +35,7 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
   const [selectedDate, setSelectedDate] = useState(note.date);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
-  const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const taskTextareaRef = useRef<HTMLTextAreaElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
@@ -73,10 +73,10 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
 
   // Initialize selected tags from note's existing tags
   useEffect(() => {
-    if (note.tagIds && note.tagIds.length > 0) {
-      const existingTags = note.tagIds.map(id => {
+    if (note.tagUuids && note.tagUuids.length > 0) {
+      const existingTags = note.tagUuids.map(uuid => {
         const allTags = [...TagManager.getAllTags(note.userId || -1)];
-        return allTags.find(tag => tag.id === id);
+        return allTags.find(tag => tag.uuid === uuid);
       }).filter(Boolean) as Tag[];
       setSelectedTags(existingTags);
       updateTags(existingTags);
@@ -84,16 +84,16 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
       setSelectedTags([]);
       updateTags([]);
     }
-  }, [note.id, note.tagIds, note.userId, updateTags]);
+  }, [note.uuid, note.tagUuids, note.userId, updateTags]);
 
   // Handle tag changes
   const handleTagsChange = (newTags: Tag[]) => {
     setSelectedTags(newTags);
     updateTags(newTags);
-    const newTagIds = newTags.map(tag => tag.id);
+    const newTagUuids = newTags.map(tag => tag.uuid);
     onUpdate({
       ...note,
-      tagIds: newTagIds,
+      tagUuids: newTagUuids,
       updatedAt: new Date()
     });
   };
@@ -112,23 +112,23 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
     setShowDatePicker(false);
     setNewTaskText('');
     setEditingTaskId(null);
-  }, [note.id, note.date]);
+  }, [note.uuid, note.date]);
 
   // Save any remaining unsaved changes when closing
   const saveAllChanges = useCallback(() => {
     // Check for unsaved changes in title, content, tags, and date
-    const tagIds = tags.map(tag => tag.id);
+    const tagUuids = tags.map(tag => tag.uuid);
     const hasUnsavedChanges = title !== note.title || 
                              content !== note.content || 
                              selectedDate.getTime() !== note.date.getTime() ||
-                             JSON.stringify(tagIds) !== JSON.stringify(note.tagIds);
+                             JSON.stringify(tagUuids) !== JSON.stringify(note.tagUuids);
     
     if (hasUnsavedChanges) {
       const updatedNote = {
         ...note,
         title: title.trim() || 'Untitled',
         content: content,
-        tagIds: tagIds,
+        tagUuids: tagUuids,
         date: selectedDate,
         updatedAt: new Date()
       };
@@ -136,9 +136,9 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
       // If date changed, use onMoveToDate, otherwise use onUpdate
       if (selectedDate.getTime() !== note.date.getTime()) {
         if (onMoveToDate) {
-          onMoveToDate(note.id, selectedDate);
+          onMoveToDate(note.uuid, selectedDate);
         }
-        if (title !== note.title || content !== note.content || JSON.stringify(tagIds) !== JSON.stringify(note.tagIds)) {
+        if (title !== note.title || content !== note.content || JSON.stringify(tagUuids) !== JSON.stringify(note.tagUuids)) {
           onUpdate({ ...updatedNote, date: note.date }); // Keep original date for onUpdate
         }
       } else {
@@ -148,7 +148,7 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
       
       setTimeout(() => {
         if (onRefreshFromStorage) {
-          onRefreshFromStorage(note.id);
+          onRefreshFromStorage(note.uuid);
         }
       }, ANIMATION.SCROLL_TO_NOTE_DELAY);
     }
@@ -239,16 +239,16 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
     }
   };
 
-  const handleEditTask = (taskId: number, newText: string) => {
-    updateTask(taskId, { text: newText.trim() });
+  const handleEditTask = (taskUuid: string, newText: string) => {
+    updateTask(taskUuid, { text: newText.trim() });
     setEditingTaskId(null);
   };
 
-  const handleTaskEditKeyDown = (e: React.KeyboardEvent, taskId: number, currentText: string) => {
+  const handleTaskEditKeyDown = (e: React.KeyboardEvent, taskUuid: string, currentText: string) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       const target = e.target as HTMLTextAreaElement;
-      handleEditTask(taskId, target.value);
+      handleEditTask(taskUuid, target.value);
     } else if (e.key === 'Escape') {
       setEditingTaskId(null);
     }
@@ -372,7 +372,7 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
               onEditTask={handleEditTask}
               onDeleteTask={deleteTask}
               onStartEditingTask={setEditingTaskId}
-              onTaskEditKeyDown={(e, taskId) => handleTaskEditKeyDown(e, taskId, '')}
+              onTaskEditKeyDown={(e, taskUuid) => handleTaskEditKeyDown(e, taskUuid, '')}
               isDetail={true}
             />
           ) : (

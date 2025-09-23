@@ -6,10 +6,10 @@ import { Eye, EyeOff } from 'lucide-react';
 interface QuickNoteTabsProps {
   notes: Note[];
   onNoteSelect: (note: Note) => void;
-  selectedNoteId?: number | null;
+  selectedNoteUuid?: string | null;
 }
 
-export const QuickNoteTabs = ({ notes, onNoteSelect, selectedNoteId }: QuickNoteTabsProps) => {
+export const QuickNoteTabs = ({ notes, onNoteSelect, selectedNoteUuid }: QuickNoteTabsProps) => {
   const [isExpanded, setIsExpanded] = useState(true);
 
   // Filter to only displayed notes and sort by creation time (newest first)
@@ -46,11 +46,11 @@ export const QuickNoteTabs = ({ notes, onNoteSelect, selectedNoteId }: QuickNote
       {isExpanded && (
         <div className="flex-1 overflow-y-auto">
           {displayedNotes.map((note) => {
-            const isSelected = selectedNoteId === note.id;
+            const isSelected = selectedNoteUuid === note.uuid;
             
             return (
               <button
-                key={note.id}
+                key={note.uuid}
                 onClick={() => onNoteSelect(note)}
                 className={`w-full p-2 text-left border-b border-gray-100 dark:border-gray-700 hover:bg-sidebar-accent dark:hover:bg-gray-800 transition-colors ${
                   isSelected ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500' : ''

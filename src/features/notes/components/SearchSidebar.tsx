@@ -139,7 +139,7 @@ export const SearchSidebar = ({ allNotes, isOpen, onClose, onNoteSelect }: Searc
                 <div className="divide-y divide-gray-200 dark:divide-gray-700">
                   {searchResults.map((note) => (
                     <div
-                      key={note.id}
+                      key={note.uuid}
                       className="p-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                       onClick={() => onNoteSelect?.(note)}
                     >
@@ -179,7 +179,7 @@ export const SearchSidebar = ({ allNotes, isOpen, onClose, onNoteSelect }: Searc
                 <div className="divide-y divide-gray-200 dark:divide-gray-700">
                   {searchResults.map((note) => (
                     <div
-                      key={note.id}
+                      key={note.uuid}
                       className="p-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                       onClick={() => onNoteSelect?.(note)}
                     >

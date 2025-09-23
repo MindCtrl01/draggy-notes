@@ -1,4 +1,5 @@
 import { Tag } from '@/domains/tag';
+import { v7 as uuidv7 } from 'uuid';
 
 // Storage keys
 const STORAGE_PREFIX = 'draggy-notes';
@@ -6,9 +7,9 @@ const TAGS_STORAGE_KEY = (userId: number) => `${STORAGE_PREFIX}-note_tag_${userI
 
 // Predefined tags
 export const PREDEFINED_TAGS: Tag[] = [
-  { id: '-1', name: 'Công việc', userId: null, usageCount: 0 },
-  { id: '-2', name: 'Cá nhân', userId: null, usageCount: 0 },
-  { id: '-3', name: 'Gấp', userId: null, usageCount: 0 },
+  { uuid: '00000000-0000-7000-8000-000000000001', name: 'Công việc', userId: null, usageCount: 0 },
+  { uuid: '00000000-0000-7000-8000-000000000002', name: 'Cá nhân', userId: null, usageCount: 0 },
+  { uuid: '00000000-0000-7000-8000-000000000003', name: 'Gấp', userId: null, usageCount: 0 },
 ];
 
 /**
@@ -43,7 +44,7 @@ export class TagManager {
       
       // Ensure all tags have usageCount property (migration for existing tags)
       return tags.map((tag: Partial<Tag>) => ({
-        id: tag.id || '',
+        uuid: tag.uuid || uuidv7(),
         name: tag.name || '',
         userId: tag.userId || null,
         usageCount: tag.usageCount || 0
@@ -62,7 +63,7 @@ export class TagManager {
   static saveTag(tag: Tag, userId: number): void {
     try {
       const userTags = this.getUserTags(userId);
-      const existingTagIndex = userTags.findIndex(t => t.id === tag.id);
+      const existingTagIndex = userTags.findIndex(t => t.uuid === tag.uuid);
       
       if (existingTagIndex >= 0) {
         userTags[existingTagIndex] = tag;
@@ -85,7 +86,7 @@ export class TagManager {
    */
   static createTag(name: string, userId: number): Tag {
     const tag: Tag = {
-      id: `tag-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+      uuid: uuidv7(),
       name: name.trim(),
       userId,
       usageCount: 1,
@@ -97,19 +98,19 @@ export class TagManager {
 
   /**
    * Increment usage count for a tag
-   * @param tagId - The tag ID
+   * @param tagUuid - The tag UUID
    * @param userId - The user ID
    */
-  static incrementTagUsage(tagId: string, userId: number): void {
+  static incrementTagUsage(tagUuid: string, userId: number): void {
     try {
       // Handle predefined tags
-      if (tagId.startsWith('-')) {
+      if (tagUuid.startsWith('00000000-0000-7000-8000-00000000000')) {
         // For predefined tags, we don't track usage in localStorage
         return;
       }
 
       const userTags = this.getUserTags(userId);
-      const tagIndex = userTags.findIndex(t => t.id === tagId);
+      const tagIndex = userTags.findIndex(t => t.uuid === tagUuid);
       
       if (tagIndex >= 0) {
         userTags[tagIndex].usageCount = (userTags[tagIndex].usageCount || 0) + 1;
@@ -126,15 +127,15 @@ export class TagManager {
    * Find or create tags from text content
    * @param text - The text to parse for tags
    * @param userId - The user ID
-   * @returns Array of tag IDs found or created
+   * @returns Array of tag UUIDs found or created
    */
   static findOrCreateTagsFromText(text: string, userId: number): string[] {
     const tagRegex = /#(\w+(?:\s+\w+)*)/g;
     const matches = Array.from(text.matchAll(tagRegex));
-    const tagIds: string[] = [];
+    const tagUuids: string[] = [];
     
     if (matches.length === 0) {
-      return tagIds;
+      return tagUuids;
     }
     
     const allTags = this.getAllTags(userId);
@@ -153,24 +154,24 @@ export class TagManager {
         allTags.push(existingTag);
       }
       
-      if (!tagIds.includes(existingTag.id)) {
-        tagIds.push(existingTag.id);
+      if (!tagUuids.includes(existingTag.uuid)) {
+        tagUuids.push(existingTag.uuid);
       }
     }
     
-    return tagIds;
+    return tagUuids;
   }
 
   /**
-   * Get tags by IDs
-   * @param tagIds - Array of tag IDs
+   * Get tags by UUIDs
+   * @param tagUuids - Array of tag UUIDs
    * @param userId - The user ID
    * @returns Array of tags
    */
-  static getTagsByIds(tagIds: string[], userId: number): Tag[] {
+  static getTagsByUuids(tagUuids: string[], userId: number): Tag[] {
     const allTags = this.getAllTags(userId);
-    return tagIds
-      .map(id => allTags.find(tag => tag.id === id))
+    return tagUuids
+      .map(uuid => allTags.find(tag => tag.uuid === uuid))
       .filter((tag): tag is Tag => tag !== undefined);
   }
 
@@ -234,7 +235,7 @@ export class TagManager {
         tag.name.toLowerCase() === tagName.toLowerCase()
       );
       
-      if (existingTag && !tags.find(t => t.id === existingTag.id)) {
+      if (existingTag && !tags.find(t => t.uuid === existingTag.uuid)) {
         tags.push(existingTag);
       }
     }
@@ -254,18 +255,18 @@ export class TagManager {
 
   /**
    * Delete a user-created tag
-   * @param tagId - The tag ID to delete
+   * @param tagUuid - The tag UUID to delete
    * @param userId - The user ID
    */
-  static deleteTag(tagId: string, userId: number): void {
+  static deleteTag(tagUuid: string, userId: number): void {
     try {
       // Don't allow deleting predefined tags
-      if (PREDEFINED_TAGS.some(tag => tag.id === tagId)) {
+      if (PREDEFINED_TAGS.some(tag => tag.uuid === tagUuid)) {
         return;
       }
       
       const userTags = this.getUserTags(userId);
-      const filteredTags = userTags.filter(tag => tag.id !== tagId);
+      const filteredTags = userTags.filter(tag => tag.uuid !== tagUuid);
       
       const key = TAGS_STORAGE_KEY(userId);
       localStorage.setItem(key, JSON.stringify(filteredTags));
@@ -296,7 +297,7 @@ export const {
   getUserTags,
   saveTag,
   createTag,
-  getTagsByIds,
+  getTagsByUuids,
   searchTags,
   getTagSuggestions,
   deleteTag,

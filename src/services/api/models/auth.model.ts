@@ -37,7 +37,7 @@ export interface RefreshTokenRequest {
 
 // Authentication Response Models
 export interface UserInfo {
-  id: number;
+  uuid: string;
   username: string | null;
   firstName: string | null;
   lastName: string | null;
@@ -54,7 +54,7 @@ export interface AuthenticationResponse {
 
 // User Models
 export interface UserResponse {
-  id: number;
+  uuid: string;
   firstName: string | null;
   lastName: string | null;
   email: string | null;
@@ -73,7 +73,7 @@ export interface CreateUserRequest {
 }
 
 export interface UpdateUserRequest {
-  id: number;
+  uuid: string;
   username: string | null;
   firstName: string | null;
   lastName: string | null;
@@ -83,11 +83,11 @@ export interface UpdateUserRequest {
 }
 
 export interface GetUserByIdRequest {
-  id: number;
+  uuid: string;
 }
 
 export interface DeleteUserRequest {
-  id: number;
+  uuid: string;
 }
 
 // Legacy types for backward compatibility
@@ -97,7 +97,7 @@ export interface AuthTokens {
 }
 
 export interface AuthUser {
-  id: number;
+  uuid: string;
   username: string;
   firstName: string;
   lastName: string;

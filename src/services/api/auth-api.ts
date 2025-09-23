@@ -212,9 +212,9 @@ class AuthApi {
     return response.data || [];
   }
 
-  // GET /api/users/{id} - Get user by ID
+  // GET /api/users/{uuid} - Get user by UUID
   async getUserById(request: GetUserByIdRequest): Promise<UserResponse> {
-    const response = await this.makeRequest<UserResponse>(`${this.usersBasePath}/${request.id}`, {
+    const response = await this.makeRequest<UserResponse>(`${this.usersBasePath}/${request.uuid}`, {
       method: 'GET',
     });
 
@@ -225,9 +225,9 @@ class AuthApi {
     return response.data;
   }
 
-  // PUT /api/users/{id} - Update user
+  // PUT /api/users/{uuid} - Update user
   async updateUser(request: UpdateUserRequest): Promise<UserResponse> {
-    const response = await this.makeRequest<UserResponse>(`${this.usersBasePath}/${request.id}`, {
+    const response = await this.makeRequest<UserResponse>(`${this.usersBasePath}/${request.uuid}`, {
       method: 'PUT',
       body: JSON.stringify(request),
     });
@@ -239,9 +239,9 @@ class AuthApi {
     return response.data;
   }
 
-  // DELETE /api/users/{id} - Delete user
+  // DELETE /api/users/{uuid} - Delete user
   async deleteUser(request: DeleteUserRequest): Promise<void> {
-    await this.makeRequest<void>(`${this.usersBasePath}/${request.id}`, {
+    await this.makeRequest<void>(`${this.usersBasePath}/${request.uuid}`, {
       method: 'DELETE',
     });
   }
@@ -263,7 +263,7 @@ class AuthApi {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
       return {
-        id: payload.sub || payload.userId,
+        uuid: payload.sub || payload.userId,
         username: payload.username || payload.name,
         firstName: payload.firstName || '',
         lastName: payload.lastName || '',

@@ -78,9 +78,9 @@ class NotesApi {
     return response.data;
   }
 
-  // GET /api/notes/{id} - Get note by ID
+  // GET /api/notes/{uuid} - Get note by UUID
   async getNoteById(request: GetNoteByIdRequest): Promise<NoteResponse> {
-    const response = await this.makeRequest<NoteResponse>(`${this.basePath}/${request.id}`, {
+    const response = await this.makeRequest<NoteResponse>(`${this.basePath}/${request.uuid}`, {
       method: 'GET',
     });
     if (!response.data) {
@@ -89,9 +89,9 @@ class NotesApi {
     return response.data;
   }
 
-  // PUT /api/notes/{id} - Update an existing note
+  // PUT /api/notes/{uuid} - Update an existing note
   async updateNote(request: UpdateNoteRequest): Promise<NoteResponse> {
-    const response = await this.makeRequest<NoteResponse>(`${this.basePath}/${request.id}`, {
+    const response = await this.makeRequest<NoteResponse>(`${this.basePath}/${request.uuid}`, {
       method: 'PUT',
       body: JSON.stringify(request),
     });
@@ -101,16 +101,16 @@ class NotesApi {
     return response.data;
   }
 
-  // DELETE /api/notes/{id} - Delete a note
+  // DELETE /api/notes/{uuid} - Delete a note
   async deleteNote(request: DeleteNoteRequest): Promise<void> {
-    await this.makeRequest<void>(`${this.basePath}/${request.id}`, {
+    await this.makeRequest<void>(`${this.basePath}/${request.uuid}`, {
       method: 'DELETE',
     });
   }
 
-  // POST /api/notes/{id}/duplicate - Duplicate a note
+  // POST /api/notes/{uuid}/duplicate - Duplicate a note
   async duplicateNote(request: DuplicateNoteRequest): Promise<NoteResponse> {
-    const response = await this.makeRequest<NoteResponse>(`${this.basePath}/${request.id}/duplicate`, {
+    const response = await this.makeRequest<NoteResponse>(`${this.basePath}/${request.uuid}/duplicate`, {
       method: 'POST',
       body: JSON.stringify(request),
     });

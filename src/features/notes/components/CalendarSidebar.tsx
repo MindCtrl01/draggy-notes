@@ -154,7 +154,7 @@ export const CalendarSidebar = ({ allNotes, selectedDate, onDateSelect }: Calend
           </div>
           <div className="space-y-1 max-h-32 overflow-y-auto">
             {hoveredDay.notes.slice(0, 5).map(note => (
-              <div key={note.id} className="text-xs text-gray-200 truncate">
+              <div key={note.uuid} className="text-xs text-gray-200 truncate">
                 • {note.title}
               </div>
             ))}

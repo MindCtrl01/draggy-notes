@@ -5,6 +5,7 @@ import { NotesStorage } from '@/helpers/notes-storage';
 import { generateRandomNoteColor } from '@/helpers/color-generator';
 import { formatDateKey, formatDateDisplay, formatDateInput, formatDateShort, isSameDay } from '@/helpers/date-helper';
 import { LIMITS, ANIMATION } from '@/constants/ui-constants';
+import { v7 as uuidv7 } from 'uuid';
 
 
 export const useNotes = (selectedDate?: Date) => {
@@ -51,6 +52,7 @@ export const useNotes = (selectedDate?: Date) => {
     };
 
     const newNote: Note = {
+      uuid: uuidv7(),
       title: 'New Note',
       content: noteContent,
       date: selectedDate || new Date(),
@@ -60,7 +62,7 @@ export const useNotes = (selectedDate?: Date) => {
       createdAt: new Date(),
       updatedAt: new Date(),
       userId: -1, // Temporary userId
-      tagIds: [], // Empty tagIds initially
+      tagUuids: [], // Empty tagUuids initially
       isTaskMode: true, // Default to task mode
       noteTasks: [], // Initialize empty tasks array
     };
@@ -83,7 +85,7 @@ export const useNotes = (selectedDate?: Date) => {
     
     setAllNotes(prevNotes => 
       prevNotes.map(note => 
-        note.id === updatedNote.id ? noteToUpdate : note
+        note.uuid === updatedNote.uuid ? noteToUpdate : note
       )
     );
     
@@ -93,12 +95,12 @@ export const useNotes = (selectedDate?: Date) => {
     }, ANIMATION.UPDATE_NOTE_DELAY);
   }, []);
 
-  const deleteNote = useCallback((id: number) => {
+  const deleteNote = useCallback((uuid: string) => {
     setIsDeleting(true);
     
-    NotesStorage.deleteNote(id);
+    NotesStorage.deleteNote(uuid);
     
-    setAllNotes(prevNotes => prevNotes.filter(note => note.id !== id));
+    setAllNotes(prevNotes => prevNotes.filter(note => note.uuid !== uuid));
     
     // Simulate API delay
     setTimeout(() => {
@@ -112,10 +114,10 @@ export const useNotes = (selectedDate?: Date) => {
     const displayedNotes = notes.filter(note => note.isDisplayed);
     
     displayedNotes.forEach(note => {
-      NotesStorage.deleteNote(note.id);
+      NotesStorage.deleteNote(note.uuid);
     });
     
-    setAllNotes(prevNotes => prevNotes.filter(note => !displayedNotes.some(dn => dn.id === note.id)));
+    setAllNotes(prevNotes => prevNotes.filter(note => !displayedNotes.some(dn => dn.uuid === note.uuid)));
     
     // Simulate API delay
     setTimeout(() => {
@@ -123,18 +125,18 @@ export const useNotes = (selectedDate?: Date) => {
     }, ANIMATION.CREATE_NOTE_DELAY);
   }, [notes]);
 
-  const dragNote = useCallback((id: number, position: { x: number; y: number }) => {
+  const dragNote = useCallback((uuid: string, position: { x: number; y: number }) => {
     // Optimistic update for smooth dragging
     setDraggedNotes(prev => ({
       ...prev,
-      [id]: position
+      [uuid]: position
     }));
   }, []);
 
-  const finalizeDrag = useCallback((id: number, position: { x: number; y: number }) => {
+  const finalizeDrag = useCallback((uuid: string, position: { x: number; y: number }) => {
     setAllNotes(prevNotes => {
       const updatedNotes = prevNotes.map(note => {
-        if (note.id === id) {
+        if (note.uuid === uuid) {
           const updatedNote = { ...note, position, updatedAt: new Date() };
           NotesStorage.saveNote(updatedNote);
           return updatedNote;
@@ -145,17 +147,17 @@ export const useNotes = (selectedDate?: Date) => {
     });
     
     setDraggedNotes(prev => {
-      const { [id]: _, ...rest } = prev;
+      const { [uuid]: _, ...rest } = prev;
       return rest;
     });
   }, []);
 
-  const moveNoteToDate = useCallback((id: number, newDate: Date) => {
+  const moveNoteToDate = useCallback((uuid: string, newDate: Date) => {
     setIsUpdating(true);
     
     setAllNotes(prevNotes => {
       const updatedNotes = prevNotes.map(note => {
-        if (note.id === id) {
+        if (note.uuid === uuid) {
           const updatedNote = { ...note, date: newDate, updatedAt: new Date() };
           NotesStorage.saveNote(updatedNote);
           return updatedNote;
@@ -172,13 +174,13 @@ export const useNotes = (selectedDate?: Date) => {
   }, []);
 
   // Function to refresh a specific note from localStorage
-  const refreshNoteFromStorage = useCallback((noteId: number) => {
+  const refreshNoteFromStorage = useCallback((noteUuid: string) => {
     try {
-      const updatedNote = NotesStorage.getNote(noteId);
+      const updatedNote = NotesStorage.getNote(noteUuid);
       if (updatedNote) {
         setAllNotes(prevNotes => 
           prevNotes.map(note => 
-            note.id === noteId ? updatedNote : note
+            note.uuid === noteUuid ? updatedNote : note
           )
         );
       }
@@ -190,7 +192,7 @@ export const useNotes = (selectedDate?: Date) => {
   // Merge notes with dragged positions for display
   const displayNotes = notes.map(note => ({
     ...note,
-    position: draggedNotes[note.id] || note.position
+    position: draggedNotes[note.uuid] || note.position
   }));
 
     return {

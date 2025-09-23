@@ -5,11 +5,13 @@ export interface CreateNotePositionRequest {
 }
 
 export interface CreateTaskRequest {
+  uuid: string;
   text: string | null;
   completed: boolean;
 }
 
 export interface CreateNoteRequest {
+  uuid: string;
   title: string | null;
   content: string | null;
   date?: string | null; // ISO date string format
@@ -19,6 +21,7 @@ export interface CreateNoteRequest {
   noteTasks?: CreateTaskRequest[] | null;
   isTaskMode?: boolean | null;
   isPinned?: boolean | null;
+  tagUuids?: string[] | null;
 }
 
 export interface UpdateNotePositionRequest {
@@ -27,13 +30,13 @@ export interface UpdateNotePositionRequest {
 }
 
 export interface UpdateTaskRequest {
-  id: number;
+  uuid: string;
   text: string | null;
   completed: boolean;
 }
 
 export interface UpdateNoteRequest {
-  id: number;
+  uuid: string;
   title: string | null;
   content: string | null;
   date?: string | null; // ISO date string format
@@ -42,18 +45,19 @@ export interface UpdateNoteRequest {
   position: UpdateNotePositionRequest;
   tasks?: UpdateTaskRequest[] | null;
   isTaskMode?: boolean | null;
+  tagUuids?: string[] | null;
 }
 
 export interface GetNoteByIdRequest {
-  id: number;
+  uuid: string;
 }
 
 export interface DeleteNoteRequest {
-  id: number;
+  uuid: string;
 }
 
 export interface DuplicateNoteRequest {
-  id: number;
+  uuid: string;
 }
 
 export interface GetNotesByColorRequest {
@@ -65,7 +69,7 @@ export interface SearchNotesRequest {
 }
 
 export interface BulkDeleteRequest {
-  ids: number[] | null;
+  uuids: string[] | null;
 }
 
 // Note Response Models
@@ -75,14 +79,14 @@ export interface NotePositionResponse {
 }
 
 export interface TaskResponse {
-  id: number;
+  uuid: string;
   text: string | null;
   completed: boolean;
   createdAt: string; // ISO date string format
 }
 
 export interface NoteResponse {
-  id: number;
+  uuid: string;
   title: string | null;
   content: string | null;
   date: string; // ISO date string format
@@ -93,6 +97,7 @@ export interface NoteResponse {
   updatedAt: string; // ISO date string format
   tasks?: TaskResponse[] | null;
   isTaskMode?: boolean | null;
+  tagUuids?: string[] | null;
 }
 
 // Health Response Models

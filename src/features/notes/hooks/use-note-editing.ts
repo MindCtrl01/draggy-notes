@@ -36,13 +36,13 @@ export const useNoteEditing = (
 
   const handleTitleSubmit = () => {
     const trimmedTitle = title.trim();
-    const tagIds = tags.map(tag => tag.id);
+    const tagUuids = tags.map(tag => tag.uuid);
     
-    if (trimmedTitle !== note.title || JSON.stringify(tagIds) !== JSON.stringify(note.tagIds)) {
+    if (trimmedTitle !== note.title || JSON.stringify(tagUuids) !== JSON.stringify(note.tagUuids)) {
       onUpdate({
         ...note,
         title: trimmedTitle || 'Untitled',
-        tagIds: tagIds,
+        tagUuids: tagUuids,
         updatedAt: new Date()
       });
     }
@@ -51,13 +51,13 @@ export const useNoteEditing = (
 
   const handleContentSubmit = () => {
     const trimmedContent = content.trim();
-    const tagIds = tags.map(tag => tag.id);
+    const tagUuids = tags.map(tag => tag.uuid);
     
-    if (trimmedContent !== note.content || JSON.stringify(tagIds) !== JSON.stringify(note.tagIds)) {
+    if (trimmedContent !== note.content || JSON.stringify(tagUuids) !== JSON.stringify(note.tagUuids)) {
       onUpdate({
         ...note,
         content: trimmedContent,
-        tagIds: tagIds,
+        tagUuids: tagUuids,
         updatedAt: new Date()
       });
     }
@@ -177,11 +177,11 @@ export const useNoteEditing = (
     });
   };
 
-  const updateTask = (taskId: number, updates: Partial<NoteTask>) => {
+  const updateTask = (taskUuid: string, updates: Partial<NoteTask>) => {
     if (!note.noteTasks) return;
     
     const updatedTasks = note.noteTasks.map(task => {
-      if (task.id === taskId) {
+      if (task.uuid === taskUuid) {
         return { ...task, ...updates };
       }
       return task;
@@ -194,10 +194,10 @@ export const useNoteEditing = (
     });
   };
 
-  const deleteTask = (taskId: number) => {
+  const deleteTask = (taskUuid: string) => {
     if (!note.noteTasks) return;
     
-    const updatedTasks = note.noteTasks.filter(task => task.id !== taskId);
+    const updatedTasks = note.noteTasks.filter(task => task.uuid !== taskUuid);
     
     onUpdate({
       ...note,
@@ -206,14 +206,14 @@ export const useNoteEditing = (
     });
   };
 
-  const toggleTask = (taskId: number) => {
+  const toggleTask = (taskUuid: string) => {
     if (!note.noteTasks) return;
     
-    const task = note.noteTasks.find(t => t.id === taskId);
+    const task = note.noteTasks.find(t => t.uuid === taskUuid);
     if (!task) return;
     
     const updatedTask = toggleTaskCompletion(task);
-    updateTask(taskId, updatedTask);
+    updateTask(taskUuid, updatedTask);
   };
 
   // Pin management function

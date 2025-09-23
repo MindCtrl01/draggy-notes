@@ -14,7 +14,7 @@ export interface User extends BaseEntity {
   
   // Navigation properties (using type references to avoid circular imports)
   refreshTokens?: Array<{
-    id: number;
+    uuid: string;
     token: string;
     expires: Date;
     created: Date;
@@ -28,7 +28,7 @@ export interface User extends BaseEntity {
     isActive: boolean;
   }>;
   notes?: Array<{
-    id: number;
+    uuid: string;
     title: string;
     content: string;
     date: Date;
@@ -38,7 +38,7 @@ export interface User extends BaseEntity {
     position: { x: number; y: number };
     isTaskMode?: boolean;
     userId: number;
-    tagIds: number[];
+    tagUuids: string[];
   }>;
   
   passwordResetToken?: string;

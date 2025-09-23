@@ -22,7 +22,7 @@ export interface UpdateNoteRequest {
 
 // API response type (what the backend returns)
 export interface NoteApiResponse {
-  id: string;
+  uuid: string;
   content: string;
   color: NoteColor;
   position: {
@@ -36,7 +36,7 @@ export interface NoteApiResponse {
 // Helper function to convert API response to Note type
 function apiNoteToNote(apiNote: NoteApiResponse): Note {
   return {
-    id: apiNote.id,
+    uuid: apiNote.uuid,
     content: apiNote.content,
     color: apiNote.color,
     position: apiNote.position,
@@ -48,7 +48,7 @@ function apiNoteToNote(apiNote: NoteApiResponse): Note {
 // Extended Notes API with custom methods
 class NotesApi extends BaseApi<Note, CreateNoteRequest, UpdateNoteRequest> {
   constructor() {
-    super('notes'); // This will create endpoints like /notes, /notes/{id}
+    super('notes'); // This will create endpoints like /notes, /notes/{uuid}
   }
 
   // Override methods to handle data transformation
@@ -57,8 +57,8 @@ class NotesApi extends BaseApi<Note, CreateNoteRequest, UpdateNoteRequest> {
     return apiNotes.map(apiNoteToNote);
   }
 
-  async getById(id: string): Promise<Note> {
-    const apiNote = await super.customRequest<NoteApiResponse>(`/${id}`);
+  async getById(uuid: string): Promise<Note> {
+    const apiNote = await super.customRequest<NoteApiResponse>(`/${uuid}`);
     return apiNoteToNote(apiNote);
   }
 
@@ -70,8 +70,8 @@ class NotesApi extends BaseApi<Note, CreateNoteRequest, UpdateNoteRequest> {
     return apiNoteToNote(apiNote);
   }
 
-  async update(id: string, data: UpdateNoteRequest): Promise<Note> {
-    const apiNote = await super.customRequest<NoteApiResponse>(`/${id}`, {
+  async update(uuid: string, data: UpdateNoteRequest): Promise<Note> {
+    const apiNote = await super.customRequest<NoteApiResponse>(`/${uuid}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -79,8 +79,8 @@ class NotesApi extends BaseApi<Note, CreateNoteRequest, UpdateNoteRequest> {
   }
 
   // Custom methods specific to notes
-  async duplicateNote(id: string): Promise<Note> {
-    const apiNote = await super.customRequest<NoteApiResponse>(`/${id}/duplicate`, {
+  async duplicateNote(uuid: string): Promise<Note> {
+    const apiNote = await super.customRequest<NoteApiResponse>(`/${uuid}/duplicate`, {
       method: 'POST',
     });
     return apiNoteToNote(apiNote);
@@ -96,10 +96,10 @@ class NotesApi extends BaseApi<Note, CreateNoteRequest, UpdateNoteRequest> {
     return apiNotes.map(apiNoteToNote);
   }
 
-  async bulkDelete(ids: string[]): Promise<void> {
+  async bulkDelete(uuids: string[]): Promise<void> {
     await super.customRequest<void>('/bulk-delete', {
       method: 'DELETE',
-      body: JSON.stringify({ ids }),
+      body: JSON.stringify({ uuids }),
     });
   }
 }
