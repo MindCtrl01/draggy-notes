@@ -1,16 +1,17 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { X, Edit3, Calendar, Plus } from 'lucide-react';
+import { X, Edit3, Calendar } from 'lucide-react';
 import { DatePicker } from '@mantine/dates';
 import { Note } from '@/domains/note';
 import { Tag } from '@/domains/tag';
-import { TagDisplay } from '@/components/common';
 import { TagManager } from '@/helpers/tag-manager';
 import { getContrastTextColor } from '@/helpers/color-generator';
 import { formatDateDisplay } from '@/helpers/date-helper';
-import { getTaskProgressDisplay, getTaskProgress } from '@/helpers/task-manager';
+import { getTaskProgressDisplay } from '@/helpers/task-manager';
 import { getTaskColors } from '@/helpers/task-colors';
 import { useNoteEditing } from '../hooks/use-note-editing';
-import { cn } from '@/styles/utils';
+import { NoteTitle } from './NoteTitle';
+import { NoteTaskMode } from './NoteTaskMode';
+import { NoteContentMode } from './NoteContentMode';
 import '../styles/note-card.css';
 
 interface NoteDetailProps {
@@ -274,31 +275,22 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
             <Edit3 size={24} />
             {/* Title in header */}
             <div className="flex-1">
-              {isEditingTitle ? (
-                <input
-                  ref={titleRef}
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  onBlur={handleTitleSubmit}
-                  onKeyDown={handleTitleKeyDown}
-                  className="w-full bg-transparent border-none outline-none text-xl font-semibold placeholder-gray-400"
-                  placeholder="Enter note title..."
-                />
-              ) : (
-                <div
-                  onClick={() => startEditingTitle()}
-                  className="text-xl font-semibold cursor-pointer hover:bg-black/5 rounded px-2 py-1 -mx-2 -my-1"
-                >
-                  {note.title || 'Untitled Note'}
-                </div>
-              )}
-
-              {/* Tags display */}
-              <TagDisplay 
-                tags={contentTags} 
-                className="mt-2" 
-                onTagsChange={handleTagsChange}
+              <NoteTitle
+                title={title}
+                displayTitle={note.title || 'Untitled Note'}
+                isEditingTitle={isEditingTitle}
+                titleRef={titleRef}
+                isPinned={false} // Pin button not shown in detail view
+                tags={contentTags}
                 userId={note.userId || -1}
+                onTitleChange={setTitle}
+                onTitleSubmit={handleTitleSubmit}
+                onTitleKeyDown={handleTitleKeyDown}
+                onStartEditingTitle={startEditingTitle}
+                onTogglePin={() => {}} // No-op in detail view
+                onDelete={() => {}} // No delete button in detail view
+                onTagsChange={handleTagsChange}
+                className="note-detail-title"
               />
             </div>
           </div>
@@ -366,145 +358,38 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
         {/* Content */}
         <div className="p-6 overflow-y-auto h-[calc(100%-140px)] note-detail-content">
           {note.isTaskMode ? (
-            // Task Mode
-            <div 
-              className="w-full h-full"
-              style={{
-                '--task-bg-color': taskColors.taskBgColor,
-                '--task-bg-hover-color': taskColors.taskBgHoverColor,
-                '--task-border-color': taskColors.taskBorderColor,
-                '--add-task-bg-color': taskColors.addTaskBgColor,
-                '--add-task-bg-hover-color': taskColors.addTaskBgHoverColor,
-                '--add-task-border-color': taskColors.addTaskBorderColor,
-                '--add-task-border-hover-color': taskColors.addTaskBorderHoverColor,
-                '--progress-bar-bg-color': taskColors.progressBarBgColor,
-                '--progress-bar-fill-color': taskColors.progressBarFillColor,
-              } as React.CSSProperties}
-            >
-              {note.noteTasks && note.noteTasks.length > 0 && (
-                <>
-                  <div className="task-header-text mb-3">
-                    <span className="text-lg font-medium">Tasks</span>
-                  </div>
-                  <div className="task-progress-container mb-6">
-                    <div className="task-progress-bar">
-                      <div 
-                        className="task-progress-fill"
-                        style={{ width: `${getTaskProgress(note.noteTasks).percentage}%` }}
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-              
-              <div className="task-list">
-                {note.noteTasks?.map((task) => (
-                  <div key={task.id} className="task-item-container">
-                    <button
-                      className={cn('task-checkbox', task.completed && 'checked')}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleTask(task.id);
-                      }}
-                    />
-                    
-                    <div className="task-item">
-                      <div className={cn('task-text', task.completed && 'completed')}>
-                        {editingTaskId === task.id ? (
-                          <textarea
-                            defaultValue={task.text}
-                            onBlur={(e) => handleEditTask(task.id, e.target.value)}
-                            onKeyDown={(e) => handleTaskEditKeyDown(e, task.id, task.text)}
-                            autoFocus
-                            rows={1}
-                            onInput={(e) => {
-                              const target = e.target as HTMLTextAreaElement;
-                              target.style.height = 'auto';
-                              target.style.height = Math.min(target.scrollHeight, 1.4 * 16 * 3) + 'px';
-                            }}
-                          />
-                        ) : (
-                          <span
-                            className="cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingTaskId(task.id);
-                            }}
-                            title={task.text.length > 100 ? task.text : undefined}
-                          >
-                            {task.text}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <button
-                      className="task-delete"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteTask(task.id);
-                      }}
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                ))}
-                
-                {/* Add new task */}
-                <div className="add-task-button">
-                  <textarea
-                    ref={taskTextareaRef}
-                    placeholder="Add new task..."
-                    value={newTaskText}
-                    onChange={(e) => {
-                      setNewTaskText(e.target.value);
-                    }}
-                    onKeyDown={handleTaskKeyDown}
-                    className="w-full bg-transparent border-none outline-none resize-none"
-                    rows={1}
-                    style={{ minHeight: '1.4em', maxHeight: 'calc(1.4em * 3)' }}
-                    onInput={(e) => {
-                      const target = e.target as HTMLTextAreaElement;
-                      target.style.height = 'auto';
-                      target.style.height = Math.min(target.scrollHeight, 1.4 * 16 * 3) + 'px';
-                    }}
-                  />
-                  {newTaskText && (
-                    <button
-                      onClick={handleAddTask}
-                      className="ml-2 p-1 hover:bg-black/10 rounded flex-shrink-0"
-                    >
-                      <Plus size={14} />
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
+            <NoteTaskMode
+              tasks={note.noteTasks || []}
+              newTaskText={newTaskText}
+              editingTaskId={editingTaskId}
+              taskTextareaRef={taskTextareaRef}
+              taskColors={taskColors}
+              onNewTaskTextChange={setNewTaskText}
+              onAddTask={handleAddTask}
+              onTaskKeyDown={handleTaskKeyDown}
+              onToggleTask={toggleTask}
+              onEditTask={handleEditTask}
+              onDeleteTask={deleteTask}
+              onStartEditingTask={setEditingTaskId}
+              onTaskEditKeyDown={(e, taskId) => handleTaskEditKeyDown(e, taskId, '')}
+              isDetail={true}
+            />
           ) : (
-            // Normal Mode
-            <div className="h-full">
-              {isEditingContent ? (
-                <textarea
-                  ref={textareaRef}
-                  value={content}
-                  onChange={(e) => {
-                    setContent(e.target.value);
-                  }}
-                  onBlur={handleContentSubmit}
-                  onKeyDown={handleContentKeyDown}
-                  onPaste={handleContentPaste}
-                  className="w-full h-full min-h-96 bg-transparent border-2 border-black/20 rounded-lg px-4 py-3 text-base resize-none focus:border-black/40 focus:outline-none note-detail-textarea"
-                  placeholder="Enter note content..."
-                />
-              ) : (
-                <div
-                  onClick={() => startEditingContent()}
-                  className="w-full h-full min-h-96 px-4 py-3 text-base cursor-pointer hover:bg-black/5 rounded-lg border-2 border-transparent hover:border-black/10 transition-colors whitespace-pre-wrap break-words note-detail-content-view"
-                >
-                  {cleanDisplayContent || 'Click to add content...'}
-                </div>
-              )}
-            </div>
+            <NoteContentMode
+              content={content}
+              displayContent={cleanDisplayContent}
+              isEditingContent={isEditingContent}
+              isContentTooLong={false} // No truncation in detail view
+              contentRef={useRef<HTMLDivElement>(null)} // Not used in detail view
+              textareaRef={textareaRef}
+              onContentChange={setContent}
+              onContentSubmit={handleContentSubmit}
+              onContentKeyDown={handleContentKeyDown}
+              onContentPaste={handleContentPaste}
+              onStartEditingContent={startEditingContent}
+              isDetail={true}
+              className="h-full"
+            />
           )}
         </div>
       </div>
