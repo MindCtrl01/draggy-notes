@@ -11,7 +11,6 @@ export const getDateColor = (noteCount: number, isToday: boolean, isSelected: bo
   }
   
   if (isToday && noteCount > 0) {
-    const intensity = Math.min(noteCount * 20, 100);
     return `bg-blue-200 text-blue-800 border-2 border-blue-400`;
   }
   

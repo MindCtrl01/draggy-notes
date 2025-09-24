@@ -36,13 +36,12 @@ export const useNoteEditing = (
 
   const handleTitleSubmit = () => {
     const trimmedTitle = title.trim();
-    const tagUuids = tags.map(tag => tag.uuid);
     
-    if (trimmedTitle !== note.title || JSON.stringify(tagUuids) !== JSON.stringify(note.tagUuids)) {
+    if (trimmedTitle !== note.title || JSON.stringify(tags) !== JSON.stringify(note.tags)) {
       onUpdate({
         ...note,
         title: trimmedTitle || 'Untitled',
-        tagUuids: tagUuids,
+        tags: tags,
         updatedAt: new Date()
       });
     }
@@ -51,13 +50,12 @@ export const useNoteEditing = (
 
   const handleContentSubmit = () => {
     const trimmedContent = content.trim();
-    const tagUuids = tags.map(tag => tag.uuid);
     
-    if (trimmedContent !== note.content || JSON.stringify(tagUuids) !== JSON.stringify(note.tagUuids)) {
+    if (trimmedContent !== note.content || JSON.stringify(tags) !== JSON.stringify(note.tags)) {
       onUpdate({
         ...note,
         content: trimmedContent,
-        tagUuids: tagUuids,
+        tags: tags,
         updatedAt: new Date()
       });
     }

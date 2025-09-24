@@ -4,7 +4,6 @@ import { Note } from '@/domains/note';
 import { Tag } from '@/domains/tag';
 import { useNoteDrag } from '../hooks/use-note-drag';
 import { useNoteEditing } from '../hooks/use-note-editing';
-import { TagManager } from '@/helpers/tag-manager';
 import { getContrastTextColor } from '@/helpers/color-generator';
 import { formatDateDisplay } from '@/helpers/date-helper';
 import { getTaskProgressDisplay } from '@/helpers/task-manager';
@@ -14,7 +13,7 @@ import { NoteDetail } from './NoteDetail';
 import { NoteTitle } from './NoteTitle';
 import { NoteTaskMode } from './NoteTaskMode';
 import { NoteContentMode } from './NoteContentMode';
-import { TEXT, NOTE_CARD, LIMITS, COLORS } from '@/constants/ui-constants';
+import { TEXT, NOTE_CARD, LIMITS } from '@/constants/ui-constants';
 import '../styles/note-card.css';
 
 interface NoteCardProps {
@@ -216,27 +215,22 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
 
   // Initialize selected tags from note's existing tags
   useEffect(() => {
-    if (note.tagUuids && note.tagUuids.length > 0) {
-      const existingTags = note.tagUuids.map(uuid => {
-        const allTags = [...TagManager.getAllTags(note.userId || -1)];
-        return allTags.find(tag => tag.uuid === uuid);
-      }).filter(Boolean) as Tag[];
-      setSelectedTags(existingTags);
-      updateTags(existingTags);
+    if (note.tags && note.tags.length > 0) {
+      setSelectedTags(note.tags);
+      updateTags(note.tags);
     } else {
       setSelectedTags([]);
       updateTags([]);
     }
-  }, [note.uuid, note.tagUuids, note.userId, updateTags]);
+  }, [note.uuid, note.tags, note.userId, updateTags]);
 
   // Handle tag changes
   const handleTagsChange = (newTags: Tag[]) => {
     setSelectedTags(newTags);
     updateTags(newTags);
-    const newTagUuids = newTags.map(tag => tag.uuid);
     onUpdate({
       ...note,
-      tagUuids: newTagUuids,
+      tags: newTags,
       updatedAt: new Date()
     });
   };
@@ -401,7 +395,7 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
           displayTitle={displayTitle}
           isEditingTitle={isEditingTitle}
           titleRef={titleRef}
-          isPinned={note.isPinned}
+          isPinned={note.isPinned || false}
           tags={contentTags}
           userId={note.userId || -1}
           onTitleChange={setTitle}

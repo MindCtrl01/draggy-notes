@@ -32,7 +32,6 @@ export const useCanvasDrag = () => {
     if (!isDragging || !containerRef.current) return;
 
     const deltaX = e.clientX - startPosition.x;
-    const deltaY = e.clientY - startPosition.y;
 
     // Only allow horizontal dragging, ignore vertical
     containerRef.current.scrollLeft = startScrollPosition.x - deltaX;

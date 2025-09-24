@@ -20,10 +20,10 @@ export class NotesStorage {
       const noteData = {
         ...note,
         date: note.date.toISOString(),
-        createdAt: note.createdAt.toISOString(),
-        updatedAt: note.updatedAt.toISOString(),
+        createdAt: note.createdAt?.toISOString() || new Date().toISOString(),
+        updatedAt: note.updatedAt?.toISOString() || new Date().toISOString(),
         userId: note.userId || -1, // Default to -1 if not set
-        tagUuids: note.tagUuids || [], // Default to empty array if not set
+        tags: note.tags || [], // Default to empty array if not set
         isPinned: note.isPinned || false, // Default to false if not set
       };
       localStorage.setItem(key, JSON.stringify(noteData));
@@ -54,7 +54,7 @@ export class NotesStorage {
         createdAt: new Date(parsed.createdAt),
         updatedAt: new Date(parsed.updatedAt),
         userId: parsed.userId || -1, // Default to -1 if not set
-        tagUuids: parsed.tagUuids || [], // Default to empty array if not set
+        tags: parsed.tags || [], // Default to empty array if not set
         isPinned: parsed.isPinned || false, // Default to false if not set
       };
     } catch (error) {
@@ -80,7 +80,7 @@ export class NotesStorage {
       }
       
       // Sort by creation date (newest first)
-      return notes.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      return notes.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
     } catch (error) {
       console.error('Failed to retrieve all notes from localStorage:', error);
       return [];

@@ -10,7 +10,7 @@ interface TagSuggestionState {
 
 export const useTagSuggestions = (
   textareaRef: React.RefObject<HTMLTextAreaElement>,
-  userId: number,
+  _userId: number,
   onTagInsert?: (tag: Tag, position: number) => void
 ) => {
   const [suggestionState, setSuggestionState] = useState<TagSuggestionState>({

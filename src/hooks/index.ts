@@ -6,4 +6,4 @@ export * from './use-toast'; // Toast hook for UI components
 export * from './auth';
 
 // API hooks exports  
-export * from './api/use-health-api'; // Health check API hooks
+// export * from './api/use-health-api'; // Health check API hooks - not implemented yet

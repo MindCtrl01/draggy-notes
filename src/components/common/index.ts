@@ -13,6 +13,6 @@ export {
   type ToastProps,
   type ToastActionElement,
 } from './ui/toast';
-export { TagSuggestion } from './TagSuggestion';
-export { TagDisplay } from './TagDisplay';
-export { ThemeToggle } from './ThemeToggle';
+export { TagSuggestion } from '../../features/notes/components/TagSuggestion';
+export { TagDisplay } from '../../features/notes/components/TagDisplay';
+export { ThemeToggle } from '../../features/notes/components/ThemeToggle';

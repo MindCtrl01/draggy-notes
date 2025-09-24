@@ -127,15 +127,15 @@ export class TagManager {
    * Find or create tags from text content
    * @param text - The text to parse for tags
    * @param userId - The user ID
-   * @returns Array of tag UUIDs found or created
+   * @returns Array of Tag objects found or created
    */
-  static findOrCreateTagsFromText(text: string, userId: number): string[] {
+  static findOrCreateTagsFromText(text: string, userId: number): Tag[] {
     const tagRegex = /#(\w+(?:\s+\w+)*)/g;
     const matches = Array.from(text.matchAll(tagRegex));
-    const tagUuids: string[] = [];
+    const foundTags: Tag[] = [];
     
     if (matches.length === 0) {
-      return tagUuids;
+      return foundTags;
     }
     
     const allTags = this.getAllTags(userId);
@@ -154,12 +154,23 @@ export class TagManager {
         allTags.push(existingTag);
       }
       
-      if (!tagUuids.includes(existingTag.uuid)) {
-        tagUuids.push(existingTag.uuid);
+      if (!foundTags.some(tag => tag.uuid === existingTag!.uuid)) {
+        foundTags.push(existingTag);
       }
     }
     
-    return tagUuids;
+    return foundTags;
+  }
+
+  /**
+   * Find or create tags from text content - Legacy UUID version
+   * @param text - The text to parse for tags
+   * @param userId - The user ID
+   * @returns Array of tag UUIDs found or created
+   * @deprecated Use findOrCreateTagsFromText instead
+   */
+  static findOrCreateTagUuidsFromText(text: string, userId: number): string[] {
+    return this.findOrCreateTagsFromText(text, userId).map(tag => tag.uuid);
   }
 
   /**

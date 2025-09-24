@@ -1,4 +1,4 @@
-import { API_CONFIG } from '@/services/config/api';
+import { API_CONFIG } from '@/config/api';
 import { TokenManager } from '@/helpers/token-manager';
 import { ApiError, ApiResponse } from './models/api.model';
 import {
@@ -15,7 +15,6 @@ import {
   UpdateUserRequest,
   GetUserByIdRequest,
   DeleteUserRequest,
-  AuthResponse,
   AuthUser
 } from './models/auth.model';
 
@@ -160,7 +159,7 @@ class AuthApi {
   }
 
   // POST /api/auth/reset-password - Reset password with token
-  async resetPassword(request: ResetPasswordRequest): Promise<void> {
+  async resetPasswordWithRequest(request: ResetPasswordRequest): Promise<void> {
     await this.makeRequest<void>(`${this.authBasePath}/reset-password`, {
       method: 'POST',
       body: JSON.stringify(request),
@@ -270,6 +269,7 @@ class AuthApi {
         email: payload.email,
         phoneNumber: payload.phoneNumber,
         isActive: payload.isActive !== false,
+        isDelete: payload.isDelete || false,
         roles: payload.roles || [],
       };
     } catch {
@@ -292,10 +292,17 @@ class AuthApi {
   }
 
   // Legacy methods for backward compatibility
-  async requestPasswordReset(email: string): Promise<void> {
-    const request: ForgotPasswordRequest = { email };
-    await this.forgotPassword(request);
+
+  // Get current user from server (API call) - using token parsing instead of API call
+  async getCurrentUser(): Promise<AuthUser> {
+    const user = this.getCurrentUserFromToken();
+    if (!user) {
+      throw new Error('No authenticated user found');
+    }
+    return user;
   }
+
+
 }
 
 // Export singleton instance

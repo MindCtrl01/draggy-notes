@@ -1,7 +1,7 @@
 /**
  * Generate task-related colors that provide good contrast with the note card background
  */
-export const getTaskColors = (noteColor: string, textColor: string) => {
+export const getTaskColors = (noteColor: string, _textColor: string) => {
   const hexToRgb = (hex: string) => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? {

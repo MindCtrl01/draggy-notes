@@ -9,7 +9,7 @@ import { LoginModal } from '@/components/auth';
 import { ThemeToggle } from '@/components/common';
 import { useNotes, formatDateKey } from '../hooks/use-notes';
 import { useCanvasDrag } from '../hooks/use-canvas-drag';
-import { useAuthContext } from '@/contexts/AuthContext';
+import { useAuthContext } from '@/components/common/contexts/AuthContext';
 import { useState, useEffect, useCallback } from 'react';
 import { NotesStorage } from '@/helpers/notes-storage';
 import { Note } from '@/domains/note';
@@ -154,7 +154,7 @@ export const NotesCanvas = () => {
     }, ANIMATION.SCROLL_TO_NOTE_DELAY);
   };
 
-  const handleNoteDetailStateChange = useCallback((noteUuid: string, isOpen: boolean) => {
+  const handleNoteDetailStateChange = useCallback((_noteUuid: string, isOpen: boolean) => {
     setIsAnyNoteDetailOpen(isOpen);
   }, []);
 
@@ -173,9 +173,15 @@ export const NotesCanvas = () => {
       }
     });
     
-    setNoteZIndices(newZIndices);
-    setMaxZIndex(currentZIndex);
-  }, [notes]);
+    // Only update if the new indices are actually different
+    const hasChanges = notes.some(note => !noteZIndices[note.uuid]) || 
+                       Object.keys(noteZIndices).length !== notes.length;
+    
+    if (hasChanges) {
+      setNoteZIndices(newZIndices);
+      setMaxZIndex(currentZIndex);
+    }
+  }, [notes, noteZIndices]);
 
   // Function to bring a note to the front
   const bringNoteToFront = useCallback((noteUuid: string) => {
@@ -304,7 +310,7 @@ export const NotesCanvas = () => {
                   <div className="flex items-center gap-2 px-3 py-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
                     <User size={16} className="text-gray-600 dark:text-gray-400" />
                     <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                      {user.name || user.email}
+                      {user.username || user.email}
                     </span>
                   </div>
                   <button
@@ -349,7 +355,7 @@ export const NotesCanvas = () => {
                 note={note}
                 onUpdate={updateNote}
                 onDelete={deleteNote}
-                onDrag={showSearchSidebar ? undefined : dragNote}
+                onDrag={showSearchSidebar ? () => {} : dragNote}
                 onDragEnd={showSearchSidebar ? undefined : finalizeDrag}
                 onMoveToDate={moveNoteToDate}
                 onRefreshFromStorage={refreshNoteFromStorage}

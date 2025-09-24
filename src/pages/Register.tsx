@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LoginModal } from '@/components/auth';
-import { useAuthContext } from '@/contexts/AuthContext';
+import { useAuthContext } from '@/components/common/contexts/AuthContext';
 
 export const Register: React.FC = () => {
   const navigate = useNavigate();

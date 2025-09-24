@@ -3,7 +3,6 @@ import { X, Edit3, Calendar } from 'lucide-react';
 import { DatePicker } from '@mantine/dates';
 import { Note } from '@/domains/note';
 import { Tag } from '@/domains/tag';
-import { TagManager } from '@/helpers/tag-manager';
 import { getContrastTextColor } from '@/helpers/color-generator';
 import { formatDateDisplay } from '@/helpers/date-helper';
 import { getTaskProgressDisplay } from '@/helpers/task-manager';
@@ -73,27 +72,22 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
 
   // Initialize selected tags from note's existing tags
   useEffect(() => {
-    if (note.tagUuids && note.tagUuids.length > 0) {
-      const existingTags = note.tagUuids.map(uuid => {
-        const allTags = [...TagManager.getAllTags(note.userId || -1)];
-        return allTags.find(tag => tag.uuid === uuid);
-      }).filter(Boolean) as Tag[];
-      setSelectedTags(existingTags);
-      updateTags(existingTags);
+    if (note.tags && note.tags.length > 0) {
+      setSelectedTags(note.tags);
+      updateTags(note.tags);
     } else {
       setSelectedTags([]);
       updateTags([]);
     }
-  }, [note.uuid, note.tagUuids, note.userId, updateTags]);
+  }, [note.uuid, note.tags, note.userId, updateTags]);
 
   // Handle tag changes
   const handleTagsChange = (newTags: Tag[]) => {
     setSelectedTags(newTags);
     updateTags(newTags);
-    const newTagUuids = newTags.map(tag => tag.uuid);
     onUpdate({
       ...note,
-      tagUuids: newTagUuids,
+      tags: newTags,
       updatedAt: new Date()
     });
   };
@@ -117,18 +111,17 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
   // Save any remaining unsaved changes when closing
   const saveAllChanges = useCallback(() => {
     // Check for unsaved changes in title, content, tags, and date
-    const tagUuids = tags.map(tag => tag.uuid);
     const hasUnsavedChanges = title !== note.title || 
                              content !== note.content || 
                              selectedDate.getTime() !== note.date.getTime() ||
-                             JSON.stringify(tagUuids) !== JSON.stringify(note.tagUuids);
+                             JSON.stringify(tags) !== JSON.stringify(note.tags);
     
     if (hasUnsavedChanges) {
       const updatedNote = {
         ...note,
         title: title.trim() || 'Untitled',
         content: content,
-        tagUuids: tagUuids,
+        tags: tags,
         date: selectedDate,
         updatedAt: new Date()
       };
@@ -138,7 +131,7 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
         if (onMoveToDate) {
           onMoveToDate(note.uuid, selectedDate);
         }
-        if (title !== note.title || content !== note.content || JSON.stringify(tagUuids) !== JSON.stringify(note.tagUuids)) {
+        if (title !== note.title || content !== note.content || JSON.stringify(tags) !== JSON.stringify(note.tags)) {
           onUpdate({ ...updatedNote, date: note.date }); // Keep original date for onUpdate
         }
       } else {
@@ -244,7 +237,7 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
     setEditingTaskId(null);
   };
 
-  const handleTaskEditKeyDown = (e: React.KeyboardEvent, taskUuid: string, currentText: string) => {
+  const handleTaskEditKeyDown = (e: React.KeyboardEvent, taskUuid: string, _currentText: string) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       const target = e.target as HTMLTextAreaElement;

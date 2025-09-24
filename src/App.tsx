@@ -1,8 +1,8 @@
 import { Toaster, Sonner, TooltipProvider } from "@/components/common";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { ThemeProvider } from "@/contexts/ThemeContext";
+import { AuthProvider } from "@/components/common/contexts/AuthContext";
+import { ThemeProvider } from "@/components/common/contexts/ThemeContext";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 import Index from "./pages/Index";

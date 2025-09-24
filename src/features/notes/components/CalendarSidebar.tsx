@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Note } from '@/domains/note';
-import { formatDateKey, formatDateDisplay, isSameDay, generateCalendarDays } from '@/helpers/date-helper';
+import { formatDateKey, generateCalendarDays } from '@/helpers/date-helper';
 import { getDateColor, goToPreviousMonth, goToNextMonth } from '@/helpers/calendar-helper';
 
 interface CalendarSidebarProps {

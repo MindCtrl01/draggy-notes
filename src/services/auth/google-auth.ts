@@ -65,7 +65,7 @@ export class GoogleAuthService {
   }
 
   // Handle OAuth callback (for when implementing server-side flow)
-  async handleCallback(code: string): Promise<GoogleAuthResponse> {
+  async handleCallback(_code: string): Promise<GoogleAuthResponse> {
     // TODO: Exchange authorization code for tokens
     // This would typically be done on the server side
     throw new Error('OAuth callback handling not implemented');

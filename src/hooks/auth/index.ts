@@ -1,2 +1,2 @@
 export * from './use-auth';
-export { useAuthContext } from '@/contexts/AuthContext';
+export { useAuthContext } from '@/components/common/contexts/AuthContext';

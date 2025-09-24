@@ -38,7 +38,12 @@ export interface User extends BaseEntity {
     position: { x: number; y: number };
     isTaskMode?: boolean;
     userId: number;
-    tagUuids: string[];
+    tags: Array<{
+      uuid: string;
+      name: string;
+      userId: number | null;
+      usageCount: number;
+    }>;
   }>;
   
   passwordResetToken?: string;

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Tag } from '@/domains/note';
+import { Tag } from '@/domains/tag';
 import { TagManager } from '@/helpers/tag-manager';
 
 interface TagSuggestionProps {

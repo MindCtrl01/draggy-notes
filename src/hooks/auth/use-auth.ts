@@ -4,20 +4,19 @@ import {
   AuthUser, 
   LoginRequest, 
   RegisterRequest, 
-  AuthResponse 
+  AuthenticationResponse 
 } from '@/services/api';
 
 interface UseAuthReturn {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (credentials: LoginRequest) => Promise<AuthResponse>;
-  register: (userData: RegisterRequest) => Promise<AuthResponse>;
+  login: (credentials: LoginRequest) => Promise<AuthenticationResponse>;
+  register: (userData: RegisterRequest) => Promise<AuthenticationResponse>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
-  changePassword: (oldPassword: string, newPassword: string) => Promise<void>;
-  requestPasswordReset: (email: string) => Promise<void>;
-  resetPassword: (token: string, newPassword: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (email: string, resetToken: string, newPassword: string) => Promise<void>;
 }
 
 export const useAuth = (): UseAuthReturn => {
@@ -58,11 +57,23 @@ export const useAuth = (): UseAuthReturn => {
     initAuth();
   }, []);
 
-  const login = useCallback(async (credentials: LoginRequest): Promise<AuthResponse> => {
+  const login = useCallback(async (credentials: LoginRequest): Promise<AuthenticationResponse> => {
     setIsLoading(true);
     try {
       const response = await authApi.login(credentials);
-      setUser(response.user);
+      // Convert UserInfo to AuthUser by adding missing properties
+      const authUser: AuthUser = {
+        ...response.user,
+        username: response.user.username || '',
+        firstName: response.user.firstName || '',
+        lastName: response.user.lastName || '',
+        email: response.user.email || '',
+        phoneNumber: response.user.phoneNumber || '',
+        roles: response.user.roles || [],
+        isActive: true, // Default value
+        isDelete: false, // Default value
+      };
+      setUser(authUser);
       return response;
     } catch (error) {
       setUser(null);
@@ -72,11 +83,23 @@ export const useAuth = (): UseAuthReturn => {
     }
   }, []);
 
-  const register = useCallback(async (userData: RegisterRequest): Promise<AuthResponse> => {
+  const register = useCallback(async (userData: RegisterRequest): Promise<AuthenticationResponse> => {
     setIsLoading(true);
     try {
       const response = await authApi.register(userData);
-      setUser(response.user);
+      // Convert UserInfo to AuthUser by adding missing properties
+      const authUser: AuthUser = {
+        ...response.user,
+        username: response.user.username || '',
+        firstName: response.user.firstName || '',
+        lastName: response.user.lastName || '',
+        email: response.user.email || '',
+        phoneNumber: '',
+        roles: response.user.roles || [],
+        isActive: true, // Default value
+        isDelete: false, // Default value
+      };
+      setUser(authUser);
       return response;
     } catch (error) {
       setUser(null);
@@ -113,22 +136,18 @@ export const useAuth = (): UseAuthReturn => {
     }
   }, []);
 
-  const changePassword = useCallback(async (
-    oldPassword: string, 
-    newPassword: string
-  ): Promise<void> => {
-    return authApi.changePassword(oldPassword, newPassword);
-  }, []);
 
-  const requestPasswordReset = useCallback(async (email: string): Promise<void> => {
-    return authApi.requestPasswordReset(email);
+  const forgotPassword = useCallback(async (email: string): Promise<void> => {
+    return authApi.forgotPassword({ email });
   }, []);
 
   const resetPassword = useCallback(async (
-    token: string, 
+    email: string,
+    resetToken: string, 
     newPassword: string
   ): Promise<void> => {
-    return authApi.resetPassword(token, newPassword);
+    const request = { email, resetToken, newPassword };
+    return authApi.resetPasswordWithRequest(request);
   }, []);
 
   return {
@@ -139,8 +158,7 @@ export const useAuth = (): UseAuthReturn => {
     register,
     logout,
     refreshUser,
-    changePassword,
-    requestPasswordReset,
+    forgotPassword,
     resetPassword,
   };
 };

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Mail, Eye, EyeOff, LogIn, UserPlus } from 'lucide-react';
-import { useAuthContext } from '@/contexts/AuthContext';
+import { useAuthContext } from '@/components/common/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 
 interface LoginModalProps {
@@ -29,13 +29,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
     try {
       if (mode === 'login') {
-        await login({ email, password });
+        await login({ username: email, password });
         toast({
           title: "Login successful!",
           description: "Welcome back to Draggy Notes.",
         });
       } else {
-        await register({ email, password, name: name.trim() || undefined });
+        await register({ username: email, password, firstName: name.trim() || null, lastName: null, email, phoneNumber: null });
         toast({
           title: "Registration successful!",
           description: "Welcome to Draggy Notes!",

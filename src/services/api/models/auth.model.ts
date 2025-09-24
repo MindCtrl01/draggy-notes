@@ -26,9 +26,9 @@ export interface ForgotPasswordRequest {
 }
 
 export interface ResetPasswordRequest {
-  email: string | null;
-  resetToken: string | null;
-  newPassword: string | null;
+  email: string;
+  resetToken: string;
+  newPassword: string;
 }
 
 export interface RefreshTokenRequest {
@@ -42,6 +42,7 @@ export interface UserInfo {
   firstName: string | null;
   lastName: string | null;
   email: string | null;
+  phoneNumber: string | null;
   roles: string[] | null;
 }
 
@@ -104,6 +105,7 @@ export interface AuthUser {
   email: string;
   phoneNumber?: string;
   isActive: boolean;
+  isDelete: boolean;
   roles: string[];
 }
 

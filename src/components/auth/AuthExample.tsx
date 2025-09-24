@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuthContext } from '@/contexts/AuthContext';
+import { useAuthContext } from '@/components/common/contexts/AuthContext';
 
 /**
  * Example component demonstrating how to use the AuthContext
@@ -22,7 +22,7 @@ export const AuthExample: React.FC = () => {
   if (isAuthenticated && user) {
     return (
       <div className="p-4 border rounded-lg">
-        <h2 className="text-lg font-semibold mb-2">Welcome, {user.name || user.email}!</h2>
+        <h2 className="text-lg font-semibold mb-2">Welcome, {user.username || user.email}!</h2>
         <p className="text-sm text-gray-600 mb-4">
           Email: {user.email}
           {user.roles && user.roles.length > 0 && (
@@ -51,7 +51,7 @@ export const AuthExample: React.FC = () => {
         <button 
           onClick={() => {
             // Example login - replace with your actual login form
-            login({ email: 'user@example.com', password: 'password' })
+            login({ username: 'user@example.com', password: 'password' })
               .catch(error => console.error('Login failed:', error));
           }}
           className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
@@ -61,7 +61,7 @@ export const AuthExample: React.FC = () => {
         <button 
           onClick={() => {
             // Example register - replace with your actual register form
-            register({ email: 'user@example.com', password: 'password', name: 'User' })
+            register({ username: 'user@example.com', password: 'password', firstName: 'User', lastName: null, email: 'user@example.com', phoneNumber: null })
               .catch(error => console.error('Registration failed:', error));
           }}
           className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"

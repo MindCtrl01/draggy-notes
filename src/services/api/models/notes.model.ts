@@ -11,17 +11,16 @@ export interface CreateTaskRequest {
 }
 
 export interface CreateNoteRequest {
-  uuid: string;
-  title: string | null;
-  content: string | null;
+  title: string;
+  content: string;
   date?: string | null; // ISO date string format
-  color: string | null;
+  color: string;
   isDisplayed: boolean;
   position: CreateNotePositionRequest;
   noteTasks?: CreateTaskRequest[] | null;
   isTaskMode?: boolean | null;
   isPinned?: boolean | null;
-  tagUuids?: string[] | null;
+  tagNames?: string[] | null;
 }
 
 export interface UpdateNotePositionRequest {
@@ -36,16 +35,16 @@ export interface UpdateTaskRequest {
 }
 
 export interface UpdateNoteRequest {
-  uuid: string;
-  title: string | null;
-  content: string | null;
+  id: number;
+  title: string;
+  content: string;
   date?: string | null; // ISO date string format
-  color: string | null;
+  color: string;
   isDisplayed: boolean;
   position: UpdateNotePositionRequest;
   tasks?: UpdateTaskRequest[] | null;
   isTaskMode?: boolean | null;
-  tagUuids?: string[] | null;
+  tagNames?: string[] | null;
 }
 
 export interface GetNoteByIdRequest {
@@ -79,25 +78,36 @@ export interface NotePositionResponse {
 }
 
 export interface TaskResponse {
+  id: number;
   uuid: string;
-  text: string | null;
+  text: string;
   completed: boolean;
   createdAt: string; // ISO date string format
 }
 
-export interface NoteResponse {
+export interface TagResponse {
+  id: number;
   uuid: string;
-  title: string | null;
-  content: string | null;
+  name: string;
+  userId?: number | null;
+  usageCount: number;
+}
+
+export interface NoteResponse {
+  id: number;
+  uuid: string;
+  title: string;
+  content: string;
   date: string; // ISO date string format
-  color: string | null;
+  color: string;
   isDisplayed: boolean;
+  isPinned?: boolean | null;
   position: NotePositionResponse;
   createdAt: string; // ISO date string format
   updatedAt: string; // ISO date string format
   tasks?: TaskResponse[] | null;
   isTaskMode?: boolean | null;
-  tagUuids?: string[] | null;
+  tags: TagResponse[];
 }
 
 // Health Response Models

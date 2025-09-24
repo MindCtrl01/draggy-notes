@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Search, X, Calendar, FileText, Tag } from 'lucide-react';
+import { Search, X, Calendar, FileText } from 'lucide-react';
 import { Note } from '@/domains/note';
 import { NoteTask } from '@/domains/noteTask';
 import { formatDateShort } from '@/helpers/date-helper';
@@ -26,12 +26,11 @@ export const SearchSidebar = ({ allNotes, isOpen, onClose, onNoteSelect }: Searc
     if (!searchQuery.trim()) {
       // Show top 10 most recent notes by creation date when no search query
       return allNotes
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
         .slice(0, 10);
     }
     
     const normalizedQuery = normalizeText(searchQuery);
-    const userId = -1; // Using temporary userId
     
     return allNotes
       .filter(note => {
@@ -51,7 +50,7 @@ export const SearchSidebar = ({ allNotes, isOpen, onClose, onNoteSelect }: Searc
         
         return matches;
       })
-      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()); // Sort by most recent
+      .sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime()); // Sort by most recent
   }, [allNotes, searchQuery]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {

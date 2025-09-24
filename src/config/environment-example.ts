@@ -12,9 +12,9 @@ console.log('App Title:', import.meta.env.VITE_APP_TITLE);    // From .env file
 console.log('Debug Mode:', import.meta.env.VITE_DEBUG_MODE);  // From .env file
 
 // With fallbacks
-const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://localhost:7060/api';
-const appTitle = import.meta.env.VITE_APP_TITLE || 'Draggy Notes';
-const debugMode = import.meta.env.VITE_DEBUG_MODE === 'true';
+// const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://localhost:7060/api';
+// const appTitle = import.meta.env.VITE_APP_TITLE || 'Draggy Notes';
+// const debugMode = import.meta.env.VITE_DEBUG_MODE === 'true';
 
 // Environment-specific configuration
 export const config = {

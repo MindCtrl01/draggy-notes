@@ -15,7 +15,7 @@ export const QuickNoteTabs = ({ notes, onNoteSelect, selectedNoteUuid }: QuickNo
   // Filter to only displayed notes and sort by creation time (newest first)
   const displayedNotes = notes
     .filter(note => note.isDisplayed)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
 
   if (displayedNotes.length === 0) {
     return null;

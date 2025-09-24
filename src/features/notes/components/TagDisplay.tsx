@@ -183,7 +183,7 @@ export const TagDisplay: React.FC<TagDisplayProps> = ({
                 <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-32 overflow-y-auto min-w-32 z-50 scrollbar-hide">
                   {suggestions.map((suggestion, index) => (
                     <div
-                      key={suggestion.id}
+                      key={suggestion.uuid}
                       className={`px-3 py-2 cursor-pointer text-xs ${
                         index === selectedSuggestionIndex
                           ? 'bg-blue-100 dark:bg-blue-700 text-blue-900 dark:text-blue-100'

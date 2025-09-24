@@ -1,4 +1,4 @@
-import { API_CONFIG } from '@/services/config/api';
+import { API_CONFIG } from '@/config/api';
 import { TokenManager } from '@/helpers/token-manager';
 import { ApiError, ApiResponse } from './models/api.model';
 import {

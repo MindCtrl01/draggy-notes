@@ -1,4 +1,5 @@
 import { BaseEntity } from './base-entity';
+import { Tag } from './tag';
 
 export interface NoteTask extends BaseEntity {
     uuid: string;
@@ -7,5 +8,5 @@ export interface NoteTask extends BaseEntity {
     completed: boolean;
     userId: number;
     noteUuid: string;
-    tagUuids: string[];
+    tags: Tag[];
 }
