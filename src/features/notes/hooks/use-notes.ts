@@ -1,11 +1,12 @@
 import { useCallback, useState, useEffect } from 'react';
 import { Note } from '@/domains/note';
-// import { useNotesApi } from './use-notes-api'; // Temporarily disabled
+import { NotesSyncService } from '@/services/notes-sync-service';
 import { NotesStorage } from '@/helpers/notes-storage';
 import { generateRandomNoteColor } from '@/helpers/color-generator';
 import { formatDateKey, formatDateDisplay, formatDateInput, formatDateShort, isSameDay } from '@/helpers/date-helper';
 import { LIMITS, ANIMATION } from '@/constants/ui-constants';
 import { v7 as uuidv7 } from 'uuid';
+import { API } from '@/constants/ui-constants';
 
 
 export const useNotes = (selectedDate?: Date) => {
@@ -15,16 +16,23 @@ export const useNotes = (selectedDate?: Date) => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Load notes from localStorage on initialization
+  // Load notes from API and localStorage on initialization
   useEffect(() => {
-    const loadNotes = () => {
+    const loadNotes = async () => {
       try {
-        if (NotesStorage.isStorageAvailable()) {
-          const savedNotes = NotesStorage.getAllNotes();
-          setAllNotes(savedNotes);
-        }
+        const notes = await NotesSyncService.loadAllNotes();
+        setAllNotes(notes);
       } catch (error) {
-        console.error('Failed to load notes from localStorage:', error);
+        console.error('Failed to load notes:', error);
+        // Fallback to localStorage only
+        try {
+          if (NotesStorage.isStorageAvailable()) {
+            const savedNotes = NotesStorage.getAllNotes();
+            setAllNotes(savedNotes);
+          }
+        } catch (localError) {
+          console.error('Failed to load notes from localStorage:', localError);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -41,7 +49,7 @@ export const useNotes = (selectedDate?: Date) => {
 
   const [draggedNotes, setDraggedNotes] = useState<Record<string, { x: number; y: number }>>({});
 
-  const createNote = useCallback((position?: { x: number; y: number }, content?: string) => {
+  const createNote = useCallback(async (position?: { x: number; y: number }, content?: string) => {
     setIsCreating(true);
     
     const noteContent = content !== undefined ? content.trim() : 'Click to add content...';
@@ -52,6 +60,7 @@ export const useNotes = (selectedDate?: Date) => {
     };
 
     const newNote: Note = {
+      id: API.DEFAULT_IDS.NEW_ENTITY,
       uuid: uuidv7(),
       title: 'New Note',
       content: noteContent,
@@ -61,68 +70,111 @@ export const useNotes = (selectedDate?: Date) => {
       position: defaultPosition,
       createdAt: new Date(),
       updatedAt: new Date(),
-      userId: -1, // Temporary userId
+      userId: API.DEFAULT_IDS.TEMPORARY_USER, // Temporary userId
       tags: [], // Empty tags initially
       isTaskMode: true, // Default to task mode
       noteTasks: [], // Initialize empty tasks array
     };
 
-    NotesStorage.saveNote(newNote);
+    // Optimistically add to UI
     setAllNotes(prevNotes => [...prevNotes, newNote]);
     
-    // Simulate API delay
-    setTimeout(() => {
-      setIsCreating(false);
-    }, ANIMATION.CREATE_NOTE_DELAY);
+    try {
+      // Sync with API and localStorage
+      const syncedNote = await NotesSyncService.createNote(newNote);
+      
+      // Update with synced version (may have server-generated ID)
+      setAllNotes(prevNotes => 
+        prevNotes.map(note => 
+          note.uuid === newNote.uuid ? syncedNote : note
+        )
+      );
+    } catch (error) {
+      console.error('Failed to sync created note:', error);
+      // Note is already in the UI and localStorage, so we continue
+    } finally {
+      // Simulate API delay for smooth UX
+      setTimeout(() => {
+        setIsCreating(false);
+      }, ANIMATION.CREATE_NOTE_DELAY);
+    }
   }, [selectedDate]);
 
-  const updateNote = useCallback((updatedNote: Note) => {
+  const updateNote = useCallback(async (updatedNote: Note) => {
     setIsUpdating(true);
     
     const noteToUpdate = { ...updatedNote, updatedAt: new Date() };
     
-    NotesStorage.saveNote(noteToUpdate);
-    
+    // Optimistically update UI
     setAllNotes(prevNotes => 
       prevNotes.map(note => 
         note.uuid === updatedNote.uuid ? noteToUpdate : note
       )
     );
     
-    // Simulate API delay
-    setTimeout(() => {
-      setIsUpdating(false);
-    }, ANIMATION.UPDATE_NOTE_DELAY);
+    try {
+      // Sync with API and localStorage
+      const syncedNote = await NotesSyncService.updateNote(noteToUpdate);
+      
+      // Update with synced version
+      setAllNotes(prevNotes => 
+        prevNotes.map(note => 
+          note.uuid === updatedNote.uuid ? syncedNote : note
+        )
+      );
+    } catch (error) {
+      console.error('Failed to sync updated note:', error);
+      // Note is already updated in UI and localStorage, so we continue
+    } finally {
+      // Simulate API delay for smooth UX
+      setTimeout(() => {
+        setIsUpdating(false);
+      }, ANIMATION.UPDATE_NOTE_DELAY);
+    }
   }, []);
 
-  const deleteNote = useCallback((uuid: string) => {
+  const deleteNote = useCallback(async (id: number, uuid: string) => {
     setIsDeleting(true);
     
-    NotesStorage.deleteNote(uuid);
-    
+    // Optimistically remove from UI
     setAllNotes(prevNotes => prevNotes.filter(note => note.uuid !== uuid));
     
-    // Simulate API delay
-    setTimeout(() => {
-      setIsDeleting(false);
-    }, ANIMATION.UPDATE_NOTE_DELAY);
+    try {
+      // Sync with API and localStorage
+      await NotesSyncService.deleteNote(id, uuid);
+    } catch (error) {
+      console.error('Failed to sync deleted note:', error);
+      // Note is already removed from UI and localStorage, so we continue
+    } finally {
+      // Simulate API delay for smooth UX
+      setTimeout(() => {
+        setIsDeleting(false);
+      }, ANIMATION.UPDATE_NOTE_DELAY);
+    }
   }, []);
 
-  const clearAllDisplayedNotes = useCallback(() => {
+  const clearAllDisplayedNotes = useCallback(async () => {
     setIsDeleting(true);
     
     const displayedNotes = notes.filter(note => note.isDisplayed);
     
-    displayedNotes.forEach(note => {
-      NotesStorage.deleteNote(note.uuid);
-    });
-    
+    // Optimistically remove from UI
     setAllNotes(prevNotes => prevNotes.filter(note => !displayedNotes.some(dn => dn.uuid === note.uuid)));
     
-    // Simulate API delay
-    setTimeout(() => {
-      setIsDeleting(false);
-    }, ANIMATION.CREATE_NOTE_DELAY);
+    try {
+      // Sync deletions with API and localStorage
+      await Promise.all(
+        displayedNotes.map(note => NotesSyncService.deleteNote(note.id, note.uuid))
+      );
+    } catch (error) {
+      console.error('Failed to sync batch delete:', error);
+      // Notes are already removed from UI and localStorage, so we continue
+    } finally {
+      // Simulate API delay for smooth UX
+      setTimeout(() => {
+        setIsDeleting(false);
+      }, ANIMATION.CREATE_NOTE_DELAY);
+    }
   }, [notes]);
 
   const dragNote = useCallback((uuid: string, position: { x: number; y: number }) => {
@@ -133,13 +185,12 @@ export const useNotes = (selectedDate?: Date) => {
     }));
   }, []);
 
-  const finalizeDrag = useCallback((uuid: string, position: { x: number; y: number }) => {
+  const finalizeDrag = useCallback(async (uuid: string, position: { x: number; y: number }) => {
+    // Update UI immediately
     setAllNotes(prevNotes => {
       const updatedNotes = prevNotes.map(note => {
         if (note.uuid === uuid) {
-          const updatedNote = { ...note, position, updatedAt: new Date() };
-          NotesStorage.saveNote(updatedNote);
-          return updatedNote;
+          return { ...note, position, updatedAt: new Date() };
         }
         return note;
       });
@@ -150,28 +201,51 @@ export const useNotes = (selectedDate?: Date) => {
       const { [uuid]: _, ...rest } = prev;
       return rest;
     });
-  }, []);
 
-  const moveNoteToDate = useCallback((uuid: string, newDate: Date) => {
+    try {
+      // Find the note to sync
+      const noteToUpdate = allNotes.find(note => note.uuid === uuid);
+      if (noteToUpdate) {
+        const updatedNote = { ...noteToUpdate, position, updatedAt: new Date() };
+        await NotesSyncService.updateNote(updatedNote);
+      }
+    } catch (error) {
+      console.error('Failed to sync drag position:', error);
+      // Position is already updated in UI and localStorage, so we continue
+    }
+  }, [allNotes]);
+
+  const moveNoteToDate = useCallback(async (uuid: string, newDate: Date) => {
     setIsUpdating(true);
     
+    // Update UI immediately
     setAllNotes(prevNotes => {
       const updatedNotes = prevNotes.map(note => {
         if (note.uuid === uuid) {
-          const updatedNote = { ...note, date: newDate, updatedAt: new Date() };
-          NotesStorage.saveNote(updatedNote);
-          return updatedNote;
+          return { ...note, date: newDate, updatedAt: new Date() };
         }
         return note;
       });
       return updatedNotes;
     });
     
-    // Simulate API delay
-    setTimeout(() => {
-      setIsUpdating(false);
-    }, ANIMATION.UPDATE_NOTE_DELAY);
-  }, []);
+    try {
+      // Find the note to sync
+      const noteToUpdate = allNotes.find(note => note.uuid === uuid);
+      if (noteToUpdate) {
+        const updatedNote = { ...noteToUpdate, date: newDate, updatedAt: new Date() };
+        await NotesSyncService.updateNote(updatedNote);
+      }
+    } catch (error) {
+      console.error('Failed to sync note date move:', error);
+      // Date is already updated in UI and localStorage, so we continue
+    } finally {
+      // Simulate API delay for smooth UX
+      setTimeout(() => {
+        setIsUpdating(false);
+      }, ANIMATION.UPDATE_NOTE_DELAY);
+    }
+  }, [allNotes]);
 
   // Function to refresh a specific note from localStorage
   const refreshNoteFromStorage = useCallback((noteUuid: string) => {

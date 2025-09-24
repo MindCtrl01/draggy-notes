@@ -1,5 +1,6 @@
 export interface BaseEntity {
-  uuid?: string;
+  id: number;
+  uuid: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

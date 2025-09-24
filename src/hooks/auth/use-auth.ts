@@ -6,6 +6,7 @@ import {
   RegisterRequest, 
   AuthenticationResponse 
 } from '@/services/api';
+import { API } from '@/constants/ui-constants';
 
 interface UseAuthReturn {
   user: AuthUser | null;
@@ -64,6 +65,7 @@ export const useAuth = (): UseAuthReturn => {
       // Convert UserInfo to AuthUser by adding missing properties
       const authUser: AuthUser = {
         ...response.user,
+        id: response.user.id || API.DEFAULT_IDS.NEW_ENTITY,
         username: response.user.username || '',
         firstName: response.user.firstName || '',
         lastName: response.user.lastName || '',

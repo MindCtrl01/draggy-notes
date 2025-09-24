@@ -3,7 +3,6 @@ import { NoteTask } from "./noteTask";
 import { Tag } from "./tag";
 
 export interface Note extends BaseEntity {
-  uuid: string;
   title: string;
   content: string;
   date: Date;

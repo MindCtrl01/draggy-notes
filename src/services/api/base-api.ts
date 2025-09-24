@@ -1,6 +1,7 @@
 import { API_CONFIG } from '@/config/api';
 import { TokenManager } from '@/helpers/token-manager';
 import { ApiError, ApiResponse } from './models/api.model';
+import { API } from '@/constants/ui-constants';
 
 // Enhanced API request helper with JWT authentication and OpenAPI response format
 export async function apiRequest<T>(
@@ -25,9 +26,9 @@ export async function apiRequest<T>(
     const response = await fetch(url, config);
     
     // Handle authentication errors
-    if (response.status === 401) {
+    if (response.status === API.STATUS_CODES.UNAUTHORIZED) {
       TokenManager.clearTokens();
-      throw new ApiError('Authentication failed. Please login again.', 401);
+      throw new ApiError('Authentication failed. Please login again.', API.STATUS_CODES.UNAUTHORIZED);
     }
     
     if (!response.ok) {
@@ -41,7 +42,7 @@ export async function apiRequest<T>(
     }
     
     // Handle 204 No Content responses
-    if (response.status === 204) {
+    if (response.status === API.STATUS_CODES.NO_CONTENT) {
       return {
         success: true,
         message: null,
@@ -56,7 +57,7 @@ export async function apiRequest<T>(
       throw error;
     }
     console.error('API Request failed:', error);
-    throw new ApiError('Network error occurred', 500);
+    throw new ApiError('Network error occurred', API.STATUS_CODES.INTERNAL_SERVER_ERROR);
   }
 }
 
@@ -94,7 +95,7 @@ export class BaseApi<TEntity, TCreateRequest, TUpdateRequest> {
       method: 'GET'
     });
     if (!response.data) {
-      throw new ApiError('Entity not found', 404);
+      throw new ApiError('Entity not found', API.STATUS_CODES.NOT_FOUND);
     }
     return response.data;
   }
@@ -106,7 +107,7 @@ export class BaseApi<TEntity, TCreateRequest, TUpdateRequest> {
       body: JSON.stringify(data),
     });
     if (!response.data) {
-      throw new ApiError('No data returned from create', 500);
+      throw new ApiError('No data returned from create', API.STATUS_CODES.INTERNAL_SERVER_ERROR);
     }
     return response.data;
   }
@@ -118,7 +119,7 @@ export class BaseApi<TEntity, TCreateRequest, TUpdateRequest> {
       body: JSON.stringify(data),
     });
     if (!response.data) {
-      throw new ApiError('No data returned from update', 500);
+      throw new ApiError('No data returned from update', API.STATUS_CODES.INTERNAL_SERVER_ERROR);
     }
     return response.data;
   }

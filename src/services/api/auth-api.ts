@@ -1,4 +1,5 @@
 import { API_CONFIG } from '@/config/api';
+import { API } from '@/constants/ui-constants';
 import { TokenManager } from '@/helpers/token-manager';
 import { ApiError, ApiResponse } from './models/api.model';
 import {
@@ -59,7 +60,7 @@ class AuthApi {
         throw error;
       }
       console.error('API Request failed:', error);
-      throw new ApiError('Network error occurred', 500);
+      throw new ApiError('Network error occurred', API.STATUS_CODES.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -71,7 +72,7 @@ class AuthApi {
     });
 
     if (!response.data) {
-      throw new ApiError('No authentication data returned', 500);
+      throw new ApiError('No authentication data returned', API.STATUS_CODES.INTERNAL_SERVER_ERROR);
     }
 
     // Store tokens
@@ -93,7 +94,7 @@ class AuthApi {
     });
 
     if (!response.data) {
-      throw new ApiError('No authentication data returned', 500);
+      throw new ApiError('No authentication data returned', API.STATUS_CODES.INTERNAL_SERVER_ERROR);
     }
 
     // Store tokens
@@ -115,7 +116,7 @@ class AuthApi {
     });
 
     if (!response.data) {
-      throw new ApiError('No authentication data returned', 500);
+      throw new ApiError('No authentication data returned', API.STATUS_CODES.INTERNAL_SERVER_ERROR);
     }
 
     // Store tokens
@@ -174,7 +175,7 @@ class AuthApi {
     });
 
     if (!response.data) {
-      throw new ApiError('No authentication data returned', 500);
+      throw new ApiError('No authentication data returned', API.STATUS_CODES.INTERNAL_SERVER_ERROR);
     }
 
     // Store new tokens
@@ -196,7 +197,7 @@ class AuthApi {
     });
 
     if (!response.data) {
-      throw new ApiError('No user data returned', 500);
+      throw new ApiError('No user data returned', API.STATUS_CODES.INTERNAL_SERVER_ERROR);
     }
 
     return response.data;
@@ -213,12 +214,12 @@ class AuthApi {
 
   // GET /api/users/{uuid} - Get user by UUID
   async getUserById(request: GetUserByIdRequest): Promise<UserResponse> {
-    const response = await this.makeRequest<UserResponse>(`${this.usersBasePath}/${request.uuid}`, {
+    const response = await this.makeRequest<UserResponse>(`${this.usersBasePath}/${request.id}`, {
       method: 'GET',
     });
 
     if (!response.data) {
-      throw new ApiError('User not found', 404);
+      throw new ApiError('User not found', API.STATUS_CODES.NOT_FOUND);
     }
 
     return response.data;
@@ -226,13 +227,13 @@ class AuthApi {
 
   // PUT /api/users/{uuid} - Update user
   async updateUser(request: UpdateUserRequest): Promise<UserResponse> {
-    const response = await this.makeRequest<UserResponse>(`${this.usersBasePath}/${request.uuid}`, {
+    const response = await this.makeRequest<UserResponse>(`${this.usersBasePath}/${request.id}`, {
       method: 'PUT',
       body: JSON.stringify(request),
     });
 
     if (!response.data) {
-      throw new ApiError('No user data returned', 500);
+      throw new ApiError('No user data returned', API.STATUS_CODES.INTERNAL_SERVER_ERROR);
     }
 
     return response.data;
@@ -240,7 +241,7 @@ class AuthApi {
 
   // DELETE /api/users/{uuid} - Delete user
   async deleteUser(request: DeleteUserRequest): Promise<void> {
-    await this.makeRequest<void>(`${this.usersBasePath}/${request.uuid}`, {
+    await this.makeRequest<void>(`${this.usersBasePath}/${request.id}`, {
       method: 'DELETE',
     });
   }
@@ -260,9 +261,9 @@ class AuthApi {
     }
 
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const payload = JSON.parse(atob(token.split('.')[API.JWT.PAYLOAD_INDEX]));
       return {
-        uuid: payload.sub || payload.userId,
+        id: payload.sub || payload.userId,
         username: payload.username || payload.name,
         firstName: payload.firstName || '',
         lastName: payload.lastName || '',

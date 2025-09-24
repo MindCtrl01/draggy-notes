@@ -19,7 +19,7 @@ import '../styles/note-card.css';
 interface NoteCardProps {
   note: Note;
   onUpdate: (note: Note) => void;
-  onDelete: (uuid: string) => void;
+  onDelete: (id: number, uuid: string) => void;
   onDrag: (uuid: string, position: { x: number; y: number }) => void;
   onDragEnd?: (uuid: string, position: { x: number; y: number }) => void;
   onMoveToDate?: (noteUuid: string, newDate: Date) => void;
@@ -403,7 +403,7 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
           onTitleKeyDown={handleTitleKeyDown}
           onStartEditingTitle={handleStartEditingTitle}
           onTogglePin={togglePin}
-          onDelete={() => onDelete(note.uuid)}
+          onDelete={() => onDelete(note.id, note.uuid)}
           onTagsChange={handleTagsChange}
         />
         

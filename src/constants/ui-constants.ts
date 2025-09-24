@@ -210,3 +210,60 @@ export const COLORS = {
     FULL: 1,
   },
 } as const;
+
+// ===== SYNC AND API CONSTANTS =====
+export const SYNC = {
+  /** Maximum number of recent sync errors to keep */
+  MAX_RECENT_ERRORS: 4,
+  /** Maximum number of errors to show in details */
+  MAX_ERRORS_DISPLAY: 3,
+  /** Number of recent errors to keep after cleanup */
+  RECENT_ERRORS_KEEP: 2,
+  /** Auto-sync interval in milliseconds (5 minutes) */
+  AUTO_SYNC_INTERVAL: 30000,
+  /** Time calculation constants */
+  TIME: {
+    /** Milliseconds per minute */
+    MS_PER_MINUTE: 60000,
+    /** Minutes per hour */
+    MINUTES_PER_HOUR: 60,
+    /** Hours per day */
+    HOURS_PER_DAY: 24,
+  },
+} as const;
+
+// ===== API CONSTANTS =====
+export const API = {
+  /** HTTP Status Codes */
+  STATUS_CODES: {
+    /** Success - No Content */
+    NO_CONTENT: 204,
+    /** Client Error - Unauthorized */
+    UNAUTHORIZED: 401,
+    /** Client Error - Not Found */
+    NOT_FOUND: 404,
+    /** Server Error - Internal Server Error */
+    INTERNAL_SERVER_ERROR: 500,
+  },
+  /** Default entity IDs */
+  DEFAULT_IDS: {
+    /** Default ID for new/unsynced entities */
+    NEW_ENTITY: 0,
+    /** Temporary user ID for offline mode */
+    TEMPORARY_USER: -1,
+  },
+  /** JWT Token parsing */
+  JWT: {
+    /** Index of payload section in JWT token (split by '.') */
+    PAYLOAD_INDEX: 1,
+  },
+} as const;
+
+// ===== COMPONENT SIZES =====
+export const COMPONENT_SIZES = {
+  /** Icon sizes in Tailwind classes */
+  ICONS: {
+    /** Small icons (w-4 h-4) */
+    SMALL: 4,
+  },
+} as const;

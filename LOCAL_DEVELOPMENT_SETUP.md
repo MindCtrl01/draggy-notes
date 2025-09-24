@@ -91,7 +91,7 @@ Based on the OpenAPI specification, the following endpoints should be available:
 - `POST /api/notes/{id}/duplicate`
 - `GET /api/notes/color/{color}`
 - `GET /api/notes/search`
-- `DELETE /api/notes/bulk-delete`
+- `DELETE /api/notes/batch-delete`
 
 #### **Health Check:**
 - `GET /health`

@@ -5,13 +5,6 @@ import { v7 as uuidv7 } from 'uuid';
 const STORAGE_PREFIX = 'draggy-notes';
 const TAGS_STORAGE_KEY = (userId: number) => `${STORAGE_PREFIX}-note_tag_${userId}`;
 
-// Predefined tags
-export const PREDEFINED_TAGS: Tag[] = [
-  { uuid: '00000000-0000-7000-8000-000000000001', name: 'Công việc', userId: null, usageCount: 0 },
-  { uuid: '00000000-0000-7000-8000-000000000002', name: 'Cá nhân', userId: null, usageCount: 0 },
-  { uuid: '00000000-0000-7000-8000-000000000003', name: 'Gấp', userId: null, usageCount: 0 },
-];
-
 /**
  * Helper functions for managing tags in localStorage
  */
@@ -24,10 +17,10 @@ export class TagManager {
   static getAllTags(userId: number): Tag[] {
     try {
       const userTags = this.getUserTags(userId);
-      return [...PREDEFINED_TAGS, ...userTags];
+      return [...userTags];
     } catch (error) {
       console.error('Failed to get all tags:', error);
-      return PREDEFINED_TAGS;
+      return [];
     }
   }
 
@@ -86,10 +79,12 @@ export class TagManager {
    */
   static createTag(name: string, userId: number): Tag {
     const tag: Tag = {
+      id: 0,
       uuid: uuidv7(),
       name: name.trim(),
       userId,
       usageCount: 1,
+      isPredefined: false,
     };
     
     this.saveTag(tag, userId);
@@ -103,12 +98,6 @@ export class TagManager {
    */
   static incrementTagUsage(tagUuid: string, userId: number): void {
     try {
-      // Handle predefined tags
-      if (tagUuid.startsWith('00000000-0000-7000-8000-00000000000')) {
-        // For predefined tags, we don't track usage in localStorage
-        return;
-      }
-
       const userTags = this.getUserTags(userId);
       const tagIndex = userTags.findIndex(t => t.uuid === tagUuid);
       
@@ -215,7 +204,7 @@ export class TagManager {
         .sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0))
         .slice(0, 2);
       
-      return [...PREDEFINED_TAGS, ...mostUsedUserTags];
+      return [...mostUsedUserTags];
     }
     
     return this.searchTags(query, userId).slice(0, 10);
@@ -269,18 +258,15 @@ export class TagManager {
    * @param tagUuid - The tag UUID to delete
    * @param userId - The user ID
    */
-  static deleteTag(tagUuid: string, userId: number): void {
+  static deleteTag(tag: Tag): void {
     try {
       // Don't allow deleting predefined tags
-      if (PREDEFINED_TAGS.some(tag => tag.uuid === tagUuid)) {
+      if (tag.isPredefined) {
         return;
       }
       
-      const userTags = this.getUserTags(userId);
-      const filteredTags = userTags.filter(tag => tag.uuid !== tagUuid);
-      
-      const key = TAGS_STORAGE_KEY(userId);
-      localStorage.setItem(key, JSON.stringify(filteredTags));
+      const key = TAGS_STORAGE_KEY(tag.userId);
+      localStorage.removeItem(key);
     } catch (error) {
       console.error('Failed to delete tag from localStorage:', error);
     }

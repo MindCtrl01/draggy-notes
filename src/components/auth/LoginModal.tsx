@@ -29,7 +29,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
     try {
       if (mode === 'login') {
-        await login({ username: email, password });
+        await login({ email, password });
         toast({
           title: "Login successful!",
           description: "Welcome back to Draggy Notes.",

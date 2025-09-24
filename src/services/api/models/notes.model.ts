@@ -5,6 +5,7 @@ export interface CreateNotePositionRequest {
 }
 
 export interface CreateTaskRequest {
+  id: number;
   uuid: string;
   text: string | null;
   completed: boolean;
@@ -29,6 +30,7 @@ export interface UpdateNotePositionRequest {
 }
 
 export interface UpdateTaskRequest {
+  id: number;
   uuid: string;
   text: string | null;
   completed: boolean;
@@ -49,15 +51,15 @@ export interface UpdateNoteRequest {
 }
 
 export interface GetNoteByIdRequest {
-  uuid: string;
+  id: number;
 }
 
 export interface DeleteNoteRequest {
-  uuid: string;
+  id: number;
 }
 
 export interface DuplicateNoteRequest {
-  uuid: string;
+  id: number;
 }
 
 export interface GetNotesByColorRequest {
@@ -68,8 +70,8 @@ export interface SearchNotesRequest {
   q: string | null;
 }
 
-export interface BulkDeleteRequest {
-  uuids: string[] | null;
+export interface BatchDeleteRequest {
+  ids: number[] | null;
 }
 
 // Note Response Models
@@ -90,8 +92,9 @@ export interface TagResponse {
   id: number;
   uuid: string;
   name: string;
-  userId?: number | null;
+  userId: number;
   usageCount: number;
+  isPredefined: boolean;
 }
 
 export interface NoteResponse {

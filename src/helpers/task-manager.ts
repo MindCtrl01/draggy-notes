@@ -1,10 +1,10 @@
 import { NoteTask } from '@/domains/noteTask';
-
+import { v7 as uuidv7 } from 'uuid';
 export const createTask = (text: string, noteUuid: string = ''): NoteTask => {
-  const uuid = crypto.randomUUID();
+  const uuid = uuidv7();
   return {
+    id: 0,
     uuid,
-    taskId: uuid, // Use the same UUID for taskId
     text: text.trim(),
     completed: false,
     createdAt: new Date(),

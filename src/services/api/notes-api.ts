@@ -1,6 +1,7 @@
 import { API_CONFIG } from '@/config/api';
 import { TokenManager } from '@/helpers/token-manager';
 import { ApiError, ApiResponse } from './models/api.model';
+import { API } from '@/constants/ui-constants';
 import {
   CreateNoteRequest,
   UpdateNoteRequest,
@@ -9,7 +10,7 @@ import {
   DuplicateNoteRequest,
   GetNotesByColorRequest,
   SearchNotesRequest,
-  BulkDeleteRequest,
+  BatchDeleteRequest,
   NoteResponse,
   HealthResponse
 } from './models/notes.model';
@@ -54,7 +55,7 @@ class NotesApi {
         throw error;
       }
       console.error('API Request failed:', error);
-      throw new ApiError('Network error occurred', 500);
+      throw new ApiError('Network error occurred', API.STATUS_CODES.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -73,49 +74,49 @@ class NotesApi {
       body: JSON.stringify(noteData),
     });
     if (!response.data) {
-      throw new ApiError('No data returned from create note', 500);
+      throw new ApiError('No data returned from create note', API.STATUS_CODES.INTERNAL_SERVER_ERROR);
     }
     return response.data;
   }
 
   // GET /api/notes/{uuid} - Get note by UUID
   async getNoteById(request: GetNoteByIdRequest): Promise<NoteResponse> {
-    const response = await this.makeRequest<NoteResponse>(`${this.basePath}/${request.uuid}`, {
+    const response = await this.makeRequest<NoteResponse>(`${this.basePath}/${request.id}`, {
       method: 'GET',
     });
     if (!response.data) {
-      throw new ApiError('Note not found', 404);
+      throw new ApiError('Note not found', API.STATUS_CODES.NOT_FOUND);
     }
     return response.data;
   }
 
   // PUT /api/notes/{uuid} - Update an existing note
   async updateNote(request: UpdateNoteRequest): Promise<NoteResponse> {
-    const response = await this.makeRequest<NoteResponse>(`${this.basePath}/${request.uuid}`, {
+    const response = await this.makeRequest<NoteResponse>(`${this.basePath}/${request.id}`, {
       method: 'PUT',
       body: JSON.stringify(request),
     });
     if (!response.data) {
-      throw new ApiError('No data returned from update note', 500);
+      throw new ApiError('No data returned from update note', API.STATUS_CODES.INTERNAL_SERVER_ERROR);
     }
     return response.data;
   }
 
   // DELETE /api/notes/{uuid} - Delete a note
   async deleteNote(request: DeleteNoteRequest): Promise<void> {
-    await this.makeRequest<void>(`${this.basePath}/${request.uuid}`, {
+    await this.makeRequest<void>(`${this.basePath}/${request.id}`, {
       method: 'DELETE',
     });
   }
 
   // POST /api/notes/{uuid}/duplicate - Duplicate a note
   async duplicateNote(request: DuplicateNoteRequest): Promise<NoteResponse> {
-    const response = await this.makeRequest<NoteResponse>(`${this.basePath}/${request.uuid}/duplicate`, {
+    const response = await this.makeRequest<NoteResponse>(`${this.basePath}/${request.id}/duplicate`, {
       method: 'POST',
       body: JSON.stringify(request),
     });
     if (!response.data) {
-      throw new ApiError('No data returned from duplicate note', 500);
+      throw new ApiError('No data returned from duplicate note', API.STATUS_CODES.INTERNAL_SERVER_ERROR);
     }
     return response.data;
   }
@@ -141,9 +142,9 @@ class NotesApi {
     return response.data || [];
   }
 
-  // DELETE /api/notes/bulk-delete - Bulk delete notes
-  async bulkDeleteNotes(request: BulkDeleteRequest): Promise<void> {
-    await this.makeRequest<void>(`${this.basePath}/bulk-delete`, {
+  // DELETE /api/notes/batch-delete - Batch delete notes
+  async batchDeleteNotes(request: BatchDeleteRequest): Promise<void> {
+    await this.makeRequest<void>(`${this.basePath}/batch-delete`, {
       method: 'DELETE',
       body: JSON.stringify(request),
     });
@@ -155,7 +156,7 @@ class NotesApi {
       method: 'GET'
     });
     if (!response.data) {
-      throw new ApiError('No health data returned', 500);
+      throw new ApiError('No health data returned', API.STATUS_CODES.INTERNAL_SERVER_ERROR);
     }
     return response.data;
   }
