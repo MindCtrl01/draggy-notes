@@ -36,6 +36,7 @@ export interface UpdateTaskRequest {
 
 export interface UpdateNoteRequest {
   id: number;
+  uuid: string;
   title: string;
   content: string;
   date?: string | null; // ISO date string format
