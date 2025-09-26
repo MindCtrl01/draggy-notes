@@ -2,197 +2,324 @@ import { Note } from '@/domains/note';
 import { notesApi } from './api/notes-api';
 import { authApi } from './api/auth-api';
 import { NotesStorage } from '@/helpers/notes-storage';
-import { 
-  transformNoteToCreateRequest, 
-  transformNoteToUpdateRequest, 
-  transformNoteResponseToNote 
-} from './api/transformers/note-transformers';
-import { API } from '@/constants/ui-constants';
-// Note: ApiError is available but not used directly in this service
+import { TokenManager } from '@/helpers/token-manager';
+import { transformNoteResponseToNote } from './api/transformers/note-transformers';
+import { QueueManager } from './sync/queue-manager';
+import { BatchSyncHandler } from './sync/batch-sync-handler';
+import { QueueItem } from '@/types/sync.types';
+import { SYNC } from '@/constants/ui-constants';
 
 /**
- * Service that handles synchronization between API and localStorage
- * For authenticated users: tries API first, falls back to localStorage-only operations
- * For unauthenticated users: uses localStorage only, no API calls
+ * Enhanced service that handles synchronization between API and localStorage
+ * Features: Queue-based sync, retry mechanisms, batch processing, and 5-minute auto-sync
  */
 export class NotesSyncService {
+  private static syncTimer: NodeJS.Timeout | null = null;
+  private static readonly SYNC_INTERVAL = SYNC.AUTO_SYNC_INTERVAL;
+  private static isSyncing = false;
+
   /**
-   * Check if user is authenticated
+   * Start automatic sync timer
    */
-  private static isAuthenticated(): boolean {
-    return authApi.isAuthenticated();
+  static startSyncTimer(): void {
+    this.stopSyncTimer(); // Clear existing timer
+    
+    this.syncTimer = setInterval(() => {
+      this.performScheduledSync();
+    }, this.SYNC_INTERVAL);
+    
+    console.log('Sync timer started - will sync every 5 minutes');
   }
+
   /**
-   * Create a note both in API and localStorage (authenticated) or localStorage only (unauthenticated)
+   * Stop automatic sync timer
+   */
+  static stopSyncTimer(): void {
+    if (this.syncTimer) {
+      clearInterval(this.syncTimer);
+      this.syncTimer = null;
+      console.log('Sync timer stopped');
+    }
+  }
+
+  /**
+   * Check if sync conditions are met
+   */
+  private static canSync(): boolean {
+    return (
+      this.isAuthenticated() &&
+      navigator.onLine &&
+      !this.isSyncing
+    );
+  }
+
+  /**
+   * Perform scheduled sync with retry queue processing
+   */
+  static async performScheduledSync(): Promise<void> {
+    if (!this.canSync()) {
+      console.log('Sync conditions not met, skipping sync');
+      return;
+    }
+
+    this.isSyncing = true;
+    console.log('Starting scheduled sync...');
+
+    try {
+      // First, process retry queue to move eligible items back to primary
+      QueueManager.processRetryQueue();
+      
+      // Then sync all items from primary queue
+      await this.syncAllQueuedItems();
+      
+      console.log('Scheduled sync completed successfully');
+    } catch (error) {
+      console.error('Scheduled sync failed:', error);
+    } finally {
+      this.isSyncing = false;
+    }
+  }
+
+  /**
+   * Sync all items from primary queue in batches
+   */
+  static async syncAllQueuedItems(): Promise<void> {
+    const queueByAction = QueueManager.getPrimaryQueueByAction();
+    const batchHandler = new BatchSyncHandler();
+
+    // Process in order: creates, updates, deletes
+    await this.processBatch('create', queueByAction.create, batchHandler);
+    await this.processBatch('update', queueByAction.update, batchHandler);
+    await this.processBatch('delete', queueByAction.delete, batchHandler);
+  }
+
+  /**
+   * Process a batch of queue items using batch API operations
+   */
+  private static async processBatch(
+    action: 'create' | 'update' | 'delete',
+    items: QueueItem[],
+    batchHandler: BatchSyncHandler
+  ): Promise<void> {
+    if (items.length === SYNC.EMPTY_QUEUE_LENGTH) return;
+
+    console.log(`Processing ${items.length} ${action} operations using batch API...`);
+
+    try {
+      let result: { successful: string[], failed: Array<{ noteUuid: string, error: string }> };
+
+      // Use batch operations instead of individual item processing
+      switch (action) {
+        case 'create':
+          result = await batchHandler.batchSyncCreateItems(items);
+          break;
+        case 'update':
+          result = await batchHandler.batchSyncUpdateItems(items);
+          break;
+        case 'delete':
+          result = await batchHandler.batchSyncDeleteItems(items);
+          break;
+      }
+
+      // Remove successful items from primary queue
+      result.successful.forEach(noteUuid => {
+        QueueManager.removeFromPrimaryQueue(noteUuid);
+        console.log(`Successfully synced ${action} for note ${noteUuid}`);
+      });
+
+      // Handle failed items
+      result.failed.forEach(({ noteUuid, error }) => {
+        console.error(`Failed to sync ${action} for note ${noteUuid}:`, error);
+        
+        // Handle failed sync - either retry or move to retry queue
+        const canRetry = QueueManager.handleFailedSync(noteUuid, error);
+        
+        if (!canRetry) {
+          console.warn(`Note ${noteUuid} moved to retry queue after max retries`);
+        }
+      });
+
+    } catch (error) {
+      console.error(`Batch ${action} operation failed entirely:`, error);
+      
+      // If the entire batch fails, handle all items as failed
+      items.forEach(item => {
+        const canRetry = QueueManager.handleFailedSync(item.noteUuid, (error as Error).message);
+        
+        if (!canRetry) {
+          console.warn(`Note ${item.noteUuid} moved to retry queue after max retries`);
+        }
+      });
+    }
+  }
+
+  /**
+   * Create a note with precheck and queue management
    */
   static async createNote(note: Note): Promise<Note> {
-    // Always save to localStorage first for immediate UI feedback
+    // Always save to localStorage first
     NotesStorage.saveNote(note);
     
-    // If user is not authenticated, only use localStorage
-    if (!this.isAuthenticated()) {
-      console.log('User not authenticated, using localStorage only for note creation');
-      return note;
+    // Add to sync queue with precheck if authenticated
+    if (this.isAuthenticated()) {
+      const added = QueueManager.addToQueue(note.uuid, 'create');
+      if (!added) {
+        console.log(`Note ${note.uuid} not added to sync queue due to precheck failure`);
+      }
     }
     
-    try {
-      // Try to sync with API
-      const createRequest = transformNoteToCreateRequest(note);
-      const apiResponse = await notesApi.createNote(createRequest);
-      
-      // Transform API response back to domain model
-      const syncedNote = transformNoteResponseToNote(apiResponse);
-      
-      // Update localStorage with the synced version (includes server-generated ID)
-      NotesStorage.saveNote(syncedNote);
-      
-      return syncedNote;
-    } catch (error) {
-      console.warn('Failed to create note via API, using localStorage only:', error);
-      
-      // If API fails, return the original note (already saved to localStorage)
-      return note;
-    }
+    return note;
   }
 
   /**
-   * Update a note both in API and localStorage (authenticated) or localStorage only (unauthenticated)
+   * Update a note with precheck and queue management
    */
   static async updateNote(note: Note): Promise<Note> {
-    // Always save to localStorage first for immediate UI feedback
+    // Always save to localStorage first
     NotesStorage.saveNote(note);
     
-    // If user is not authenticated, only use localStorage
-    if (!this.isAuthenticated()) {
-      console.log('User not authenticated, using localStorage only for note update');
-      return note;
+    // Add to sync queue with precheck if authenticated
+    if (this.isAuthenticated()) {
+      const added = QueueManager.addToQueue(note.uuid, 'update');
+      if (!added) {
+        console.log(`Note ${note.uuid} update not added to sync queue due to precheck failure`);
+      }
     }
     
-    // If note has id = 0, it's not synced yet - only update localStorage
-    if (note.id === API.DEFAULT_IDS.NEW_ENTITY) {
-      console.log('Note has id = 0, updating localStorage only (not synced yet)');
-      return note;
-    }
-    
-    try {
-      // Try to sync with API
-      const updateRequest = transformNoteToUpdateRequest(note);
-      const apiResponse = await notesApi.updateNote(updateRequest);
-      
-      // Transform API response back to domain model
-      const syncedNote = transformNoteResponseToNote(apiResponse);
-      
-      // Update localStorage with the synced version
-      NotesStorage.saveNote(syncedNote);
-      
-      return syncedNote;
-    } catch (error) {
-      console.warn('Failed to update note via API, using localStorage only:', error);
-      
-      // If API fails, return the original note (already saved to localStorage)
-      return note;
-    }
+    return note;
   }
 
   /**
-   * Delete a note both from API and localStorage (authenticated) or localStorage only (unauthenticated)
+   * Delete a note with precheck and queue management
    */
-  static async deleteNote(id: number, uuid: string): Promise<void> {
-    // If user is not authenticated, only delete from localStorage
-    if (!this.isAuthenticated()) {
-      console.log('User not authenticated, deleting from localStorage only');
-      NotesStorage.deleteNote(uuid);
-      return;
-    }
+  static async deleteNote(_id: number, uuid: string): Promise<void> {
+    // Remove from localStorage first
+    NotesStorage.deleteNote(uuid);
     
-    // If note has id = 0, it's not synced yet - only delete from localStorage
-    if (id === API.DEFAULT_IDS.NEW_ENTITY) {
-      console.log('Note has id = 0, deleting from localStorage only (not synced yet)');
-      NotesStorage.deleteNote(uuid);
-      return;
-    }
-    
-    try {
-      // Try to delete from API first
-      await notesApi.deleteNote({ id });
-      
-      // If API succeeds, remove from localStorage
-      NotesStorage.deleteNote(uuid);
-    } catch (error) {
-      console.warn('Failed to delete note via API, deleting from localStorage only:', error);
-      
-      // If API fails, still remove from localStorage
-      NotesStorage.deleteNote(uuid);
+    // Add to sync queue with precheck if authenticated
+    if (this.isAuthenticated()) {
+      const added = QueueManager.addToQueue(uuid, 'delete');
+      if (!added) {
+        console.log(`Note ${uuid} delete not added to sync queue due to precheck (likely id=0)`);
+      }
     }
   }
 
   /**
-   * Load all notes, preferring API but falling back to localStorage (authenticated) or localStorage only (unauthenticated)
+   * Handle user logout - stop sync and clear queue
+   */
+  static handleUserLogout(): void {
+    console.log('User logged out - stopping sync and clearing queue');
+    this.stopSyncTimer();
+    QueueManager.clearAllQueues();
+  }
+
+  /**
+   * Handle user login - start sync timer
+   */
+  static handleUserLogin(): void {
+    console.log('User logged in - starting sync timer');
+    this.startSyncTimer();
+  }
+
+  /**
+   * Handle network status change
+   */
+  static handleNetworkChange(isOnline: boolean): void {
+    if (isOnline && this.isAuthenticated()) {
+      console.log('Network restored - starting sync timer');
+      this.startSyncTimer();
+    } else {
+      console.log('Network lost - stopping sync timer');
+      this.stopSyncTimer();
+    }
+  }
+
+  /**
+   * Get enhanced sync status including retry queue
+   */
+  static getSyncStatus() {
+    const queueStats = QueueManager.getQueueStats();
+    
+    return {
+      isTimerActive: this.syncTimer !== null,
+      isSyncing: this.isSyncing,
+      canSync: this.canSync(),
+      primaryQueueCount: queueStats.primary.total,
+      retryQueueCount: queueStats.retry.total,
+      queueStats
+    };
+  }
+
+  /**
+   * Manual retry of items in retry queue
+   */
+  static async retryFailedItems(): Promise<void> {
+    console.log('Manually retrying failed items...');
+    QueueManager.processRetryQueue();
+    
+    if (this.canSync()) {
+      await this.performScheduledSync();
+    }
+  }
+
+  /**
+   * Load all notes from API and localStorage
    */
   static async loadAllNotes(): Promise<Note[]> {
-    // If user is not authenticated, only use localStorage
+    // If user has never logged in, only use localStorage
+    if (!TokenManager.hasUserEverLoggedIn()) {
+      console.log('User has never logged in, using localStorage only');
+      return NotesStorage.getAllNotes();
+    }
+
+    // If user has logged in before but is not currently authenticated, use localStorage only
     if (!this.isAuthenticated()) {
-      console.log('User not authenticated, loading notes from localStorage only');
+      console.log('User not currently authenticated but has logged in before, using localStorage only');
       return NotesStorage.getAllNotes();
     }
     
     try {
-      // Try to load from API first
+      // User is authenticated and has logged in before - merge API + unsynced local notes
+      console.log('User is authenticated, loading and merging API notes with local unsynced notes');
+      
       const apiResponse = await notesApi.getAllNotes();
       const apiNotes = apiResponse.map(transformNoteResponseToNote);
       
-      // Sync API notes to localStorage
-      apiNotes.forEach(note => {
-        NotesStorage.saveNote(note);
-      });
-      
-      return apiNotes;
-    } catch (error) {
-      console.warn('Failed to load notes from API, using localStorage:', error);
-      
-      // Fall back to localStorage
-      return NotesStorage.getAllNotes();
-    }
-  }
-
-  /**
-   * Sync localStorage notes to API (useful for offline-first scenarios)
-   * Only works for authenticated users
-   */
-  static async syncLocalNotesToApi(): Promise<void> {
-    // If user is not authenticated, skip sync
-    if (!this.isAuthenticated()) {
-      console.log('User not authenticated, skipping sync to API');
-      return;
-    }
-    
-    try {
+      // Get all local notes
       const localNotes = NotesStorage.getAllNotes();
       
-      for (const note of localNotes) {
-        try {
-          // Try to create or update each note in the API
-          if (note.id && note.id > API.DEFAULT_IDS.NEW_ENTITY) {
-            // Note has a valid server ID, try to update
-            const updateRequest = transformNoteToUpdateRequest(note);
-            await notesApi.updateNote(updateRequest);
-          } else {
-            // Note doesn't have a server ID (id = 0 or undefined), create it
-            console.log(`Syncing note ${note.uuid} with id=${note.id} to API (creating new)`);
-            const createRequest = transformNoteToCreateRequest(note);
-            const apiResponse = await notesApi.createNote(createRequest);
-            const syncedNote = transformNoteResponseToNote(apiResponse);
-            
-            // Update localStorage with the synced version (now has server ID)
-            NotesStorage.saveNote(syncedNote);
+      // Find notes that exist locally but not in API response (unsynced notes)
+      const unsyncedNotes = localNotes.filter(localNote => 
+        !apiNotes.some(apiNote => apiNote.uuid === localNote.uuid)
+      );
+      
+      // Merge API notes with unsynced local notes
+      const mergedNotes = [...apiNotes, ...unsyncedNotes];
+      
+      // Save all API notes to localStorage to keep them in sync
+      apiNotes.forEach(note => NotesStorage.saveNote(note));
+      
+      // Add unsynced notes to queue if they're not already in the queue
+      unsyncedNotes.forEach(note => {
+        const isInQueue = QueueManager.getPrimaryQueue().some(queueItem => queueItem.noteUuid === note.uuid) ||
+                         QueueManager.getRetryQueue().some(queueItem => queueItem.noteUuid === note.uuid);
+        
+        if (!isInQueue) {
+          // Determine the appropriate action based on note properties
+          const action = note.id === 0 ? 'create' : 'update';
+          const added = QueueManager.addToQueue(note.uuid, action);
+          if (added) {
+            console.log(`Added unsynced note ${note.uuid} to sync queue with action: ${action}`);
           }
-        } catch (error) {
-          console.warn(`Failed to sync note ${note.uuid} to API:`, error);
-          // Continue with other notes
         }
-      }
+      });
+      
+      console.log(`Loaded ${apiNotes.length} API notes and ${unsyncedNotes.length} unsynced local notes`);
+      return mergedNotes;
     } catch (error) {
-      console.error('Failed to sync local notes to API:', error);
+      console.warn('Failed to load notes from API, using localStorage:', error);
+      return NotesStorage.getAllNotes();
     }
   }
 
@@ -200,7 +327,6 @@ export class NotesSyncService {
    * Check if API is available (only for authenticated users)
    */
   static async isApiAvailable(): Promise<boolean> {
-    // If user is not authenticated, consider API unavailable
     if (!this.isAuthenticated()) {
       return false;
     }
@@ -211,5 +337,12 @@ export class NotesSyncService {
     } catch (error) {
       return false;
     }
+  }
+
+  /**
+   * Check if user is authenticated
+   */
+  private static isAuthenticated(): boolean {
+    return authApi.isAuthenticated();
   }
 }

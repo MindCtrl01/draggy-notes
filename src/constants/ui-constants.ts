@@ -213,14 +213,43 @@ export const COLORS = {
 
 // ===== SYNC AND API CONSTANTS =====
 export const SYNC = {
+  /** Auto-sync interval in milliseconds (5 minutes) */
+  AUTO_SYNC_INTERVAL: 5 * 60 * 1000,
+  /** Maximum retry count before moving to retry queue */
+  MAX_RETRY_COUNT: 3,
+  /** Delay before retrying failed items (24 hours) */
+  RETRY_DELAY: 24 * 60 * 60 * 1000,
   /** Maximum number of recent sync errors to keep */
-  MAX_RECENT_ERRORS: 4,
+  MAX_RECENT_ERRORS: 10,
   /** Maximum number of errors to show in details */
   MAX_ERRORS_DISPLAY: 3,
   /** Number of recent errors to keep after cleanup */
-  RECENT_ERRORS_KEEP: 2,
-  /** Auto-sync interval in milliseconds (5 minutes) */
-  AUTO_SYNC_INTERVAL: 30000,
+  RECENT_ERRORS_KEEP: 5,
+  /** Status update interval in milliseconds (10 seconds) */
+  STATUS_UPDATE_INTERVAL: 10 * 1000,
+  /** Initial retry count for new queue items */
+  INITIAL_RETRY_COUNT: 0,
+  /** Empty queue length check */
+  EMPTY_QUEUE_LENGTH: 0,
+  /** Default queue statistics */
+  DEFAULT_QUEUE_STATS: {
+    /** Default count for empty queue sections */
+    EMPTY_COUNT: 0,
+  },
+  /** Queue processing constants */
+  QUEUE_PROCESSING: {
+    /** Minimum time difference to be eligible for retry (milliseconds) */
+    MIN_RETRY_ELIGIBILITY: 0,
+    /** Array slice parameter for keeping recent errors */
+    ERROR_SLICE_START: -3,
+  },
+  /** Precheck operation results */
+  PRECHECK: {
+    /** Action conversion: update with id=0 becomes create */
+    CONVERT_UPDATE_TO_CREATE: true,
+    /** Skip delete operations for notes with id=0 */
+    SKIP_DELETE_FOR_UNSYNCED: true,
+  },
   /** Time calculation constants */
   TIME: {
     /** Milliseconds per minute */
@@ -229,6 +258,10 @@ export const SYNC = {
     MINUTES_PER_HOUR: 60,
     /** Hours per day */
     HOURS_PER_DAY: 24,
+    /** Milliseconds per second */
+    MS_PER_SECOND: 1000,
+    /** Seconds per minute */
+    SECONDS_PER_MINUTE: 60,
   },
 } as const;
 
@@ -257,6 +290,14 @@ export const API = {
     /** Index of payload section in JWT token (split by '.') */
     PAYLOAD_INDEX: 1,
   },
+} as const;
+
+// ===== QUEUE CONSTANTS =====
+export const QUEUE = {
+  /** Primary sync queue localStorage key */
+  PRIMARY_STORAGE_KEY: 'draggy-notes-sync-queue',
+  /** Retry queue localStorage key */
+  RETRY_STORAGE_KEY: 'draggy-notes-retry-queue',
 } as const;
 
 // ===== COMPONENT SIZES =====

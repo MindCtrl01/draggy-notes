@@ -24,6 +24,7 @@ export function transformNoteResponseToNote(response: NoteResponse): Note {
   return {
     id: response.id,
     uuid: response.uuid,
+    userId: response.userId || API.DEFAULT_IDS.TEMPORARY_USER,
     title: response.title,
     content: response.content,
     date: new Date(response.date),
@@ -36,10 +37,14 @@ export function transformNoteResponseToNote(response: NoteResponse): Note {
     },
     createdAt: new Date(response.createdAt),
     updatedAt: new Date(response.updatedAt),
-    userId: API.DEFAULT_IDS.TEMPORARY_USER, // Will be set based on current user context
-    isTaskMode: response.isTaskMode || false,
+    isTaskMode: response.isTaskMode,
     noteTasks: transformedTasks,
-    tags: response.tags.map(transformTagResponseToTag)
+    tags: response.tags ? response.tags.map(transformTagResponseToTag) : null,
+    isDeleted: response.isDeleted || false,
+    // sync properties - received from server
+    syncVersion: (response as any).syncVersion || 1,
+    lastSyncedAt: new Date((response as any).lastSyncedAt || response.updatedAt),
+    clientUpdatedAt: (response as any).clientUpdatedAt ? new Date((response as any).clientUpdatedAt) : undefined
   };
 }
 
@@ -48,9 +53,11 @@ export function transformNoteResponseToNote(response: NoteResponse): Note {
  */
 export function transformNoteToCreateRequest(note: Note): CreateNoteRequest {
   return {
+    uuid: note.uuid,
     title: note.title,
     content: note.content,
     date: note.date.toISOString(),
+    userId: note.userId,
     color: note.color,
     isDisplayed: note.isDisplayed,
     position: {
@@ -60,8 +67,13 @@ export function transformNoteToCreateRequest(note: Note): CreateNoteRequest {
     noteTasks: note.noteTasks ? note.noteTasks.map(transformNoteTaskToCreateRequest) : null,
     isTaskMode: note.isTaskMode || false,
     isPinned: note.isPinned || false,
-    tagNames: note.tags ? note.tags.map(tag => tag.name) : null
-  };
+    tagNames: note.tags ? note.tags.map(tag => tag.name) : null,
+    isDeleted: note.isDeleted || false,
+    // sync properties - send clientUpdatedAt to server for tracking
+    clientUpdatedAt: note.clientUpdatedAt?.toISOString(),
+    syncVersion: note.syncVersion,
+    lastSyncedAt: note.lastSyncedAt.toISOString()
+  }
 }
 
 /**
@@ -71,6 +83,7 @@ export function transformNoteToUpdateRequest(note: Note): UpdateNoteRequest {
   return {
     id: note.id || API.DEFAULT_IDS.NEW_ENTITY, // Will be set from the API response
     uuid: note.uuid,
+    userId: note.userId,
     title: note.title,
     content: note.content,
     date: note.date.toISOString(),
@@ -82,8 +95,13 @@ export function transformNoteToUpdateRequest(note: Note): UpdateNoteRequest {
     },
     tasks: note.noteTasks ? note.noteTasks.map(transformNoteTaskToUpdateRequest) : null,
     isTaskMode: note.isTaskMode || false,
-    tagNames: note.tags ? note.tags.map(tag => tag.name) : null
-  };
+    tagNames: note.tags ? note.tags.map(tag => tag.name) : null,
+    isDeleted: note.isDeleted,
+    // sync properties - send clientUpdatedAt to server for conflict detection
+    clientUpdatedAt: note.clientUpdatedAt?.toISOString(),
+    syncVersion: note.syncVersion,
+    lastSyncedAt: note.lastSyncedAt.toISOString()
+  }
 }
 
 /**
@@ -93,13 +111,11 @@ export function transformTaskResponseToNoteTask(response: TaskResponse): NoteTas
   return {
     id: response.id,
     uuid: response.uuid,
+    noteId: response.noteId,
     text: response.text,
     completed: response.completed,
     createdAt: new Date(response.createdAt),
     updatedAt: new Date(response.createdAt), // Use createdAt as fallback
-    userId: API.DEFAULT_IDS.TEMPORARY_USER, // Will be set based on current user context
-    noteUuid: '', // Will be set by the calling context
-    tags: [] // Initialize empty tags array
   };
 }
 
@@ -111,7 +127,8 @@ export function transformNoteTaskToCreateRequest(task: NoteTask): CreateTaskRequ
     id: API.DEFAULT_IDS.NEW_ENTITY,
     uuid: task.uuid,
     text: task.text,
-    completed: task.completed
+    completed: task.completed,
+    noteId: task.noteId
   };
 }
 
@@ -122,6 +139,7 @@ export function transformNoteTaskToUpdateRequest(task: NoteTask): UpdateTaskRequ
   return {
     id: task.id,
     uuid: task.uuid,
+    noteId: task.noteId,
     text: task.text,
     completed: task.completed
   };

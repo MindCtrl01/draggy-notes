@@ -1,6 +1,7 @@
 export class TokenManager {
     private static readonly TOKEN_KEY = 'auth_token';
     private static readonly REFRESH_TOKEN_KEY = 'refresh_token';
+    private static readonly LOGIN_HISTORY_KEY = 'draggy_login_history';
   
     static getToken(): string | null {
       return localStorage.getItem(this.TOKEN_KEY);
@@ -21,6 +22,14 @@ export class TokenManager {
     static clearTokens(): void {
       localStorage.removeItem(this.TOKEN_KEY);
       localStorage.removeItem(this.REFRESH_TOKEN_KEY);
+    }
+
+    static markUserHasLoggedIn(): void {
+      localStorage.setItem(this.LOGIN_HISTORY_KEY, 'true');
+    }
+
+    static hasUserEverLoggedIn(): boolean {
+      return localStorage.getItem(this.LOGIN_HISTORY_KEY) === 'true';
     }
   
     static isTokenExpired(token: string): boolean {

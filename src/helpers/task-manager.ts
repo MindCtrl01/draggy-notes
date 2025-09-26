@@ -1,6 +1,6 @@
 import { NoteTask } from '@/domains/noteTask';
 import { v7 as uuidv7 } from 'uuid';
-export const createTask = (text: string, noteUuid: string = ''): NoteTask => {
+export const createTask = (text: string, noteId: number | null | undefined): NoteTask => {
   const uuid = uuidv7();
   return {
     id: 0,
@@ -8,9 +8,7 @@ export const createTask = (text: string, noteUuid: string = ''): NoteTask => {
     text: text.trim(),
     completed: false,
     createdAt: new Date(),
-    userId: -1, // Default userId
-    noteUuid, // Required property
-    tags: [], // Will be set by the calling function
+    noteId: noteId || 0,
   };
 };
 

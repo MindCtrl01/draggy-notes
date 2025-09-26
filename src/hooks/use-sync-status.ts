@@ -1,20 +1,25 @@
 import { useState, useEffect, useCallback } from 'react';
 import { NotesSyncService } from '@/services/notes-sync-service';
+import { QueueManager } from '@/services/sync/queue-manager';
 import { authApi } from '@/services/api/auth-api';
-import { SYNC, API } from '@/constants/ui-constants';
+import { QueueStats } from '@/types/sync.types';
+import { SYNC } from '@/constants/ui-constants';
 
 export interface SyncStatus {
   isOnline: boolean;
   isApiAvailable: boolean;
   isAuthenticated: boolean;
   lastSyncTime: Date | null;
-  pendingSyncCount: number;
+  primaryQueueCount: number;
+  retryQueueCount: number;
   syncErrors: string[];
+  isTimerActive: boolean;
+  isSyncing: boolean;
+  queueStats: QueueStats;
 }
 
 /**
- * Hook to track sync status between API and localStorage
- * For unauthenticated users, API is considered unavailable
+ * Enhanced hook to track sync status with queue management and retry mechanisms
  */
 export const useSyncStatus = () => {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({
@@ -22,70 +27,86 @@ export const useSyncStatus = () => {
     isApiAvailable: false,
     isAuthenticated: authApi.isAuthenticated(),
     lastSyncTime: null,
-    pendingSyncCount: API.DEFAULT_IDS.NEW_ENTITY,
-    syncErrors: []
+    primaryQueueCount: SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT,
+    retryQueueCount: SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT,
+    syncErrors: [],
+    isTimerActive: false,
+    isSyncing: false,
+    queueStats: {
+      primary: { 
+        total: SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT, 
+        create: SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT, 
+        update: SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT, 
+        delete: SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT 
+      },
+      retry: { 
+        total: SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT, 
+        create: SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT, 
+        update: SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT, 
+        delete: SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT 
+      }
+    }
   });
 
-  // Check API availability
-  const checkApiAvailability = useCallback(async () => {
-    const isAuthenticated = authApi.isAuthenticated();
-    
-    try {
-      const isAvailable = await NotesSyncService.isApiAvailable();
-      setSyncStatus(prev => ({
-        ...prev,
-        isAuthenticated,
-        isApiAvailable: isAvailable,
-        lastSyncTime: isAvailable ? new Date() : prev.lastSyncTime
-      }));
-      return isAvailable;
-    } catch (error) {
-      setSyncStatus(prev => ({
-        ...prev,
-        isAuthenticated,
-        isApiAvailable: false,
-        syncErrors: [...prev.syncErrors.slice(-SYNC.MAX_RECENT_ERRORS), `API check failed: ${error}`]
-      }));
-      return false;
-    }
-  }, []);
-
-  // Sync local notes to API
-  const syncToApi = useCallback(async () => {
-    if (!syncStatus.isOnline || !syncStatus.isApiAvailable || !syncStatus.isAuthenticated) {
-      return false;
-    }
-
-    try {
-      setSyncStatus(prev => ({ ...prev, pendingSyncCount: prev.pendingSyncCount + 1 }));
-      
-      await NotesSyncService.syncLocalNotesToApi();
-      
-      setSyncStatus(prev => ({
-        ...prev,
-        pendingSyncCount: Math.max(API.DEFAULT_IDS.NEW_ENTITY, prev.pendingSyncCount - 1),
-        lastSyncTime: new Date(),
-        syncErrors: prev.syncErrors.slice(-SYNC.RECENT_ERRORS_KEEP) // Keep only recent errors
-      }));
-      
-      return true;
-    } catch (error) {
-      setSyncStatus(prev => ({
-        ...prev,
-        pendingSyncCount: Math.max(API.DEFAULT_IDS.NEW_ENTITY, prev.pendingSyncCount - 1),
-        syncErrors: [...prev.syncErrors.slice(-SYNC.MAX_RECENT_ERRORS), `Sync failed: ${error}`]
-      }));
-      return false;
-    }
-  }, [syncStatus.isOnline, syncStatus.isApiAvailable, syncStatus.isAuthenticated]);
-
-  // Add sync error
-  const addSyncError = useCallback((error: string) => {
+  // Update sync status from service
+  const updateSyncStatus = useCallback(() => {
+    const status = NotesSyncService.getSyncStatus();
     setSyncStatus(prev => ({
       ...prev,
-      syncErrors: [...prev.syncErrors.slice(-SYNC.MAX_RECENT_ERRORS), error]
+      primaryQueueCount: status.primaryQueueCount,
+      retryQueueCount: status.retryQueueCount,
+      isTimerActive: status.isTimerActive,
+      isSyncing: status.isSyncing,
+      isAuthenticated: authApi.isAuthenticated(),
+      queueStats: status.queueStats
     }));
   }, []);
+
+  // Manual sync trigger
+  const triggerSync = useCallback(async () => {
+    if (!syncStatus.isOnline || !syncStatus.isAuthenticated) {
+      return false;
+    }
+
+    try {
+      await NotesSyncService.performScheduledSync();
+      updateSyncStatus();
+      setSyncStatus(prev => ({
+        ...prev,
+        lastSyncTime: new Date()
+      }));
+      return true;
+    } catch (error) {
+      console.error('Manual sync failed:', error);
+      setSyncStatus(prev => ({
+        ...prev,
+        syncErrors: [...prev.syncErrors, `Manual sync failed: ${error}`]
+      }));
+      return false;
+    }
+  }, [syncStatus.isOnline, syncStatus.isAuthenticated, updateSyncStatus]);
+
+  // Retry failed items
+  const retryFailedItems = useCallback(async () => {
+    try {
+      await NotesSyncService.retryFailedItems();
+      updateSyncStatus();
+      return true;
+    } catch (error) {
+      console.error('Retry failed:', error);
+      return false;
+    }
+  }, [updateSyncStatus]);
+
+  // Handle authentication changes
+  const handleAuthChange = useCallback((isAuthenticated: boolean) => {
+    if (isAuthenticated) {
+      NotesSyncService.handleUserLogin();
+    } else {
+      NotesSyncService.handleUserLogout();
+    }
+    updateSyncStatus();
+  }, [updateSyncStatus]);
 
   // Clear sync errors
   const clearSyncErrors = useCallback(() => {
@@ -95,36 +116,38 @@ export const useSyncStatus = () => {
     }));
   }, []);
 
-  // Update authentication status
-  const updateAuthStatus = useCallback(() => {
-    const isAuthenticated = authApi.isAuthenticated();
-    setSyncStatus(prev => ({
-      ...prev,
-      isAuthenticated,
-      // If user becomes unauthenticated, mark API as unavailable
-      isApiAvailable: isAuthenticated ? prev.isApiAvailable : false
-    }));
-    
-    // Re-check API availability if user becomes authenticated
-    if (isAuthenticated) {
-      checkApiAvailability();
+  // Check API availability
+  const checkApiAvailability = useCallback(async () => {
+    try {
+      const isAvailable = await NotesSyncService.isApiAvailable();
+      setSyncStatus(prev => ({
+        ...prev,
+        isApiAvailable: isAvailable,
+        lastSyncTime: isAvailable ? new Date() : prev.lastSyncTime
+      }));
+      return isAvailable;
+    } catch (error) {
+      setSyncStatus(prev => ({
+        ...prev,
+        isApiAvailable: false,
+        syncErrors: [...prev.syncErrors, `API check failed: ${error}`]
+      }));
+      return false;
     }
-  }, [checkApiAvailability]);
+  }, []);
 
-  // Listen to online/offline events
+  // Handle network changes
   useEffect(() => {
     const handleOnline = () => {
       setSyncStatus(prev => ({ ...prev, isOnline: true }));
-      // Check API availability when coming back online
-      checkApiAvailability();
+      NotesSyncService.handleNetworkChange(true);
+      updateSyncStatus();
     };
 
     const handleOffline = () => {
-      setSyncStatus(prev => ({ 
-        ...prev, 
-        isOnline: false, 
-        isApiAvailable: false 
-      }));
+      setSyncStatus(prev => ({ ...prev, isOnline: false }));
+      NotesSyncService.handleNetworkChange(false);
+      updateSyncStatus();
     };
 
     window.addEventListener('online', handleOnline);
@@ -134,30 +157,29 @@ export const useSyncStatus = () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [checkApiAvailability]);
+  }, [updateSyncStatus]);
 
-  // Initial API availability check
+  // Periodic status updates
   useEffect(() => {
-    checkApiAvailability();
-  }, [checkApiAvailability]);
+    const interval = setInterval(updateSyncStatus, SYNC.STATUS_UPDATE_INTERVAL);
+    return () => clearInterval(interval);
+  }, [updateSyncStatus]);
 
-  // Auto-sync when conditions are right
+  // Initial status update
   useEffect(() => {
-    if (syncStatus.isOnline && syncStatus.isApiAvailable && syncStatus.isAuthenticated && syncStatus.pendingSyncCount === API.DEFAULT_IDS.NEW_ENTITY) {
-      const autoSyncTimer = setTimeout(() => {
-        syncToApi();
-      }, SYNC.AUTO_SYNC_INTERVAL); // Auto-sync every 5 minutes when online
-
-      return () => clearTimeout(autoSyncTimer);
-    }
-  }, [syncStatus.isOnline, syncStatus.isApiAvailable, syncStatus.isAuthenticated, syncStatus.pendingSyncCount, syncToApi]);
+    updateSyncStatus();
+  }, [updateSyncStatus]);
 
   return {
     syncStatus,
-    checkApiAvailability,
-    syncToApi,
-    addSyncError,
+    triggerSync,
+    retryFailedItems,
+    handleAuthChange,
+    updateSyncStatus,
     clearSyncErrors,
-    updateAuthStatus
+    checkApiAvailability,
+    getQueueItems: QueueManager.getPrimaryQueue,
+    getRetryQueueItems: QueueManager.getRetryQueue,
+    clearAllQueues: QueueManager.clearAllQueues
   };
 };

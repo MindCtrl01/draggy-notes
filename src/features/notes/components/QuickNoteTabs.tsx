@@ -12,9 +12,9 @@ interface QuickNoteTabsProps {
 export const QuickNoteTabs = ({ notes, onNoteSelect, selectedNoteUuid }: QuickNoteTabsProps) => {
   const [isExpanded, setIsExpanded] = useState(true);
 
-  // Filter to only displayed notes and sort by creation time (newest first)
+  // Filter to only displayed notes (excluding deleted ones) and sort by creation time (newest first)
   const displayedNotes = notes
-    .filter(note => note.isDisplayed)
+    .filter(note => note.isDisplayed && !note.isDeleted)
     .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
 
   if (displayedNotes.length === 0) {

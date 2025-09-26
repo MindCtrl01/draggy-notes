@@ -26,6 +26,7 @@ export const SearchSidebar = ({ allNotes, isOpen, onClose, onNoteSelect }: Searc
     if (!searchQuery.trim()) {
       // Show top 10 most recent notes by creation date when no search query
       return allNotes
+        .filter(note => !note.isDeleted)
         .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
         .slice(0, 10);
     }
@@ -34,6 +35,9 @@ export const SearchSidebar = ({ allNotes, isOpen, onClose, onNoteSelect }: Searc
     
     return allNotes
       .filter(note => {
+        // First, exclude deleted notes
+        if (note.isDeleted) return false;
+        
         const normalizedTitle = normalizeText(note.title);
         const normalizedContent = normalizeText(note.content);
         

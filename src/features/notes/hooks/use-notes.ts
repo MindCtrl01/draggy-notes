@@ -43,9 +43,9 @@ export const useNotes = (selectedDate?: Date) => {
 
   const notes = selectedDate
     ? allNotes.filter(note => 
-        isSameDay(note.date, selectedDate) || note.isPinned
+        !note.isDeleted && (isSameDay(note.date, selectedDate) || note.isPinned)
       )
-    : allNotes;
+    : allNotes.filter(note => !note.isDeleted);
 
   const [draggedNotes, setDraggedNotes] = useState<Record<string, { x: number; y: number }>>({});
 
@@ -74,6 +74,12 @@ export const useNotes = (selectedDate?: Date) => {
       tags: [], // Empty tags initially
       isTaskMode: true, // Default to task mode
       noteTasks: [], // Initialize empty tasks array
+      isDeleted: false, // New notes are not deleted by default
+      isPinned: false,
+      // sync properties - initialize for tracking
+      syncVersion: 1, // Start with version 1 for new notes
+      lastSyncedAt: new Date(), // Will be updated by server after first sync
+      clientUpdatedAt: new Date(), // Set when client creates the note
     };
 
     // Optimistically add to UI
@@ -103,7 +109,11 @@ export const useNotes = (selectedDate?: Date) => {
   const updateNote = useCallback(async (updatedNote: Note) => {
     setIsUpdating(true);
     
-    const noteToUpdate = { ...updatedNote, updatedAt: new Date() };
+    const noteToUpdate = { 
+      ...updatedNote, 
+      updatedAt: new Date(),
+      clientUpdatedAt: new Date() // Update client timestamp for sync tracking
+    };
     
     // Optimistically update UI
     setAllNotes(prevNotes => 

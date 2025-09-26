@@ -25,6 +25,10 @@ export class NotesStorage {
         userId: note.userId || -1, // Default to -1 if not set
         tags: note.tags || [], // Default to empty array if not set
         isPinned: note.isPinned || false, // Default to false if not set
+        // sync properties - preserve tracking fields
+        syncVersion: note.syncVersion || 1,
+        lastSyncedAt: note.lastSyncedAt?.toISOString() || new Date().toISOString(),
+        clientUpdatedAt: note.clientUpdatedAt?.toISOString(),
       };
       localStorage.setItem(key, JSON.stringify(noteData));
       
@@ -56,6 +60,10 @@ export class NotesStorage {
         userId: parsed.userId || -1, // Default to -1 if not set
         tags: parsed.tags || [], // Default to empty array if not set
         isPinned: parsed.isPinned || false, // Default to false if not set
+        // sync properties - restore tracking fields
+        syncVersion: parsed.syncVersion || 1,
+        lastSyncedAt: new Date(parsed.lastSyncedAt || parsed.updatedAt || new Date()),
+        clientUpdatedAt: parsed.clientUpdatedAt ? new Date(parsed.clientUpdatedAt) : undefined,
       };
     } catch (error) {
       console.error('Failed to retrieve note from localStorage:', error);

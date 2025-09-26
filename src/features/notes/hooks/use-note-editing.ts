@@ -42,7 +42,8 @@ export const useNoteEditing = (
         ...note,
         title: trimmedTitle || 'Untitled',
         tags: tags,
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        clientUpdatedAt: new Date() // Track client update for sync
       });
     }
     setIsEditingTitle(false);
@@ -56,7 +57,8 @@ export const useNoteEditing = (
         ...note,
         content: trimmedContent,
         tags: tags,
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        clientUpdatedAt: new Date() // Track client update for sync
       });
     }
     setIsEditingContent(false);
@@ -155,7 +157,8 @@ export const useNoteEditing = (
       ...note,
       isTaskMode: !note.isTaskMode,
       noteTasks: note.noteTasks || [],
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      clientUpdatedAt: new Date() // Track client update for sync
     });
   };
 
@@ -163,15 +166,15 @@ export const useNoteEditing = (
     if (!text.trim()) return;
     
     const newTask = {
-      ...createTask(text),
-      userId: note.userId,
+      ...createTask(text, note.id),
     };
     const updatedTasks = [...(note.noteTasks || []), newTask];
     
     onUpdate({
       ...note,
       noteTasks: updatedTasks,
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      clientUpdatedAt: new Date() // Track client update for sync
     });
   };
 
@@ -188,7 +191,8 @@ export const useNoteEditing = (
     onUpdate({
       ...note,
       noteTasks: updatedTasks,
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      clientUpdatedAt: new Date() // Track client update for sync
     });
   };
 
@@ -200,7 +204,8 @@ export const useNoteEditing = (
     onUpdate({
       ...note,
       noteTasks: updatedTasks,
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      clientUpdatedAt: new Date() // Track client update for sync
     });
   };
 
@@ -219,7 +224,8 @@ export const useNoteEditing = (
     onUpdate({
       ...note,
       isPinned: !note.isPinned,
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      clientUpdatedAt: new Date() // Track client update for sync
     });
   };
 

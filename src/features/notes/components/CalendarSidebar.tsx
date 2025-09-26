@@ -24,10 +24,13 @@ export const CalendarSidebar = ({ allNotes, selectedDate, onDateSelect }: Calend
   const [hoveredDay, setHoveredDay] = useState<DayInfo | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
-  // Get notes grouped by date
+  // Get notes grouped by date (excluding deleted notes)
   const notesByDate = useMemo(() => {
     const groups: Record<string, Note[]> = {};
     allNotes.forEach(note => {
+      // Skip deleted notes
+      if (note.isDeleted) return;
+      
       const dateKey = formatDateKey(note.date);
       if (!groups[dateKey]) {
         groups[dateKey] = [];

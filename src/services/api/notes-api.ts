@@ -11,6 +11,9 @@ import {
   GetNotesByColorRequest,
   SearchNotesRequest,
   BatchDeleteRequest,
+  BatchCreateRequest,
+  BatchUpdateRequest,
+  BatchResponse,
   NoteResponse,
   HealthResponse
 } from './models/notes.model';
@@ -140,6 +143,30 @@ class NotesApi {
       method: 'GET',
     });
     return response.data || [];
+  }
+
+  // POST /api/notes/batch - Batch create notes
+  async batchCreateNotes(request: BatchCreateRequest): Promise<BatchResponse<NoteResponse>> {
+    const response = await this.makeRequest<BatchResponse<NoteResponse>>(`${this.basePath}/batch`, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+    if (!response.data) {
+      throw new ApiError('No data returned from batch create', API.STATUS_CODES.INTERNAL_SERVER_ERROR);
+    }
+    return response.data;
+  }
+
+  // PUT /api/notes/batch - Batch update notes
+  async batchUpdateNotes(request: BatchUpdateRequest): Promise<BatchResponse<NoteResponse>> {
+    const response = await this.makeRequest<BatchResponse<NoteResponse>>(`${this.basePath}/batch`, {
+      method: 'PUT',
+      body: JSON.stringify(request),
+    });
+    if (!response.data) {
+      throw new ApiError('No data returned from batch update', API.STATUS_CODES.INTERNAL_SERVER_ERROR);
+    }
+    return response.data;
   }
 
   // DELETE /api/notes/batch-delete - Batch delete notes

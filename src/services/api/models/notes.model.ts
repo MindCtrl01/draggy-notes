@@ -7,21 +7,29 @@ export interface CreateNotePositionRequest {
 export interface CreateTaskRequest {
   id: number;
   uuid: string;
+  noteId: number;
   text: string | null;
   completed: boolean;
 }
 
 export interface CreateNoteRequest {
+  uuid: string;
   title: string;
   content: string;
-  date?: string | null; // ISO date string format
+  date: string; // ISO date string format
+  userId: number;
   color: string;
   isDisplayed: boolean;
   position: CreateNotePositionRequest;
   noteTasks?: CreateTaskRequest[] | null;
-  isTaskMode?: boolean | null;
-  isPinned?: boolean | null;
+  isTaskMode: boolean;
+  isPinned: boolean;
   tagNames?: string[] | null;
+  isDeleted: boolean;
+  // sync properties - send clientUpdatedAt to server for tracking
+  clientUpdatedAt?: string;
+  syncVersion: number;
+  lastSyncedAt: string; // ISO date string format
 }
 
 export interface UpdateNotePositionRequest {
@@ -32,6 +40,7 @@ export interface UpdateNotePositionRequest {
 export interface UpdateTaskRequest {
   id: number;
   uuid: string;
+  noteId: number;
   text: string | null;
   completed: boolean;
 }
@@ -39,15 +48,21 @@ export interface UpdateTaskRequest {
 export interface UpdateNoteRequest {
   id: number;
   uuid: string;
+  userId: number;
   title: string;
   content: string;
-  date?: string | null; // ISO date string format
+  date: string; // ISO date string format
   color: string;
   isDisplayed: boolean;
   position: UpdateNotePositionRequest;
   tasks?: UpdateTaskRequest[] | null;
-  isTaskMode?: boolean | null;
+  isTaskMode: boolean;
   tagNames?: string[] | null;
+  isDeleted: boolean;
+  // sync properties - send clientUpdatedAt to server for conflict detection
+  clientUpdatedAt?: string;
+  syncVersion: number;
+  lastSyncedAt: string; // ISO date string format
 }
 
 export interface GetNoteByIdRequest {
@@ -74,6 +89,28 @@ export interface BatchDeleteRequest {
   ids: number[] | null;
 }
 
+export interface BatchCreateRequest {
+  notes: CreateNoteRequest[];
+}
+
+export interface BatchUpdateRequest {
+  notes: UpdateNoteRequest[];
+}
+
+export interface BatchResponse<T> {
+  successful: T[];
+  errors: Array<{
+    index: number;
+    error: string;
+    item?: any;
+  }>;
+  summary: {
+    total: number;
+    successful: number;
+    failed: number;
+  };
+}
+
 // Note Response Models
 export interface NotePositionResponse {
   x: number;
@@ -83,6 +120,7 @@ export interface NotePositionResponse {
 export interface TaskResponse {
   id: number;
   uuid: string;
+  noteId: number;
   text: string;
   completed: boolean;
   createdAt: string; // ISO date string format
@@ -100,18 +138,24 @@ export interface TagResponse {
 export interface NoteResponse {
   id: number;
   uuid: string;
+  userId: number;
   title: string;
   content: string;
   date: string; // ISO date string format
   color: string;
   isDisplayed: boolean;
-  isPinned?: boolean | null;
+  isPinned: boolean;
   position: NotePositionResponse;
   createdAt: string; // ISO date string format
   updatedAt: string; // ISO date string format
   tasks?: TaskResponse[] | null;
-  isTaskMode?: boolean | null;
-  tags: TagResponse[];
+  isTaskMode: boolean;
+  tags?: TagResponse[] | null;
+  isDeleted: boolean;
+  // sync properties - received from server
+  syncVersion: number;
+  lastSyncedAt: string; // ISO date string format
+  clientUpdatedAt?: string;
 }
 
 // Health Response Models

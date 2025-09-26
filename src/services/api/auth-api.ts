@@ -83,6 +83,9 @@ class AuthApi {
       TokenManager.setRefreshToken(response.data.refreshToken);
     }
 
+    // Mark that user has logged in at least once
+    TokenManager.markUserHasLoggedIn();
+
     return response.data;
   }
 
@@ -126,6 +129,9 @@ class AuthApi {
     if (response.data.refreshToken) {
       TokenManager.setRefreshToken(response.data.refreshToken);
     }
+
+    // Mark that user has logged in at least once
+    TokenManager.markUserHasLoggedIn();
 
     return response.data;
   }

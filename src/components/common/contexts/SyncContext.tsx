@@ -1,15 +1,9 @@
 import React, { createContext, useContext, useEffect, ReactNode } from 'react';
 import { useSyncStatus } from '@/hooks/use-sync-status';
 import { useAuthContext } from './AuthContext';
+import { NotesSyncService } from '@/services/notes-sync-service';
 
-interface SyncContextType {
-  syncStatus: ReturnType<typeof useSyncStatus>['syncStatus'];
-  checkApiAvailability: ReturnType<typeof useSyncStatus>['checkApiAvailability'];
-  syncToApi: ReturnType<typeof useSyncStatus>['syncToApi'];
-  addSyncError: ReturnType<typeof useSyncStatus>['addSyncError'];
-  clearSyncErrors: ReturnType<typeof useSyncStatus>['clearSyncErrors'];
-  updateAuthStatus: ReturnType<typeof useSyncStatus>['updateAuthStatus'];
-}
+type SyncContextType = ReturnType<typeof useSyncStatus>;
 
 const SyncContext = createContext<SyncContextType | undefined>(undefined);
 
@@ -21,10 +15,22 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({ children }) => {
   const syncHook = useSyncStatus();
   const { isAuthenticated } = useAuthContext();
 
-  // Update sync status when authentication changes
+  // Initialize sync system when app starts
   useEffect(() => {
-    syncHook.updateAuthStatus();
-  }, [isAuthenticated, syncHook.updateAuthStatus]);
+    if (isAuthenticated) {
+      NotesSyncService.handleUserLogin();
+    }
+
+    // Cleanup on unmount
+    return () => {
+      NotesSyncService.stopSyncTimer();
+    };
+  }, []);
+
+  // Handle authentication changes
+  useEffect(() => {
+    syncHook.handleAuthChange(isAuthenticated);
+  }, [isAuthenticated, syncHook]);
 
   return (
     <SyncContext.Provider value={syncHook}>

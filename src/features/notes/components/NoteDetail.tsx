@@ -88,7 +88,8 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
     onUpdate({
       ...note,
       tags: newTags,
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      clientUpdatedAt: new Date() // Track client update for sync
     });
   };
 
@@ -123,7 +124,8 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({
         content: content,
         tags: tags,
         date: selectedDate,
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        clientUpdatedAt: new Date() // Track client update for sync
       };
       
       // If date changed, use onMoveToDate, otherwise use onUpdate

@@ -1,7 +1,15 @@
 import React from 'react';
-import { useSyncContext } from '@/components/common/contexts/SyncContext';
-import { WifiOff, Cloud, CloudOff, Loader2, AlertCircle } from 'lucide-react';
-import { SYNC, COMPONENT_SIZES, API } from '@/constants/ui-constants';
+import { useSyncStatus } from '@/hooks/use-sync-status';
+import { SYNC } from '@/constants/ui-constants';
+import { 
+  WifiOff, 
+  RefreshCw, 
+  Clock, 
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  CloudOff
+} from 'lucide-react';
 
 interface SyncStatusIndicatorProps {
   className?: string;
@@ -12,78 +20,87 @@ export const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({
   className = '', 
   showDetails = false 
 }) => {
-  const { syncStatus, syncToApi, clearSyncErrors } = useSyncContext();
+  const { 
+    syncStatus, 
+    triggerSync, 
+    retryFailedItems, 
+    clearSyncErrors 
+  } = useSyncStatus();
 
-  const getStatusIcon = () => {
+  const getSyncStatusIcon = () => {
     if (!syncStatus.isAuthenticated) {
       return (
-        <div title="Not Signed In">
-          <CloudOff className={`w-${COMPONENT_SIZES.ICONS.SMALL} h-${COMPONENT_SIZES.ICONS.SMALL} text-gray-500`} />
+        <div title="Not authenticated">
+          <CloudOff className="h-4 w-4 text-gray-500" />
         </div>
       );
     }
-    
+
     if (!syncStatus.isOnline) {
       return (
         <div title="Offline">
-          <WifiOff className={`w-${COMPONENT_SIZES.ICONS.SMALL} h-${COMPONENT_SIZES.ICONS.SMALL} text-red-500`} />
+          <WifiOff className="h-4 w-4 text-red-500" />
         </div>
       );
     }
     
-    if (syncStatus.pendingSyncCount > API.DEFAULT_IDS.NEW_ENTITY) {
+    if (syncStatus.isSyncing) {
       return (
         <div title="Syncing...">
-          <Loader2 className={`w-${COMPONENT_SIZES.ICONS.SMALL} h-${COMPONENT_SIZES.ICONS.SMALL} text-blue-500 animate-spin`} />
+          <RefreshCw className="h-4 w-4 text-blue-500 animate-spin" />
         </div>
       );
     }
     
-    if (!syncStatus.isApiAvailable) {
+    if (syncStatus.primaryQueueCount > SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT || syncStatus.retryQueueCount > SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT) {
       return (
-        <div title="API Unavailable">
-          <CloudOff className={`w-${COMPONENT_SIZES.ICONS.SMALL} h-${COMPONENT_SIZES.ICONS.SMALL} text-yellow-500`} />
+        <div title="Pending sync">
+          <Clock className="h-4 w-4 text-yellow-500" />
         </div>
       );
     }
     
-    if (syncStatus.syncErrors.length > API.DEFAULT_IDS.NEW_ENTITY) {
+    if (syncStatus.syncErrors.length > SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT) {
       return (
-        <div title="Sync Errors">
-          <AlertCircle className={`w-${COMPONENT_SIZES.ICONS.SMALL} h-${COMPONENT_SIZES.ICONS.SMALL} text-orange-500`} />
+        <div title="Sync errors">
+          <AlertTriangle className="h-4 w-4 text-red-500" />
         </div>
       );
     }
     
     return (
-      <div title="Online & Synced">
-        <Cloud className={`w-${COMPONENT_SIZES.ICONS.SMALL} h-${COMPONENT_SIZES.ICONS.SMALL} text-green-500`} />
+      <div title="Synced">
+        <CheckCircle className="h-4 w-4 text-green-500" />
       </div>
     );
   };
 
-  const getStatusText = () => {
+  const getSyncStatusText = () => {
     if (!syncStatus.isAuthenticated) {
-      return 'Not signed in - Changes saved locally';
+      return 'Not authenticated - Changes saved locally';
     }
-    
+
     if (!syncStatus.isOnline) {
       return 'Offline - Changes saved locally';
     }
     
-    if (syncStatus.pendingSyncCount > API.DEFAULT_IDS.NEW_ENTITY) {
-      return `Syncing... (${syncStatus.pendingSyncCount} pending)`;
+    if (syncStatus.isSyncing) {
+      return 'Syncing...';
     }
     
-    if (!syncStatus.isApiAvailable) {
-      return 'API unavailable - Changes saved locally';
+    if (syncStatus.primaryQueueCount > SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT) {
+      return `${syncStatus.primaryQueueCount} pending sync`;
     }
     
-    if (syncStatus.syncErrors.length > API.DEFAULT_IDS.NEW_ENTITY) {
-      return `Sync errors (${syncStatus.syncErrors.length})`;
+    if (syncStatus.retryQueueCount > SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT) {
+      return `${syncStatus.retryQueueCount} failed items`;
     }
     
-    return 'Online & synced';
+    if (syncStatus.syncErrors.length > SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT) {
+      return 'Sync errors occurred';
+    }
+    
+    return 'All changes synced';
   };
 
   const formatLastSyncTime = () => {
@@ -91,7 +108,7 @@ export const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({
     
     const now = new Date();
     const diff = now.getTime() - syncStatus.lastSyncTime.getTime();
-    const minutes = Math.floor(diff / SYNC.TIME.MS_PER_MINUTE);
+    const minutes = Math.floor(diff / (SYNC.TIME.MS_PER_SECOND * SYNC.TIME.SECONDS_PER_MINUTE));
     
     if (minutes < 1) return 'Just now';
     if (minutes < SYNC.TIME.MINUTES_PER_HOUR) return `${minutes}m ago`;
@@ -103,50 +120,105 @@ export const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({
   };
 
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      <div className="flex items-center gap-1">
-        {getStatusIcon()}
+    <div className={`flex items-center space-x-2 p-2 bg-white rounded-lg shadow-sm border ${className}`}>
+      {/* Status Icon and Text */}
+      <div className="flex items-center space-x-2">
+        {getSyncStatusIcon()}
         {showDetails && (
-          <span className="text-sm text-gray-600 dark:text-gray-300">
-            {getStatusText()}
-          </span>
+          <span className="text-sm font-medium">{getSyncStatusText()}</span>
         )}
       </div>
-      
+
+      {/* Queue Status Badges */}
       {showDetails && (
-        <div className="flex items-center gap-2">
-          {syncStatus.lastSyncTime && (
-            <span className="text-xs text-gray-500">
-              Last sync: {formatLastSyncTime()}
-            </span>
+        <>
+          {syncStatus.primaryQueueCount > SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT && (
+            <div className="flex items-center space-x-1">
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                {syncStatus.primaryQueueCount} queued
+              </span>
+            </div>
           )}
           
-          {syncStatus.isOnline && !syncStatus.isApiAvailable && syncStatus.isAuthenticated && (
-            <button
-              onClick={syncToApi}
-              className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300"
-              disabled={syncStatus.pendingSyncCount > API.DEFAULT_IDS.NEW_ENTITY}
-            >
-              Retry Sync
-            </button>
+          {syncStatus.retryQueueCount > SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT && (
+            <div className="flex items-center space-x-1">
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                {syncStatus.retryQueueCount} failed
+              </span>
+            </div>
           )}
-          
-          {syncStatus.syncErrors.length > API.DEFAULT_IDS.NEW_ENTITY && (
-            <button
-              onClick={clearSyncErrors}
-              className="text-xs px-2 py-1 bg-orange-100 text-orange-700 rounded hover:bg-orange-200 dark:bg-orange-900 dark:text-orange-300"
-            >
-              Clear Errors
-            </button>
+        </>
+      )}
+
+      {/* Action Buttons */}
+      <div className="flex items-center space-x-1">
+        {/* Manual Sync Button */}
+        <button
+          onClick={triggerSync}
+          disabled={!syncStatus.isOnline || !syncStatus.isAuthenticated || syncStatus.isSyncing}
+          className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Manual sync"
+        >
+          <RefreshCw className={`h-3 w-3 ${syncStatus.isSyncing ? 'animate-spin' : ''}`} />
+        </button>
+
+        {/* Retry Failed Button */}
+        {syncStatus.retryQueueCount > SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT && (
+          <button
+            onClick={retryFailedItems}
+            disabled={!syncStatus.isOnline || !syncStatus.isAuthenticated}
+            className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Retry failed items"
+          >
+            <AlertTriangle className="h-3 w-3" />
+          </button>
+        )}
+
+        {/* Clear Errors Button */}
+        {syncStatus.syncErrors.length > SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT && (
+          <button
+            onClick={clearSyncErrors}
+            className="p-1 rounded hover:bg-gray-100"
+            title="Clear errors"
+          >
+            <XCircle className="h-3 w-3" />
+          </button>
+        )}
+      </div>
+
+      {/* Last Sync Time */}
+      {showDetails && syncStatus.lastSyncTime && (
+        <span className="text-xs text-gray-500">
+          Last sync: {formatLastSyncTime()}
+        </span>
+      )}
+
+      {/* Sync Timer Status */}
+      {showDetails && syncStatus.isAuthenticated && (
+        <div className="flex items-center space-x-1">
+          <div className={`w-2 h-2 rounded-full ${syncStatus.isTimerActive ? 'bg-green-500' : 'bg-gray-300'}`} />
+          <span className="text-xs text-gray-500">
+            Auto-sync {syncStatus.isTimerActive ? 'on' : 'off'}
+          </span>
+        </div>
+      )}
+
+      {/* Queue Details Tooltip */}
+      {showDetails && (syncStatus.primaryQueueCount > SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT || syncStatus.retryQueueCount > SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT) && (
+        <div className="text-xs text-gray-500">
+          Queue: {syncStatus.queueStats.primary.create}c, {syncStatus.queueStats.primary.update}u, {syncStatus.queueStats.primary.delete}d
+          {syncStatus.retryQueueCount > SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT && (
+            <span className="text-red-500"> | Retry: {syncStatus.retryQueueCount}</span>
           )}
         </div>
       )}
-      
-      {showDetails && syncStatus.syncErrors.length > API.DEFAULT_IDS.NEW_ENTITY && (
-        <div className="absolute top-full left-0 mt-1 p-2 bg-white dark:bg-gray-800 border rounded shadow-lg z-10 max-w-xs">
-          <div className="text-xs font-medium mb-1">Recent Sync Errors:</div>
-          {syncStatus.syncErrors.slice(-SYNC.MAX_ERRORS_DISPLAY).map((error, index) => (
-            <div key={index} className="text-xs text-red-600 dark:text-red-400 mb-1">
+
+      {/* Error Details */}
+      {showDetails && syncStatus.syncErrors.length > SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT && (
+        <div className="absolute top-full left-0 mt-1 p-2 bg-white border rounded shadow-lg z-10 max-w-xs">
+          <div className="text-xs font-medium mb-1 text-red-600">Recent Sync Errors:</div>
+          {syncStatus.syncErrors.slice(SYNC.QUEUE_PROCESSING.ERROR_SLICE_START).map((error, index) => (
+            <div key={index} className="text-xs text-red-600 mb-1 break-words">
               {error}
             </div>
           ))}
