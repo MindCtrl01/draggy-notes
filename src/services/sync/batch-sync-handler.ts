@@ -42,27 +42,28 @@ export class BatchSyncHandler {
       
       const successful: string[] = [];
       
-      // Process successful creations - only update localStorage with server-generated IDs if needed
-      batchResponse.successful.forEach((noteResponse, index) => {
-        const noteUuid = itemMap.get(index);
-        if (noteUuid) {
-          successful.push(noteUuid);
-          
-          // Only update localStorage with server ID for new notes
-          const localNote = NotesStorage.getNote(noteUuid);
-          if (localNote && (!localNote.id || localNote.id === API.DEFAULT_IDS.NEW_ENTITY)) {
-            const syncedNote = transformNoteResponseToNote(noteResponse);
-            NotesStorage.saveNote(syncedNote);
-          }
-        }
+      // Process successful creations - save to localStorage
+      batchResponse.successful.forEach((noteResponse) => {
+        const syncedNote = transformNoteResponseToNote(noteResponse);
+        successful.push(syncedNote.uuid);
+        
+        // Save successful note to localStorage
+        NotesStorage.saveNote(syncedNote);
       });
 
-      // Process failed creations
+      // Process failed creations - extract UUIDs from failed notes
+      batchResponse.failed.forEach((failedNoteResponse) => {
+        failed.push({ 
+          noteUuid: failedNoteResponse.uuid, 
+          error: 'Note creation failed on server' 
+        });
+      });
+
+      // Process general errors
       batchResponse.errors.forEach(error => {
-        const noteUuid = itemMap.get(error.index);
-        if (noteUuid) {
-          failed.push({ noteUuid, error: error.error });
-        }
+        // For general errors, we might not have specific note UUIDs
+        // These are typically validation or system errors
+        console.error('Batch create error:', error);
       });
 
       console.log(`Batch create completed: ${successful.length} successful, ${failed.length} failed`);
@@ -115,21 +116,38 @@ export class BatchSyncHandler {
       
       const successful: string[] = [];
       
-      // Process successful updates - no need to update localStorage after sync
-      batchResponse.successful.forEach((_, index) => {
-        const noteUuid = itemMap.get(index);
-        if (noteUuid) {
-          successful.push(noteUuid);
-        }
+      // Process successful updates - save updated notes to localStorage
+      batchResponse.successful.forEach((noteResponse) => {
+        const syncedNote = transformNoteResponseToNote(noteResponse);
+        successful.push(syncedNote.uuid);
+        
+        // Save successful note to localStorage
+        NotesStorage.saveNote(syncedNote);
       });
 
-      // Process failed updates
-      batchResponse.errors.forEach(error => {
-        const noteUuid = itemMap.get(error.index);
-        if (noteUuid) {
-          failed.push({ noteUuid, error: error.error });
-        }
+      // Process failed updates - extract UUIDs from failed notes
+      batchResponse.failed.forEach((failedNoteResponse) => {
+        failed.push({ 
+          noteUuid: failedNoteResponse.uuid, 
+          error: 'Note update failed on server' 
+        });
       });
+
+      // Process general errors
+      batchResponse.errors.forEach(error => {
+        // For general errors, we might not have specific note UUIDs
+        // These are typically validation or system errors
+        console.error('Batch update error:', error);
+      });
+
+      // Handle conflicts if any
+      if (batchResponse.conflicts && batchResponse.conflicts.length > 0) {
+        console.warn(`Batch update has ${batchResponse.conflicts.length} conflicts that need resolution`);
+        batchResponse.conflicts.forEach(conflict => {
+          // For now, log conflicts - in future we might want to handle them
+          console.warn(`Conflict for note ${conflict.noteUuid}: ${conflict.conflictType}`);
+        });
+      }
 
       console.log(`Batch update completed: ${successful.length} successful, ${failed.length} failed`);
       return { successful, failed };
@@ -169,10 +187,30 @@ export class BatchSyncHandler {
     if (noteIds.length === 0) return { successful: [], failed };
 
     try {
-      await notesApi.batchDeleteNotes({ ids: noteIds });
+      const batchResponse = await notesApi.batchDeleteNotes({ ids: noteIds });
       
-      // All deletes were successful
-      const successful = Array.from(itemMap.values());
+      const successful: string[] = [];
+      
+      // Process successful deletions
+      batchResponse.successful.forEach((noteResponse) => {
+        successful.push(noteResponse.uuid);
+        // Note: For deletions, we don't need to save to localStorage since the note is deleted
+        // The note should already be removed from localStorage when delete was initiated
+      });
+
+      // Process failed deletions - extract UUIDs from failed notes
+      batchResponse.failed.forEach((failedNoteResponse) => {
+        failed.push({ 
+          noteUuid: failedNoteResponse.uuid, 
+          error: 'Note deletion failed on server' 
+        });
+      });
+
+      // Process general errors
+      batchResponse.errors.forEach(error => {
+        console.error('Batch delete error:', error);
+      });
+
       console.log(`Batch delete completed: ${successful.length} successful, ${failed.length} failed`);
       return { successful, failed };
       

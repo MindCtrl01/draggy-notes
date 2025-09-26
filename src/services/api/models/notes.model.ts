@@ -111,6 +111,24 @@ export interface BatchResponse<T> {
   };
 }
 
+// New batch sync result models
+export interface SyncConflict {
+  noteId: number;
+  noteUuid: string;
+  conflictType: 'timestamp' | 'content' | 'concurrent';
+  localVersion: NoteResponse;
+  serverVersion: NoteResponse;
+  resolutionStrategy?: 'server_wins' | 'client_wins' | 'manual';
+}
+
+export interface BatchSyncResult {
+  successful: NoteResponse[];
+  failed: NoteResponse[];
+  errors: string[];
+  conflicts: SyncConflict[];
+  processingTimeMs: number;
+}
+
 // Note Response Models
 export interface NotePositionResponse {
   x: number;

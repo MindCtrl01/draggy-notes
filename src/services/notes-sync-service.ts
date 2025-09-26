@@ -121,22 +121,16 @@ export class NotesSyncService {
           break;
       }
 
-      // Remove successful items from primary queue
+      // Handle batch sync results using the new queue management method
+      QueueManager.handleBatchSyncResult(result.successful, result.failed);
+      
+      // Log results
       result.successful.forEach(noteUuid => {
-        QueueManager.removeFromPrimaryQueue(noteUuid);
         console.log(`Successfully synced ${action} for note ${noteUuid}`);
       });
 
-      // Handle failed items
       result.failed.forEach(({ noteUuid, error }) => {
         console.error(`Failed to sync ${action} for note ${noteUuid}:`, error);
-        
-        // Handle failed sync - either retry or move to retry queue
-        const canRetry = QueueManager.handleFailedSync(noteUuid, error);
-        
-        if (!canRetry) {
-          console.warn(`Note ${noteUuid} moved to retry queue after max retries`);
-        }
       });
 
     } catch (error) {

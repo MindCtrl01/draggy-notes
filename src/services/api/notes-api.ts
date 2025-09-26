@@ -13,7 +13,7 @@ import {
   BatchDeleteRequest,
   BatchCreateRequest,
   BatchUpdateRequest,
-  BatchResponse,
+  BatchSyncResult,
   NoteResponse,
   HealthResponse
 } from './models/notes.model';
@@ -146,8 +146,8 @@ class NotesApi {
   }
 
   // POST /api/notes/batch - Batch create notes
-  async batchCreateNotes(request: BatchCreateRequest): Promise<BatchResponse<NoteResponse>> {
-    const response = await this.makeRequest<BatchResponse<NoteResponse>>(`${this.basePath}/batch`, {
+  async batchCreateNotes(request: BatchCreateRequest): Promise<BatchSyncResult> {
+    const response = await this.makeRequest<BatchSyncResult>(`${this.basePath}/batch`, {
       method: 'POST',
       body: JSON.stringify(request),
     });
@@ -158,8 +158,8 @@ class NotesApi {
   }
 
   // PUT /api/notes/batch - Batch update notes
-  async batchUpdateNotes(request: BatchUpdateRequest): Promise<BatchResponse<NoteResponse>> {
-    const response = await this.makeRequest<BatchResponse<NoteResponse>>(`${this.basePath}/batch`, {
+  async batchUpdateNotes(request: BatchUpdateRequest): Promise<BatchSyncResult> {
+    const response = await this.makeRequest<BatchSyncResult>(`${this.basePath}/batch`, {
       method: 'PUT',
       body: JSON.stringify(request),
     });
@@ -170,11 +170,15 @@ class NotesApi {
   }
 
   // DELETE /api/notes/batch-delete - Batch delete notes
-  async batchDeleteNotes(request: BatchDeleteRequest): Promise<void> {
-    await this.makeRequest<void>(`${this.basePath}/batch-delete`, {
+  async batchDeleteNotes(request: BatchDeleteRequest): Promise<BatchSyncResult> {
+    const response = await this.makeRequest<BatchSyncResult>(`${this.basePath}/batch-delete`, {
       method: 'DELETE',
       body: JSON.stringify(request),
     });
+    if (!response.data) {
+      throw new ApiError('No data returned from batch delete', API.STATUS_CODES.INTERNAL_SERVER_ERROR);
+    }
+    return response.data;
   }
 
   // GET /health - Health check

@@ -275,6 +275,37 @@ export class QueueManager {
   }
 
   /**
+   * Remove multiple items from primary queue (for successful batch operations)
+   */
+  static removeMultipleFromPrimaryQueue(noteUuids: string[]): void {
+    const queue = this.getPrimaryQueue();
+    const filteredQueue = queue.filter(item => !noteUuids.includes(item.noteUuid));
+    this.savePrimaryQueue(filteredQueue);
+    console.log(`Removed ${noteUuids.length} successful items from primary queue`);
+  }
+
+  /**
+   * Handle batch sync results - remove successful, handle failed
+   */
+  static handleBatchSyncResult(
+    successful: string[], 
+    failed: Array<{ noteUuid: string, error: string }>
+  ): void {
+    // Remove successful items from primary queue
+    if (successful.length > 0) {
+      this.removeMultipleFromPrimaryQueue(successful);
+    }
+
+    // Handle failed items - increment retry count or move to retry queue
+    failed.forEach(({ noteUuid, error }) => {
+      const canRetry = this.handleFailedSync(noteUuid, error);
+      if (!canRetry) {
+        console.warn(`Note ${noteUuid} moved to retry queue after max retries`);
+      }
+    });
+  }
+
+  /**
    * Clear all queues
    */
   static clearAllQueues(): void {
