@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { NotesSyncService } from '@/services/notes-sync-service';
 import { QueueManager } from '@/services/sync/queue-manager';
-import { QueueStats } from '@/types/sync.types';
+import { QueueStats, RealTimeSyncStatus } from '@/types/sync.types';
 import { SYNC } from '@/constants/ui-constants';
 import { TokenManager } from '@/helpers/token-manager';
 
@@ -16,6 +16,7 @@ export interface SyncStatus {
   isTimerActive: boolean;
   isSyncing: boolean;
   queueStats: QueueStats;
+  realTimeStatus: RealTimeSyncStatus;
 }
 
 /**
@@ -45,6 +46,15 @@ export const useSyncStatus = () => {
         update: SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT, 
         delete: SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT 
       }
+    },
+    realTimeStatus: {
+      isRealTimeEnabled: false,
+      connectionState: {
+        isConnected: false,
+        isConnecting: false,
+        reconnectAttempts: 0
+      },
+      eventsProcessed: 0
     }
   });
 
@@ -58,7 +68,8 @@ export const useSyncStatus = () => {
       isTimerActive: status.isTimerActive,
       isSyncing: status.isSyncing,
       isAuthenticated: TokenManager.isAuthenticated(),
-      queueStats: status.queueStats
+      queueStats: status.queueStats,
+      realTimeStatus: status.realTimeStatus
     }));
   }, []);
 
@@ -170,6 +181,32 @@ export const useSyncStatus = () => {
     updateSyncStatus();
   }, [updateSyncStatus]);
 
+  // Set up real-time event handlers
+  useEffect(() => {
+    const handleRealTimeEvent = () => {
+      updateSyncStatus();
+    };
+
+    // Listen to real-time sync events
+    NotesSyncService.addRealTimeEventHandler('notesCreated', handleRealTimeEvent);
+    NotesSyncService.addRealTimeEventHandler('notesUpdated', handleRealTimeEvent);
+    NotesSyncService.addRealTimeEventHandler('notesDeleted', handleRealTimeEvent);
+    NotesSyncService.addRealTimeEventHandler('statusUpdated', handleRealTimeEvent);
+
+    return () => {
+      // Clean up event handlers
+      NotesSyncService.removeRealTimeEventHandler('notesCreated', handleRealTimeEvent);
+      NotesSyncService.removeRealTimeEventHandler('notesUpdated', handleRealTimeEvent);
+      NotesSyncService.removeRealTimeEventHandler('notesDeleted', handleRealTimeEvent);
+      NotesSyncService.removeRealTimeEventHandler('statusUpdated', handleRealTimeEvent);
+    };
+  }, [updateSyncStatus]);
+
+  // Get SignalR connection status
+  const getSignalRStatus = useCallback(() => {
+    return NotesSyncService.getSignalRStatus();
+  }, []);
+
   return {
     syncStatus,
     triggerSync,
@@ -180,6 +217,7 @@ export const useSyncStatus = () => {
     checkApiAvailability,
     getQueueItems: QueueManager.getPrimaryQueue,
     getRetryQueueItems: QueueManager.getRetryQueue,
-    clearAllQueues: QueueManager.clearAllQueues
+    clearAllQueues: QueueManager.clearAllQueues,
+    getSignalRStatus
   };
 };

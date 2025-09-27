@@ -15,6 +15,7 @@ import { NotesStorage } from '@/helpers/notes-storage';
 import { Note } from '@/domains/note';
 import { isSameDay, formatHeaderDate } from '@/helpers/date-helper';
 import { LAYOUT, DRAG, NOTE_CARD, Z_INDEX, ANIMATION } from '@/constants/ui-constants';
+import { NotesSyncService } from '@/services/notes-sync-service';
 
 export const NotesCanvas = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -37,6 +38,7 @@ export const NotesCanvas = () => {
     finalizeDrag,
     moveNoteToDate,
     refreshNoteFromStorage,
+    forceReloadAllNotes,
     isCreating,
     isUpdating,
     isDeleting 
@@ -64,6 +66,22 @@ export const NotesCanvas = () => {
       NotesStorage.saveRecentCanvasDate(dateKey);
     }
   }, [notes.length, selectedDate, isLoading, isCreating, isUpdating, isDeleting]);
+
+  // Set up force reload event handler for SignalR events
+  useEffect(() => {
+    const handleForceReload = (data: any) => {
+      console.log(`Force reloading notes after ${data.reason} event, affected notes: ${data.affectedNotes}`);
+      forceReloadAllNotes();
+    };
+
+    // Add event handler for force reload events
+    NotesSyncService.addRealTimeEventHandler('forceReloadNotes', handleForceReload);
+
+    return () => {
+      // Clean up event handler
+      NotesSyncService.removeRealTimeEventHandler('forceReloadNotes', handleForceReload);
+    };
+  }, [forceReloadAllNotes]);
 
   const handleCanvasDoubleClick = (e: React.MouseEvent) => {
     // Prevent default double-click behavior (text selection)

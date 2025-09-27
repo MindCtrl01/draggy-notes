@@ -266,6 +266,42 @@ export class NotesStorage {
       return 0;
     }
   }
+
+  /**
+   * Force reload all notes from localStorage (fresh read)
+   * This method bypasses any caching and reads directly from localStorage
+   * @returns Array of all notes freshly loaded from localStorage
+   */
+  static forceReloadAllNotes(): Note[] {
+    try {
+      console.log('Force reloading all notes from localStorage...');
+      
+      // Get fresh list of note UUIDs from localStorage
+      const noteUuids = this.getNotesList();
+      const notes: Note[] = [];
+      
+      for (const noteUuid of noteUuids) {
+        // Force fresh read of each note
+        const note = this.getNote(noteUuid);
+        if (note) {
+          notes.push(note);
+        } else {
+          console.warn(`Note ${noteUuid} found in list but not in storage - cleaning up`);
+          // Clean up orphaned UUID from list
+          this.updateNotesList(noteUuid, 'remove');
+        }
+      }
+      
+      // Sort by creation date (newest first)
+      const sortedNotes = notes.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+      
+      console.log(`Force reloaded ${sortedNotes.length} notes from localStorage`);
+      return sortedNotes;
+    } catch (error) {
+      console.error('Failed to force reload notes from localStorage:', error);
+      return [];
+    }
+  }
 }
 
 // Export individual functions for convenience
@@ -281,4 +317,5 @@ export const {
   saveRecentCanvasDate,
   getRecentCanvasDate,
   getNotesCountByDate,
+  forceReloadAllNotes,
 } = NotesStorage;

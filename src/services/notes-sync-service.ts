@@ -5,8 +5,9 @@ import { TokenManager } from '@/helpers/token-manager';
 import { transformNoteResponseToNote } from './api/transformers/note-transformers';
 import { QueueManager } from './sync/queue-manager';
 import { BatchSyncHandler } from './sync/batch-sync-handler';
-import { QueueItem } from '@/types/sync.types';
+import { QueueItem, RealTimeSyncStatus } from '@/types/sync.types';
 import { SYNC } from '@/constants/ui-constants';
+import { SignalRService } from './signalr/signalr-service';
 
 /**
  * Enhanced service that handles synchronization between API and localStorage
@@ -15,6 +16,7 @@ import { SYNC } from '@/constants/ui-constants';
 export class NotesSyncService {
   private static syncTimer: NodeJS.Timeout | null = null;
   private static isSyncing = false;
+  private static realTimeEventHandlers: Map<string, Function[]> = new Map();
 
   /**
    * Start automatic sync timer
@@ -224,17 +226,20 @@ export class NotesSyncService {
    * Handle user logout - stop sync but preserve queue
    */
   static handleUserLogout(): void {
-    console.log('User logged out - stopping sync timer');
+    console.log('User logged out - stopping sync timer and SignalR');
     this.stopSyncTimer();
+    SignalRService.handleUserLogout();
     // Note: Queue is preserved so pending operations can sync when user logs back in
   }
 
   /**
-   * Handle user login - start sync timer
+   * Handle user login - start sync timer and SignalR
    */
   static handleUserLogin(): void {
-    console.log('User logged in - starting sync timer');
+    console.log('User logged in - starting sync timer and SignalR');
     this.startSyncTimer();
+    SignalRService.handleUserLogin();
+    this.setupSignalREventHandlers();
   }
 
   /**
@@ -242,19 +247,22 @@ export class NotesSyncService {
    */
   static handleNetworkChange(isOnline: boolean): void {
     if (isOnline && this.isAuthenticated()) {
-      console.log('Network restored - starting sync timer');
+      console.log('Network restored - starting sync timer and SignalR');
       this.startSyncTimer();
+      SignalRService.handleNetworkChange(isOnline);
     } else {
       console.log('Network lost - stopping sync timer');
       this.stopSyncTimer();
+      SignalRService.handleNetworkChange(isOnline);
     }
   }
 
   /**
-   * Get enhanced sync status including retry queue
+   * Get enhanced sync status including retry queue and real-time status
    */
   static getSyncStatus() {
     const queueStats = QueueManager.getQueueStats();
+    const realTimeStatus = SignalRService.getRealTimeStatus();
     
     return {
       isTimerActive: this.syncTimer !== null,
@@ -262,7 +270,8 @@ export class NotesSyncService {
       canSync: this.canSync(),
       primaryQueueCount: queueStats.primary.total,
       retryQueueCount: queueStats.retry.total,
-      queueStats
+      queueStats,
+      realTimeStatus
     };
   }
 
@@ -416,5 +425,102 @@ export class NotesSyncService {
    */
   private static isAuthenticated(): boolean {
     return TokenManager.isAuthenticated();
+  }
+
+  /**
+   * Set up SignalR event handlers for real-time sync
+   */
+  private static setupSignalREventHandlers(): void {
+    // Handle real-time note events
+    SignalRService.addEventListener('notesCreated', (data: any) => {
+      console.log('Real-time notes created:', data.notes.length);
+      this.notifyRealTimeEventHandlers('notesCreated', data);
+    });
+
+    SignalRService.addEventListener('notesUpdated', (data: any) => {
+      console.log('Real-time notes updated:', data.notes.length);
+      this.notifyRealTimeEventHandlers('notesUpdated', data);
+    });
+
+    SignalRService.addEventListener('notesDeleted', (data: any) => {
+      console.log('Real-time notes deleted:', data.notes.length);
+      this.notifyRealTimeEventHandlers('notesDeleted', data);
+    });
+
+    // Handle connection events
+    SignalRService.addEventListener('connectionClosed', (data: any) => {
+      console.log('SignalR connection closed:', data.error?.message);
+      this.notifyRealTimeEventHandlers('connectionClosed', data);
+    });
+
+    SignalRService.addEventListener('reconnecting', (data: any) => {
+      console.log('SignalR reconnecting:', data.error?.message);
+      this.notifyRealTimeEventHandlers('reconnecting', data);
+    });
+
+    SignalRService.addEventListener('reconnected', (data: any) => {
+      console.log('SignalR reconnected:', data.connectionId);
+      this.notifyRealTimeEventHandlers('reconnected', data);
+    });
+
+    SignalRService.addEventListener('statusUpdated', (status: RealTimeSyncStatus) => {
+      this.notifyRealTimeEventHandlers('statusUpdated', status);
+    });
+
+    // Handle force reload events from SignalR
+    SignalRService.addEventListener('forceReloadNotes', (data: any) => {
+      console.log(`Force reload requested after ${data.reason}, affected notes: ${data.affectedNotes}`);
+      this.notifyRealTimeEventHandlers('forceReloadNotes', data);
+    });
+  }
+
+  /**
+   * Add event handler for real-time sync events
+   */
+  static addRealTimeEventHandler(event: string, handler: Function): void {
+    if (!this.realTimeEventHandlers.has(event)) {
+      this.realTimeEventHandlers.set(event, []);
+    }
+    this.realTimeEventHandlers.get(event)!.push(handler);
+  }
+
+  /**
+   * Remove event handler for real-time sync events
+   */
+  static removeRealTimeEventHandler(event: string, handler: Function): void {
+    const handlers = this.realTimeEventHandlers.get(event);
+    if (handlers) {
+      const index = handlers.indexOf(handler);
+      if (index > -1) {
+        handlers.splice(index, 1);
+      }
+    }
+  }
+
+  /**
+   * Notify all real-time event handlers
+   */
+  private static notifyRealTimeEventHandlers(event: string, data: any): void {
+    const handlers = this.realTimeEventHandlers.get(event);
+    if (handlers) {
+      handlers.forEach(handler => {
+        try {
+          handler(data);
+        } catch (error) {
+          console.error(`Error in real-time event handler for ${event}:`, error);
+        }
+      });
+    }
+  }
+
+  /**
+   * Get SignalR connection status
+   */
+  static getSignalRStatus() {
+    return {
+      isConnected: SignalRService.isConnected(),
+      connectionState: SignalRService.getConnectionState(),
+      realTimeStatus: SignalRService.getRealTimeStatus()
+    };
   }
 }

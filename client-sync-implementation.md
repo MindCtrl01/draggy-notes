@@ -378,7 +378,7 @@ export const useSyncContext = () => {
 
 ```bash
 # .env.local
-VITE_API_BASE_URL=https://localhost:7060/api
+VITE_API_BASE_URL=http://localhost:5231/api
 VITE_API_TIMEOUT=10000
 VITE_SYNC_INTERVAL=300000  # 5 minutes auto-sync
 ```

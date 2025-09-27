@@ -332,6 +332,18 @@ export const useNotes = (selectedDate?: Date, isAuthenticated?: boolean) => {
     }
   }, []);
 
+  // Function to force reload all notes from localStorage
+  const forceReloadAllNotes = useCallback(() => {
+    try {
+      console.log('Force reloading all notes from localStorage...');
+      const reloadedNotes = NotesStorage.forceReloadAllNotes();
+      setAllNotes(reloadedNotes);
+      console.log(`Force reloaded ${reloadedNotes.length} notes in useNotes hook`);
+    } catch (error) {
+      console.error('Failed to force reload all notes from localStorage:', error);
+    }
+  }, []);
+
   // Merge notes with dragged positions for display
   const displayNotes = notes.map(note => ({
     ...note,
@@ -350,6 +362,7 @@ export const useNotes = (selectedDate?: Date, isAuthenticated?: boolean) => {
       finalizeDrag,
       moveNoteToDate,
       refreshNoteFromStorage,
+      forceReloadAllNotes,
       
       // Loading states for UI feedback
       isCreating,
