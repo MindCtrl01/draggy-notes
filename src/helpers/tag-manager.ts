@@ -35,12 +35,16 @@ export class TagManager {
       const tagsData = localStorage.getItem(key);
       const tags = tagsData ? JSON.parse(tagsData) : [];
       
-      // Ensure all tags have usageCount property (migration for existing tags)
+      // Ensure all tags have required properties (migration for existing tags)
       return tags.map((tag: Partial<Tag>) => ({
+        id: tag.id || 0,
         uuid: tag.uuid || uuidv4(),
         name: tag.name || '',
         userId: tag.userId || null,
-        usageCount: tag.usageCount || 0
+        usageCount: tag.usageCount || 0,
+        isPreDefined: tag.isPreDefined || false,
+        createdAt: tag.createdAt || new Date(),
+        updatedAt: tag.updatedAt || new Date(),
       }));
     } catch (error) {
       console.error('Failed to get user tags from localStorage:', error);
@@ -84,7 +88,9 @@ export class TagManager {
       name: name.trim(),
       userId,
       usageCount: 1,
-      isPredefined: false,
+      isPreDefined: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
     
     this.saveTag(tag, userId);
@@ -202,7 +208,7 @@ export class TagManager {
       const userTags = this.getUserTags(userId);
       const mostUsedUserTags = userTags
         .sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0))
-        .slice(0, 2);
+        .slice(0, 10);
       
       return [...mostUsedUserTags];
     }
@@ -261,12 +267,16 @@ export class TagManager {
   static deleteTag(tag: Tag): void {
     try {
       // Don't allow deleting predefined tags
-      if (tag.isPredefined) {
+      if (tag.isPreDefined) {
         return;
       }
       
-      const key = TAGS_STORAGE_KEY(tag.userId);
-      localStorage.removeItem(key);
+      const userId = tag.userId || 0;
+      const userTags = this.getUserTags(userId);
+      const filteredTags = userTags.filter(t => t.uuid !== tag.uuid);
+      
+      const key = TAGS_STORAGE_KEY(userId);
+      localStorage.setItem(key, JSON.stringify(filteredTags));
     } catch (error) {
       console.error('Failed to delete tag from localStorage:', error);
     }

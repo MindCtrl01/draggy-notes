@@ -154,7 +154,7 @@ export interface TagResponse {
   name: string;
   userId: number;
   usageCount: number;
-  isPredefined: boolean;
+  isPreDefined: boolean;
 }
 
 export interface NoteResponse {

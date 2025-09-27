@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Tag } from '@/domains/tag';
-import { TagManager } from '@/helpers/tag-manager';
+import { useTags } from '@/hooks/tags';
 
 interface TagSuggestionProps {
   isVisible: boolean;
@@ -15,21 +15,23 @@ export const TagSuggestion = ({
   isVisible,
   position,
   query,
-  userId,
+  userId: _userId,
   onTagSelect,
   onClose,
 }: TagSuggestionProps) => {
   const [suggestions, setSuggestions] = useState<Tag[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  const { getTagSuggestions } = useTags();
 
   useEffect(() => {
     if (isVisible) {
-      const tags = TagManager.getTagSuggestions(query, userId);
+      const tags = getTagSuggestions(query);
       setSuggestions(tags);
       setSelectedIndex(0);
     }
-  }, [isVisible, query, userId]);
+  }, [isVisible, query, getTagSuggestions]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -101,9 +103,9 @@ export const TagSuggestion = ({
           >
             <span className="text-blue-500">#</span>
             <span>{tag.name}</span>
-            {tag.userId === null && (
+            {tag.isPreDefined && (
               <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto">
-                default
+                predefined
               </span>
             )}
           </div>

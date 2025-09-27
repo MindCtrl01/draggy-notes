@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, X } from 'lucide-react';
-import { TagManager } from '@/helpers/tag-manager';
 import { Tag } from '@/domains/tag';
+import { useTags } from '@/hooks/tags';
 
 interface TagDisplayProps {
   tags: Tag[];
@@ -15,7 +15,7 @@ export const TagDisplay: React.FC<TagDisplayProps> = ({
   tags, 
   className = '', 
   onTagsChange,
-  userId = -1,
+  userId: _userId = -1,
   readOnly = false
 }) => {
   const [isAddingTag, setIsAddingTag] = useState(false);
@@ -24,6 +24,8 @@ export const TagDisplay: React.FC<TagDisplayProps> = ({
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  const { createTag, getTagSuggestions, incrementTagUsage } = useTags();
 
   // Focus input when adding tag
   useEffect(() => {
@@ -35,21 +37,21 @@ export const TagDisplay: React.FC<TagDisplayProps> = ({
   // Update suggestions when input changes
   useEffect(() => {
     if (tagInput.trim()) {
-      const allSuggestions = TagManager.getTagSuggestions(tagInput.trim(), userId);
+      const allSuggestions = getTagSuggestions(tagInput.trim());
       const filteredSuggestions = allSuggestions.filter(suggestion => 
         !tags.some(tag => tag.uuid === suggestion.uuid)
       );
       setSuggestions(filteredSuggestions);
       setSelectedSuggestionIndex(0);
     } else {
-      const defaultSuggestions = TagManager.getTagSuggestions('', userId);
+      const defaultSuggestions = getTagSuggestions('');
       const filteredSuggestions = defaultSuggestions.filter(suggestion => 
         !tags.some(tag => tag.uuid === suggestion.uuid)
       );
       setSuggestions(filteredSuggestions);
       setSelectedSuggestionIndex(0);
     }
-  }, [tagInput, tags, userId]);
+  }, [tagInput, tags, getTagSuggestions]);
 
   // Handle click outside to close input
   useEffect(() => {
@@ -70,7 +72,7 @@ export const TagDisplay: React.FC<TagDisplayProps> = ({
     setIsAddingTag(true);
     setTagInput('');
 
-    const defaultSuggestions = TagManager.getTagSuggestions('', userId);
+    const defaultSuggestions = getTagSuggestions('');
     const filteredSuggestions = defaultSuggestions.filter(suggestion => 
       !tags.some(tag => tag.uuid === suggestion.uuid)
     );
@@ -120,14 +122,16 @@ export const TagDisplay: React.FC<TagDisplayProps> = ({
   const selectTag = (tag: Tag) => {
     const newTags = [...tags, tag];
     onTagsChange?.(newTags);
-    TagManager.incrementTagUsage(tag.uuid, userId);
+    incrementTagUsage(tag.uuid);
     handleCancelAdd();
   };
 
-  const createAndSelectTag = (tagName: string) => {
-    const newTag = TagManager.createTag(tagName, userId);
-    const newTags = [...tags, newTag];
-    onTagsChange?.(newTags);
+  const createAndSelectTag = async (tagName: string) => {
+    const newTag = await createTag(tagName);
+    if (newTag) {
+      const newTags = [...tags, newTag];
+      onTagsChange?.(newTags);
+    }
     handleCancelAdd();
   };
 
@@ -193,9 +197,9 @@ export const TagDisplay: React.FC<TagDisplayProps> = ({
                       onMouseEnter={() => setSelectedSuggestionIndex(index)}
                     >
                       {suggestion.name}
-                      {suggestion.userId === null && (
+                      {suggestion.isPreDefined && (
                         <span className="ml-2 text-xs text-gray-400 dark:text-gray-300">
-                          (default)
+                          (predefined)
                         </span>
                       )}
                     </div>

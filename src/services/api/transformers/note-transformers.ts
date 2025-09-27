@@ -158,7 +158,7 @@ export function transformTagResponseToTag(response: TagResponse): Tag {
     name: response.name,
     userId: response.userId,
     usageCount: response.usageCount,
-    isPredefined: response.isPredefined,
+    isPreDefined: response.isPreDefined,
     createdAt: new Date(), // Default to current date
     updatedAt: new Date()  // Default to current date
   };

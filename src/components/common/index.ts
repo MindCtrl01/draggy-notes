@@ -15,4 +15,5 @@ export {
 } from './ui/toast';
 export { TagSuggestion } from '../../features/notes/components/TagSuggestion';
 export { TagDisplay } from '../../features/notes/components/TagDisplay';
+export { TagManager } from '../../features/notes/components/TagManager';
 export { ThemeToggle } from '../../features/notes/components/ThemeToggle';
