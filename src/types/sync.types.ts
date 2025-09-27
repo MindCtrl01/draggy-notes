@@ -5,6 +5,8 @@ export interface QueueItem {
   retryCount: number;
   lastRetryAt?: number;
   errorMessage?: string;
+  localVersion?: number;
+  syncVersion?: number;
 }
 
 export interface QueueStats {

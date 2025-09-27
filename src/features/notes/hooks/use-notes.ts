@@ -5,7 +5,7 @@ import { NotesStorage } from '@/helpers/notes-storage';
 import { generateRandomNoteColor } from '@/helpers/color-generator';
 import { formatDateKey, formatDateDisplay, formatDateInput, formatDateShort, isSameDay } from '@/helpers/date-helper';
 import { LIMITS, ANIMATION } from '@/constants/ui-constants';
-import { v7 as uuidv7 } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 import { API } from '@/constants/ui-constants';
 
 
@@ -64,7 +64,7 @@ export const useNotes = (selectedDate?: Date, isAuthenticated?: boolean) => {
 
     const newNote: Note = {
       id: API.DEFAULT_IDS.NEW_ENTITY,
-      uuid: uuidv7(),
+      uuid: uuidv4(),
       title: 'New Note',
       content: noteContent,
       date: selectedDate || new Date(),
@@ -81,6 +81,7 @@ export const useNotes = (selectedDate?: Date, isAuthenticated?: boolean) => {
       isPinned: false,
       // sync properties - initialize for tracking
       syncVersion: 1, // Start with version 1 for new notes
+      localVersion: 1, // Start with local version 1 for new notes
       lastSyncedAt: new Date(), // Will be updated by server after first sync
       clientUpdatedAt: new Date(), // Set when client creates the note
     };
@@ -115,6 +116,7 @@ export const useNotes = (selectedDate?: Date, isAuthenticated?: boolean) => {
     const noteToUpdate = { 
       ...updatedNote, 
       updatedAt: new Date(),
+      localVersion: (updatedNote.localVersion || 1) + 1, // Increment local version on update
       clientUpdatedAt: new Date() // Update client timestamp for sync tracking
     };
     
@@ -149,6 +151,22 @@ export const useNotes = (selectedDate?: Date, isAuthenticated?: boolean) => {
   const deleteNote = useCallback(async (id: number, uuid: string) => {
     setIsDeleting(true);
     
+    // Get the note to update its localVersion before deletion
+    const noteToDelete = NotesStorage.getNote(uuid);
+    if (noteToDelete) {
+      // Increment localVersion to track this as a local change that needs sync
+      const updatedNote = {
+        ...noteToDelete,
+        id: noteToDelete.id || 0,
+        localVersion: (noteToDelete.localVersion || 1) + 1,
+        clientUpdatedAt: new Date(),
+        isDeleted: true // Mark as deleted for sync tracking
+      };
+      
+      // Update localStorage with incremented localVersion before deletion
+      NotesStorage.saveNote(updatedNote);
+    }
+    
     // Optimistically remove from UI
     setAllNotes(prevNotes => prevNotes.filter(note => note.uuid !== uuid));
     
@@ -164,12 +182,26 @@ export const useNotes = (selectedDate?: Date, isAuthenticated?: boolean) => {
         setIsDeleting(false);
       }, ANIMATION.UPDATE_NOTE_DELAY);
     }
-  }, []);
+  }, [allNotes]);
 
   const clearAllDisplayedNotes = useCallback(async () => {
     setIsDeleting(true);
     
-    const displayedNotes = notes.filter(note => note.isDisplayed);
+    const displayedNotes = allNotes.filter(note => note.isDisplayed);
+    
+    // Update localVersion for each note before deletion (same logic as single delete)
+    displayedNotes.forEach(noteToDelete => {
+      // Increment localVersion to track this as a local change that needs sync
+      const updatedNote = {
+        ...noteToDelete,
+        localVersion: (noteToDelete.localVersion || 1) + 1,
+        clientUpdatedAt: new Date(),
+        isDeleted: true // Mark as deleted for sync tracking
+      };
+      
+      // Update localStorage with incremented localVersion before deletion
+      NotesStorage.saveNote(updatedNote);
+    });
     
     // Optimistically remove from UI
     setAllNotes(prevNotes => prevNotes.filter(note => !displayedNotes.some(dn => dn.uuid === note.uuid)));
@@ -183,12 +215,12 @@ export const useNotes = (selectedDate?: Date, isAuthenticated?: boolean) => {
       console.error('Failed to sync batch delete:', error);
       // Notes are already removed from UI and localStorage, so we continue
     } finally {
-      // Simulate API delay for smooth UX
+      // Simulate API delay for smooth UX (same as single delete)
       setTimeout(() => {
         setIsDeleting(false);
-      }, ANIMATION.CREATE_NOTE_DELAY);
+      }, ANIMATION.UPDATE_NOTE_DELAY);
     }
-  }, [notes]);
+  }, [allNotes]);
 
   const dragNote = useCallback((uuid: string, position: { x: number; y: number }) => {
     // Optimistic update for smooth dragging
@@ -203,7 +235,13 @@ export const useNotes = (selectedDate?: Date, isAuthenticated?: boolean) => {
     setAllNotes(prevNotes => {
       const updatedNotes = prevNotes.map(note => {
         if (note.uuid === uuid) {
-          return { ...note, position, updatedAt: new Date() };
+          return { 
+            ...note, 
+            position, 
+            updatedAt: new Date(),
+            localVersion: (note.localVersion || 1) + 1, // Increment local version on position change
+            clientUpdatedAt: new Date()
+          };
         }
         return note;
       });
@@ -219,7 +257,13 @@ export const useNotes = (selectedDate?: Date, isAuthenticated?: boolean) => {
       // Find the note to sync
       const noteToUpdate = allNotes.find(note => note.uuid === uuid);
       if (noteToUpdate) {
-        const updatedNote = { ...noteToUpdate, position, updatedAt: new Date() };
+        const updatedNote = { 
+          ...noteToUpdate, 
+          position, 
+          updatedAt: new Date(),
+          localVersion: (noteToUpdate.localVersion || 1) + 1,
+          clientUpdatedAt: new Date()
+        };
         await NotesSyncService.updateNote(updatedNote);
       }
     } catch (error) {
@@ -235,7 +279,13 @@ export const useNotes = (selectedDate?: Date, isAuthenticated?: boolean) => {
     setAllNotes(prevNotes => {
       const updatedNotes = prevNotes.map(note => {
         if (note.uuid === uuid) {
-          return { ...note, date: newDate, updatedAt: new Date() };
+          return { 
+            ...note, 
+            date: newDate, 
+            updatedAt: new Date(),
+            localVersion: (note.localVersion || 1) + 1, // Increment local version on date change
+            clientUpdatedAt: new Date()
+          };
         }
         return note;
       });
@@ -246,7 +296,13 @@ export const useNotes = (selectedDate?: Date, isAuthenticated?: boolean) => {
       // Find the note to sync
       const noteToUpdate = allNotes.find(note => note.uuid === uuid);
       if (noteToUpdate) {
-        const updatedNote = { ...noteToUpdate, date: newDate, updatedAt: new Date() };
+        const updatedNote = { 
+          ...noteToUpdate, 
+          date: newDate, 
+          updatedAt: new Date(),
+          localVersion: (noteToUpdate.localVersion || 1) + 1,
+          clientUpdatedAt: new Date()
+        };
         await NotesSyncService.updateNote(updatedNote);
       }
     } catch (error) {

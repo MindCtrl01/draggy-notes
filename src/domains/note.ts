@@ -22,6 +22,7 @@ export interface Note extends BaseEntity {
 
   // sync properties
   syncVersion: number;
+  localVersion: number; // Track local change version for conflict resolution
   lastSyncedAt: Date;
   clientUpdatedAt?: Date;
 }

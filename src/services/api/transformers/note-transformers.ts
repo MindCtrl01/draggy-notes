@@ -43,6 +43,7 @@ export function transformNoteResponseToNote(response: NoteResponse): Note {
     isDeleted: response.isDeleted || false,
     // sync properties - received from server
     syncVersion: (response as any).syncVersion || 1,
+    localVersion: (response as any).localVersion || 1,
     lastSyncedAt: new Date((response as any).lastSyncedAt || response.updatedAt),
     clientUpdatedAt: (response as any).clientUpdatedAt ? new Date((response as any).clientUpdatedAt) : undefined
   };
@@ -72,6 +73,7 @@ export function transformNoteToCreateRequest(note: Note): CreateNoteRequest {
     // sync properties - send clientUpdatedAt to server for tracking
     clientUpdatedAt: note.clientUpdatedAt?.toISOString(),
     syncVersion: note.syncVersion,
+    localVersion: note.localVersion,
     lastSyncedAt: note.lastSyncedAt.toISOString()
   }
 }
@@ -100,6 +102,7 @@ export function transformNoteToUpdateRequest(note: Note): UpdateNoteRequest {
     // sync properties - send clientUpdatedAt to server for conflict detection
     clientUpdatedAt: note.clientUpdatedAt?.toISOString(),
     syncVersion: note.syncVersion,
+    localVersion: note.localVersion,
     lastSyncedAt: note.lastSyncedAt.toISOString()
   }
 }

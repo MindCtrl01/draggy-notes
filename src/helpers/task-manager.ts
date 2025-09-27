@@ -1,7 +1,7 @@
 import { NoteTask } from '@/domains/noteTask';
-import { v7 as uuidv7 } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 export const createTask = (text: string, noteId: number | null | undefined): NoteTask => {
-  const uuid = uuidv7();
+  const uuid = uuidv4();
   return {
     id: 0,
     uuid,

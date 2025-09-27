@@ -124,6 +124,9 @@ export class NotesSyncService {
       
       // Log results
       result.successful.forEach(noteUuid => {
+        if (action === 'delete') {
+          NotesStorage.deleteNote(noteUuid);
+        }
         console.log(`Successfully synced ${action} for note ${noteUuid}`);
       });
 
@@ -208,9 +211,6 @@ export class NotesSyncService {
    * Delete a note with precheck and queue management
    */
   static async deleteNote(_id: number, uuid: string): Promise<void> {
-    // Remove from localStorage first
-    NotesStorage.deleteNote(uuid);
-    
     // Add to sync queue with precheck if authenticated
     if (this.isAuthenticated()) {
       const added = QueueManager.addToQueue(uuid, 'delete');
@@ -304,16 +304,65 @@ export class NotesSyncService {
       // Get all local notes
       const localNotes = NotesStorage.getAllNotes();
       
-      // Find notes that exist locally but not in API response (unsynced notes)
+      // Create a map for efficient lookup
+      const apiNotesMap = new Map(apiNotes.map(note => [note.uuid, note]));
+      
+      // Merge notes with priority: local with bigger localVersion > API > localStorage not in API
+      const mergedNotes: Note[] = [];
+      const processedUuids = new Set<string>();
+      
+      // First, process notes that exist in both local and API
+      for (const localNote of localNotes) {
+        const apiNote = apiNotesMap.get(localNote.uuid);
+        
+        if (apiNote) {
+          // Note exists in both local and API - compare localVersion
+          const localVersion = localNote.localVersion || 1;
+          const apiSyncVersion = apiNote.syncVersion || 1;
+          
+          if (localVersion > apiSyncVersion) {
+            // Local note has higher version - use local and queue for sync
+            mergedNotes.push(localNote);
+            console.log(`Using local version of note ${localNote.uuid} (local v${localVersion} > API v${apiSyncVersion})`);
+            
+            // Immediately add to sync queue since local version is newer
+            const isInQueue = QueueManager.getPrimaryQueue().some(queueItem => queueItem.noteUuid === localNote.uuid) ||
+                             QueueManager.getRetryQueue().some(queueItem => queueItem.noteUuid === localNote.uuid);
+            
+            if (!isInQueue) {
+              const action = localNote.id === 0 ? 'create' : 'update';
+              const added = QueueManager.addToQueue(localNote.uuid, action);
+              if (added) {
+                console.log(`Added note ${localNote.uuid} to sync queue (local v${localVersion} > API v${apiSyncVersion})`);
+              }
+            }
+          } else {
+            // API note has same or higher version - use API and save to localStorage
+            mergedNotes.push(apiNote);
+            NotesStorage.saveNote(apiNote);
+            console.log(`Using API version of note ${apiNote.uuid} (API v${apiSyncVersion} >= local v${localVersion})`);
+          }
+          processedUuids.add(localNote.uuid);
+        }
+      }
+      
+      // Second, add API notes that don't exist locally
+      for (const apiNote of apiNotes) {
+        if (!processedUuids.has(apiNote.uuid)) {
+          mergedNotes.push(apiNote);
+          NotesStorage.saveNote(apiNote);
+          processedUuids.add(apiNote.uuid);
+          console.log(`Added API-only note ${apiNote.uuid} to local storage`);
+        }
+      }
+      
+      // Third, add local notes that don't exist in API (unsynced notes)
       const unsyncedNotes = localNotes.filter(localNote => 
-        !apiNotes.some(apiNote => apiNote.uuid === localNote.uuid)
+        !processedUuids.has(localNote.uuid)
       );
       
-      // Merge API notes with unsynced local notes
-      const mergedNotes = [...apiNotes, ...unsyncedNotes];
-      
-      // Save all API notes to localStorage to keep them in sync
-      apiNotes.forEach(note => NotesStorage.saveNote(note));
+      // Add unsynced notes to the merged list
+      mergedNotes.push(...unsyncedNotes);
       
       // Add unsynced notes to queue if they're not already in the queue
       unsyncedNotes.forEach(note => {
@@ -330,7 +379,7 @@ export class NotesSyncService {
         }
       });
       
-      console.log(`Loaded ${apiNotes.length} API notes and ${unsyncedNotes.length} unsynced local notes`);
+      console.log(`Loaded ${apiNotes.length} API notes and ${unsyncedNotes.length} unsynced local notes, merged total: ${mergedNotes.length}`);
       return mergedNotes;
     } catch (error) {
       console.warn('Failed to load notes from API, using localStorage:', error);

@@ -1,5 +1,5 @@
 import { Tag } from '@/domains/tag';
-import { v7 as uuidv7 } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 // Storage keys
 const STORAGE_PREFIX = 'draggy-notes';
@@ -37,7 +37,7 @@ export class TagManager {
       
       // Ensure all tags have usageCount property (migration for existing tags)
       return tags.map((tag: Partial<Tag>) => ({
-        uuid: tag.uuid || uuidv7(),
+        uuid: tag.uuid || uuidv4(),
         name: tag.name || '',
         userId: tag.userId || null,
         usageCount: tag.usageCount || 0
@@ -80,7 +80,7 @@ export class TagManager {
   static createTag(name: string, userId: number): Tag {
     const tag: Tag = {
       id: 0,
-      uuid: uuidv7(),
+      uuid: uuidv4(),
       name: name.trim(),
       userId,
       usageCount: 1,

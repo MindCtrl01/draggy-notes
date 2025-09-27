@@ -109,6 +109,7 @@ class NotesApi {
   async deleteNote(request: DeleteNoteRequest): Promise<void> {
     await this.makeRequest<void>(`${this.basePath}/${request.id}`, {
       method: 'DELETE',
+      body: JSON.stringify(request),
     });
   }
 
@@ -169,9 +170,9 @@ class NotesApi {
     return response.data;
   }
 
-  // DELETE /api/notes/batch-delete - Batch delete notes
+  // DELETE /api/notes/batch - Batch delete notes
   async batchDeleteNotes(request: BatchDeleteRequest): Promise<BatchSyncResult> {
-    const response = await this.makeRequest<BatchSyncResult>(`${this.basePath}/batch-delete`, {
+    const response = await this.makeRequest<BatchSyncResult>(`${this.basePath}/batch`, {
       method: 'DELETE',
       body: JSON.stringify(request),
     });

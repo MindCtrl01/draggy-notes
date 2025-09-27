@@ -29,6 +29,7 @@ export interface CreateNoteRequest {
   // sync properties - send clientUpdatedAt to server for tracking
   clientUpdatedAt?: string;
   syncVersion: number;
+  localVersion: number;
   lastSyncedAt: string; // ISO date string format
 }
 
@@ -62,6 +63,7 @@ export interface UpdateNoteRequest {
   // sync properties - send clientUpdatedAt to server for conflict detection
   clientUpdatedAt?: string;
   syncVersion: number;
+  localVersion: number;
   lastSyncedAt: string; // ISO date string format
 }
 
@@ -71,6 +73,8 @@ export interface GetNoteByIdRequest {
 
 export interface DeleteNoteRequest {
   id: number;
+  localVersion: number;
+  clientUpdatedAt?: string;
 }
 
 export interface DuplicateNoteRequest {
@@ -86,7 +90,7 @@ export interface SearchNotesRequest {
 }
 
 export interface BatchDeleteRequest {
-  ids: number[] | null;
+  notes: DeleteNoteRequest[];
 }
 
 export interface BatchCreateRequest {
@@ -172,6 +176,7 @@ export interface NoteResponse {
   isDeleted: boolean;
   // sync properties - received from server
   syncVersion: number;
+  localVersion: number;
   lastSyncedAt: string; // ISO date string format
   clientUpdatedAt?: string;
 }

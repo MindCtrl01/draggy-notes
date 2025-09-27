@@ -19,6 +19,8 @@ export class NotesStorage {
       const key = `${STORAGE_PREFIX}-${note.uuid}`;
       const noteData = {
         ...note,
+        id: note.id || 0,
+        uuid: note.uuid,
         date: note.date.toISOString(),
         createdAt: note.createdAt?.toISOString() || new Date().toISOString(),
         updatedAt: note.updatedAt?.toISOString() || new Date().toISOString(),
@@ -27,6 +29,7 @@ export class NotesStorage {
         isPinned: note.isPinned || false, // Default to false if not set
         // sync properties - preserve tracking fields
         syncVersion: note.syncVersion || 1,
+        localVersion: note.localVersion || 1,
         lastSyncedAt: note.lastSyncedAt?.toISOString() || new Date().toISOString(),
         clientUpdatedAt: note.clientUpdatedAt?.toISOString(),
       };
@@ -54,6 +57,8 @@ export class NotesStorage {
       const parsed = JSON.parse(noteData);
       return {
         ...parsed,
+        id: parsed.id || 0,
+        uuid: parsed.uuid,
         date: new Date(parsed.date),
         createdAt: new Date(parsed.createdAt),
         updatedAt: new Date(parsed.updatedAt),
@@ -62,6 +67,7 @@ export class NotesStorage {
         isPinned: parsed.isPinned || false, // Default to false if not set
         // sync properties - restore tracking fields
         syncVersion: parsed.syncVersion || 1,
+        localVersion: parsed.localVersion || 1,
         lastSyncedAt: new Date(parsed.lastSyncedAt || parsed.updatedAt || new Date()),
         clientUpdatedAt: parsed.clientUpdatedAt ? new Date(parsed.clientUpdatedAt) : undefined,
       };
@@ -123,9 +129,7 @@ export class NotesStorage {
         const key = `${STORAGE_PREFIX}-${noteUuid}`;
         localStorage.removeItem(key);
       }
-      
-      // Clear the notes list
-      localStorage.removeItem(NOTES_LIST_KEY);
+
     } catch (error) {
       console.error('Failed to clear all notes from localStorage:', error);
     }

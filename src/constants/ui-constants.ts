@@ -215,7 +215,7 @@ export const COLORS = {
 export const SYNC = {
   /** Auto-sync interval in milliseconds (5 minutes) */
   // AUTO_SYNC_INTERVAL: 5 * 60 * 1000,
-  AUTO_SYNC_INTERVAL: 1 * 60 * 1000,
+  AUTO_SYNC_INTERVAL: 1 * 10 * 1000,
   /** Maximum retry count before moving to retry queue */
   MAX_RETRY_COUNT: 3,
   /** Delay before retrying failed items (24 hours) */

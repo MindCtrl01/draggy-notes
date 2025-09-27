@@ -25,12 +25,17 @@ export class QueueManager {
     // Remove existing item for same note (latest action wins)
     const filteredQueue = queue.filter(item => item.noteUuid !== noteUuid);
     
-    // Add new item with potentially converted action
+    // Get note to extract version information
+    const note = NotesStorage.getNote(noteUuid);
+    
+    // Add new item with potentially converted action and version info
     const newItem: QueueItem = {
       noteUuid,
       action: precheckResult.finalAction,
       timestamp: Date.now(),
-      retryCount: SYNC.INITIAL_RETRY_COUNT
+      retryCount: SYNC.INITIAL_RETRY_COUNT,
+      localVersion: note?.localVersion,
+      syncVersion: note?.syncVersion
     };
     
     filteredQueue.push(newItem);
@@ -68,10 +73,10 @@ export class QueueManager {
           console.log(`Note ${noteUuid} doesn't exist locally, skipping update sync`);
           return { shouldQueue: false, finalAction: action };
         }
-        if (note.id === API.DEFAULT_IDS.NEW_ENTITY) {
-          console.log(`Note ${noteUuid} has id=0, converting update to create operation`);
-          return { shouldQueue: true, finalAction: 'create' };
-        }
+        // if (note.id === API.DEFAULT_IDS.NEW_ENTITY) {
+        //   console.log(`Note ${noteUuid} has id=0, converting update to create operation`);
+        //   return { shouldQueue: true, finalAction: 'create' };
+        // }
         return { shouldQueue: true, finalAction: action };
 
       case 'create':
