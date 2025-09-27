@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { NotesSyncService } from '@/services/notes-sync-service';
 import { QueueManager } from '@/services/sync/queue-manager';
-import { authApi } from '@/services/api/auth-api';
 import { QueueStats } from '@/types/sync.types';
 import { SYNC } from '@/constants/ui-constants';
+import { TokenManager } from '@/helpers/token-manager';
 
 export interface SyncStatus {
   isOnline: boolean;
@@ -25,7 +25,7 @@ export const useSyncStatus = () => {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({
     isOnline: navigator.onLine,
     isApiAvailable: false,
-    isAuthenticated: authApi.isAuthenticated(),
+    isAuthenticated: TokenManager.isAuthenticated(),
     lastSyncTime: null,
     primaryQueueCount: SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT,
     retryQueueCount: SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT,
@@ -57,7 +57,7 @@ export const useSyncStatus = () => {
       retryQueueCount: status.retryQueueCount,
       isTimerActive: status.isTimerActive,
       isSyncing: status.isSyncing,
-      isAuthenticated: authApi.isAuthenticated(),
+      isAuthenticated: TokenManager.isAuthenticated(),
       queueStats: status.queueStats
     }));
   }, []);

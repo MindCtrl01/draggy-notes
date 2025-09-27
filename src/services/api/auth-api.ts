@@ -252,38 +252,6 @@ class AuthApi {
     });
   }
 
-  // Check if user is authenticated
-  isAuthenticated(): boolean {
-    const token = TokenManager.getToken();
-    return token !== null && !TokenManager.isTokenExpired(token);
-  }
-
-  // Get current user from token (without API call)
-  getCurrentUserFromToken(): AuthUser | null {
-    const token = TokenManager.getToken();
-    
-    if (!token || TokenManager.isTokenExpired(token)) {
-      return null;
-    }
-
-    try {
-      const payload = JSON.parse(atob(token.split('.')[API.JWT.PAYLOAD_INDEX]));
-      return {
-        id: payload.sub || payload.userId,
-        username: payload.username || payload.name,
-        firstName: payload.firstName || '',
-        lastName: payload.lastName || '',
-        email: payload.email,
-        phoneNumber: payload.phoneNumber,
-        isActive: payload.isActive !== false,
-        isDelete: payload.isDelete || false,
-        roles: payload.roles || [],
-      };
-    } catch {
-      return null;
-    }
-  }
-
   // Legacy method for backward compatibility
   async refreshAuthToken(): Promise<string> {
     const refreshToken = TokenManager.getRefreshToken();
@@ -302,7 +270,7 @@ class AuthApi {
 
   // Get current user from server (API call) - using token parsing instead of API call
   async getCurrentUser(): Promise<AuthUser> {
-    const user = this.getCurrentUserFromToken();
+    const user = TokenManager.getCurrentUserFromToken();
     if (!user) {
       throw new Error('No authenticated user found');
     }

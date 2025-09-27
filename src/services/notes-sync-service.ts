@@ -1,6 +1,5 @@
 import { Note } from '@/domains/note';
 import { notesApi } from './api/notes-api';
-import { authApi } from './api/auth-api';
 import { NotesStorage } from '@/helpers/notes-storage';
 import { TokenManager } from '@/helpers/token-manager';
 import { transformNoteResponseToNote } from './api/transformers/note-transformers';
@@ -15,7 +14,6 @@ import { SYNC } from '@/constants/ui-constants';
  */
 export class NotesSyncService {
   private static syncTimer: NodeJS.Timeout | null = null;
-  private static readonly SYNC_INTERVAL = SYNC.AUTO_SYNC_INTERVAL;
   private static isSyncing = false;
 
   /**
@@ -26,7 +24,7 @@ export class NotesSyncService {
     
     this.syncTimer = setInterval(() => {
       this.performScheduledSync();
-    }, this.SYNC_INTERVAL);
+    }, SYNC.AUTO_SYNC_INTERVAL);
     
     console.log('Sync timer started - will sync every 5 minutes');
   }
@@ -151,36 +149,59 @@ export class NotesSyncService {
    * Create a note with precheck and queue management
    */
   static async createNote(note: Note): Promise<Note> {
+    // Set userId if user is authenticated
+    let noteToSave = note;
+    if (this.isAuthenticated()) {
+      const currentUser = TokenManager.getCurrentUserFromToken();
+      if (currentUser && currentUser.id) {
+        console.log(`Setting userId ${currentUser.id} for note ${note.uuid} (was ${note.userId})`);
+        noteToSave = { ...note, userId: currentUser.id };
+      } else {
+        console.log(`User authenticated but no valid user ID found for note ${note.uuid}`);
+      }
+    } else {
+      console.log(`User not authenticated, keeping original userId ${note.userId} for note ${note.uuid}`);
+    }
+    
     // Always save to localStorage first
-    NotesStorage.saveNote(note);
+    NotesStorage.saveNote(noteToSave);
     
     // Add to sync queue with precheck if authenticated
     if (this.isAuthenticated()) {
-      const added = QueueManager.addToQueue(note.uuid, 'create');
+      const added = QueueManager.addToQueue(noteToSave.uuid, 'create');
       if (!added) {
-        console.log(`Note ${note.uuid} not added to sync queue due to precheck failure`);
+        console.log(`Note ${noteToSave.uuid} not added to sync queue due to precheck failure`);
       }
     }
     
-    return note;
+    return noteToSave;
   }
 
   /**
    * Update a note with precheck and queue management
    */
   static async updateNote(note: Note): Promise<Note> {
-    // Always save to localStorage first
-    NotesStorage.saveNote(note);
-    
-    // Add to sync queue with precheck if authenticated
+    // Set userId if user is authenticated
+    let noteToSave = note;
     if (this.isAuthenticated()) {
-      const added = QueueManager.addToQueue(note.uuid, 'update');
-      if (!added) {
-        console.log(`Note ${note.uuid} update not added to sync queue due to precheck failure`);
+      const currentUser = TokenManager.getCurrentUserFromToken();
+      if (currentUser && currentUser.id) {
+        noteToSave = { ...note, userId: currentUser.id };
       }
     }
     
-    return note;
+    // Always save to localStorage first
+    NotesStorage.saveNote(noteToSave);
+    
+    // Add to sync queue with precheck if authenticated
+    if (this.isAuthenticated()) {
+      const added = QueueManager.addToQueue(noteToSave.uuid, 'update');
+      if (!added) {
+        console.log(`Note ${noteToSave.uuid} update not added to sync queue due to precheck failure`);
+      }
+    }
+    
+    return noteToSave;
   }
 
   /**
@@ -200,12 +221,12 @@ export class NotesSyncService {
   }
 
   /**
-   * Handle user logout - stop sync and clear queue
+   * Handle user logout - stop sync but preserve queue
    */
   static handleUserLogout(): void {
-    console.log('User logged out - stopping sync and clearing queue');
+    console.log('User logged out - stopping sync timer');
     this.stopSyncTimer();
-    QueueManager.clearAllQueues();
+    // Note: Queue is preserved so pending operations can sync when user logs back in
   }
 
   /**
@@ -334,9 +355,17 @@ export class NotesSyncService {
   }
 
   /**
+   * Force reload all notes from API (useful after login)
+   */
+  static async forceReloadNotes(): Promise<Note[]> {
+    console.log('Force reloading all notes from API...');
+    return this.loadAllNotes();
+  }
+
+  /**
    * Check if user is authenticated
    */
   private static isAuthenticated(): boolean {
-    return authApi.isAuthenticated();
+    return TokenManager.isAuthenticated();
   }
 }

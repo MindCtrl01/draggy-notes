@@ -9,19 +9,21 @@ import { v7 as uuidv7 } from 'uuid';
 import { API } from '@/constants/ui-constants';
 
 
-export const useNotes = (selectedDate?: Date) => {
+export const useNotes = (selectedDate?: Date, isAuthenticated?: boolean) => {
   const [allNotes, setAllNotes] = useState<Note[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Load notes from API and localStorage on initialization
+  // Load notes from API and localStorage on initialization and when authentication changes
   useEffect(() => {
     const loadNotes = async () => {
+      setIsLoading(true);
       try {
         const notes = await NotesSyncService.loadAllNotes();
         setAllNotes(notes);
+        console.log(`Loaded ${notes.length} notes (authenticated: ${isAuthenticated})`);
       } catch (error) {
         console.error('Failed to load notes:', error);
         // Fallback to localStorage only
@@ -29,6 +31,7 @@ export const useNotes = (selectedDate?: Date) => {
           if (NotesStorage.isStorageAvailable()) {
             const savedNotes = NotesStorage.getAllNotes();
             setAllNotes(savedNotes);
+            console.log(`Fallback: Loaded ${savedNotes.length} notes from localStorage`);
           }
         } catch (localError) {
           console.error('Failed to load notes from localStorage:', localError);
@@ -39,7 +42,7 @@ export const useNotes = (selectedDate?: Date) => {
     };
 
     loadNotes();
-  }, []);
+  }, [isAuthenticated]); // Add isAuthenticated as dependency
 
   const notes = selectedDate
     ? allNotes.filter(note => 

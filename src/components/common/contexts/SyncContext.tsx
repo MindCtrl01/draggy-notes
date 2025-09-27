@@ -30,7 +30,7 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({ children }) => {
   // Handle authentication changes
   useEffect(() => {
     syncHook.handleAuthChange(isAuthenticated);
-  }, [isAuthenticated, syncHook]);
+  }, [isAuthenticated]);
 
   return (
     <SyncContext.Provider value={syncHook}>

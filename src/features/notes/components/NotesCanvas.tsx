@@ -40,7 +40,7 @@ export const NotesCanvas = () => {
     isCreating,
     isUpdating,
     isDeleting 
-  } = useNotes(selectedDate);
+  } = useNotes(selectedDate, isAuthenticated);
 
   const { containerRef, isDragging, handleMouseDown } = useCanvasDrag();
 
@@ -70,7 +70,8 @@ export const NotesCanvas = () => {
     e.preventDefault();
     e.stopPropagation();
     
-    if (showSearchSidebar || isAnyNoteDetailOpen) {
+    // Disable note creation when login modal is open
+    if (showLoginModal || showSearchSidebar || isAnyNoteDetailOpen) {
       return;
     }
     
@@ -393,7 +394,7 @@ export const NotesCanvas = () => {
             {/* Add Note Button */}
             <button
               onClick={() => createNote()}
-              disabled={isCreating}
+              disabled={showLoginModal || isCreating}
               className="floating-add-btn text-white hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
               title={isCreating ? "Creating note..." : "Add new note"}
             >

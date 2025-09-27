@@ -194,8 +194,8 @@ export class BatchSyncHandler {
       // Process successful deletions
       batchResponse.successful.forEach((noteResponse) => {
         successful.push(noteResponse.uuid);
-        // Note: For deletions, we don't need to save to localStorage since the note is deleted
-        // The note should already be removed from localStorage when delete was initiated
+        // Remove the successfully deleted note from localStorage
+        NotesStorage.deleteNote(noteResponse.uuid);
       });
 
       // Process failed deletions - extract UUIDs from failed notes

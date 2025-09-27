@@ -6,11 +6,8 @@ export interface LoginRequest {
 
 export interface RegisterRequest {
   username: string | null;
-  firstName: string | null;
-  lastName: string | null;
   email: string | null;
   password: string | null;
-  phoneNumber?: string | null;
 }
 
 export interface GoogleLoginRequest {
@@ -100,8 +97,6 @@ export interface AuthTokens {
 export interface AuthUser {
   id: number;
   username: string;
-  firstName: string;
-  lastName: string;
   email: string;
   phoneNumber?: string;
   isActive: boolean;

@@ -7,6 +7,7 @@ import {
   AuthenticationResponse 
 } from '@/services/api';
 import { API } from '@/constants/ui-constants';
+import { TokenManager } from '@/helpers/token-manager';
 
 interface UseAuthReturn {
   user: AuthUser | null;
@@ -28,9 +29,9 @@ export const useAuth = (): UseAuthReturn => {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        if (authApi.isAuthenticated()) {
+        if (TokenManager.isAuthenticated()) {
           // Try to get user from token first (faster)
-          const userFromToken = authApi.getCurrentUserFromToken();
+          const userFromToken = TokenManager.getCurrentUserFromToken();
           if (userFromToken) {
             setUser(userFromToken);
           }
@@ -67,8 +68,6 @@ export const useAuth = (): UseAuthReturn => {
         ...response.user,
         id: response.user.id || API.DEFAULT_IDS.NEW_ENTITY,
         username: response.user.username || '',
-        firstName: response.user.firstName || '',
-        lastName: response.user.lastName || '',
         email: response.user.email || '',
         phoneNumber: response.user.phoneNumber || '',
         roles: response.user.roles || [],
@@ -93,8 +92,6 @@ export const useAuth = (): UseAuthReturn => {
       const authUser: AuthUser = {
         ...response.user,
         username: response.user.username || '',
-        firstName: response.user.firstName || '',
-        lastName: response.user.lastName || '',
         email: response.user.email || '',
         phoneNumber: '',
         roles: response.user.roles || [],
@@ -124,7 +121,7 @@ export const useAuth = (): UseAuthReturn => {
   }, []);
 
   const refreshUser = useCallback(async (): Promise<void> => {
-    if (!authApi.isAuthenticated()) {
+    if (!TokenManager.isAuthenticated()) {
       setUser(null);
       return;
     }
@@ -154,7 +151,7 @@ export const useAuth = (): UseAuthReturn => {
 
   return {
     user,
-    isAuthenticated: !!user && authApi.isAuthenticated(),
+    isAuthenticated: !!user && TokenManager.isAuthenticated(),
     isLoading,
     login,
     register,
