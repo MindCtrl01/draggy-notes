@@ -19,7 +19,7 @@ This guide explains how to deploy your Draggy Notes app to Vercel with proper en
 #### **Required Variables:**
 ```bash
 # API Configuration
-VITE_API_BASE_URL=https://your-api-domain.vercel.app/api
+VITE_API_BASE_URL=https://draggy-note-api.duckdns.org
 
 # Optional Configuration (with defaults)
 VITE_API_TIMEOUT=10000
@@ -43,7 +43,7 @@ vercel login
 
 # Add environment variables
 vercel env add VITE_API_BASE_URL production
-# Enter: https://your-api-domain.vercel.app/api
+# Enter: https://draggy-note-api.duckdns.org
 
 vercel env add VITE_API_TIMEOUT production  
 # Enter: 10000
@@ -95,7 +95,7 @@ vercel --prod
 const getApiBaseUrl = () => {
   if (import.meta.env.PROD) {
     // Production: Use Vercel environment variable
-    return import.meta.env.VITE_API_BASE_URL || 'https://your-api-domain.vercel.app/api';
+    return import.meta.env.VITE_API_BASE_URL || 'https://draggy-note-api.duckdns.org';
   }
   
   // Development: Use local HTTPS server
@@ -134,7 +134,7 @@ VITE_API_TIMEOUT=10000
 
 ### **Production (Vercel Dashboard)**
 ```bash
-VITE_API_BASE_URL=https://your-production-api.vercel.app/api
+VITE_API_BASE_URL=https://draggy-note-api.duckdns.org
 VITE_API_TIMEOUT=10000
 ```
 

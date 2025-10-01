@@ -1,8 +1,8 @@
 // API Configuration for local development and deployment
 const getApiBaseUrl = () => {
   if (import.meta.env.PROD) {
-    // Production: Use environment variable
-    return import.meta.env.VITE_API_BASE_URL || 'https://your-production-api.com/api';
+    // Production: Use environment variable with production fallback
+    return import.meta.env.VITE_API_BASE_URL || 'https://draggy-note-api.duckdns.org';
   }
   
   // Development: Use local HTTPS development server

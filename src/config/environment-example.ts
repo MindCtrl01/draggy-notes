@@ -19,6 +19,8 @@ console.log('Debug Mode:', import.meta.env.VITE_DEBUG_MODE);  // From .env file
 // Environment-specific configuration
 export const config = {
   api: {
+    // Production: https://draggy-note-api.duckdns.org
+    // Development: http://localhost:5231/api
     baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5231/api',
   },
   app: {
