@@ -61,8 +61,11 @@ export class QueueManager {
       case 'delete':
         // Case 1: Note never created on server (id = 0) and being deleted locally
         // Don't add to queue as there's nothing to delete on server
-        if (!note || note.id === API.DEFAULT_IDS.NEW_ENTITY) {
+        if (!note || !note.id || note.id === API.DEFAULT_IDS.NEW_ENTITY) {
           console.log(`Note ${noteUuid} has id=0 or doesn't exist, skipping delete sync`);
+          // Remove from queue if it exists there
+          this.removeFromPrimaryQueue(noteUuid);
+          this.removeFromRetryQueue(noteUuid);
           return { shouldQueue: false, finalAction: action };
         }
         return { shouldQueue: true, finalAction: action };

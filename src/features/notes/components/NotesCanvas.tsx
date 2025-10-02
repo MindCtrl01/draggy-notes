@@ -250,16 +250,7 @@ export const NotesCanvas = () => {
 
   const canvasDimensions = calculateCanvasDimensions();
 
-  if (isLoading) {
-    return (
-      <div className="canvas-container flex items-center justify-center">
-        <div className="text-center text-muted-foreground">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-lg">Loading your notes...</p>
-        </div>
-      </div>
-    );
-  }
+  // Show canvas immediately, even while loading - toast will handle sync notification
 
   return (
     <div className="canvas-container group flex">

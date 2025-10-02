@@ -7,6 +7,7 @@ import { formatDateKey, formatDateDisplay, formatDateInput, formatDateShort, isS
 import { LIMITS, ANIMATION } from '@/constants/ui-constants';
 import { v4 as uuidv4 } from 'uuid';
 import { API } from '@/constants/ui-constants';
+import { toast } from '@/hooks/use-toast';
 
 
 export const useNotes = (selectedDate?: Date, isAuthenticated?: boolean) => {
@@ -20,6 +21,16 @@ export const useNotes = (selectedDate?: Date, isAuthenticated?: boolean) => {
   useEffect(() => {
     const loadNotes = async () => {
       setIsLoading(true);
+      
+      // Show toast message if user is authenticated and syncing from server
+      let syncToast: { dismiss: () => void } | null = null;
+      if (isAuthenticated) {
+        syncToast = toast({
+          title: "Syncing from server",
+          description: "Loading your notes from the server...",
+        });
+      }
+      
       try {
         const notes = await NotesSyncService.loadAllNotes();
         setAllNotes(notes);
@@ -38,6 +49,10 @@ export const useNotes = (selectedDate?: Date, isAuthenticated?: boolean) => {
         }
       } finally {
         setIsLoading(false);
+        // Dismiss the sync toast when loading is complete
+        if (syncToast) {
+          syncToast.dismiss();
+        }
       }
     };
 
