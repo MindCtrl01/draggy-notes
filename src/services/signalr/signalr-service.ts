@@ -37,8 +37,8 @@ export class SignalRService {
       this.connectionState.isConnecting = true;
       this.updateRealTimeStatus();
 
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5231/api';
-      const hubUrl = `${apiBaseUrl}/hubs/notesync`;
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5231';
+      const hubUrl = `${apiBaseUrl}/api/hubs/notesync`;
 
       this.connection = new HubConnectionBuilder()
         .withUrl(hubUrl, {
