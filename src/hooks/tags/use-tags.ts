@@ -28,18 +28,18 @@ export const useTags = (): UseTagsResult => {
   const [error, setError] = useState<string | null>(null);
   
   const { user } = useAuth();
-  const userId = user?.id || -1;
+  const userId = user?.id || 0;
 
   // Load tags on mount and when user changes
   useEffect(() => {
-    if (userId !== -1) {
+    if (userId !== 0) {
       loadTags();
       loadTopTags();
     }
   }, [userId]);
 
   const loadTags = useCallback(async () => {
-    if (userId === -1) return;
+    if (userId === 0) return;
 
     setIsLoading(true);
     setError(null);
@@ -57,7 +57,7 @@ export const useTags = (): UseTagsResult => {
   }, [userId]);
 
   const loadTopTags = useCallback(async () => {
-    if (userId === -1) return;
+    if (userId === 0) return;
 
     try {
       const topTagsList = await TagsSyncService.getTopTags(userId);
@@ -69,7 +69,7 @@ export const useTags = (): UseTagsResult => {
   }, [userId]);
 
   const createTag = useCallback(async (name: string): Promise<Tag | null> => {
-    if (userId === -1) return null;
+    if (userId === 0) return null;
 
     setError(null);
 
@@ -92,7 +92,7 @@ export const useTags = (): UseTagsResult => {
   }, [userId, loadTopTags]);
 
   const updateTag = useCallback(async (tag: Tag): Promise<Tag | null> => {
-    if (userId === -1) return null;
+    if (userId === 0) return null;
 
     setError(null);
 
@@ -112,7 +112,7 @@ export const useTags = (): UseTagsResult => {
   }, [userId]);
 
   const deleteTag = useCallback(async (tag: Tag): Promise<boolean> => {
-    if (userId === -1) return false;
+    if (userId === 0) return false;
 
     setError(null);
 
@@ -133,17 +133,17 @@ export const useTags = (): UseTagsResult => {
   }, [userId]);
 
   const searchTags = useCallback((query: string): Tag[] => {
-    if (userId === -1) return [];
+    if (userId === 0) return [];
     return TagsSyncService.searchTags(query, userId);
   }, [userId]);
 
   const getTagSuggestions = useCallback((query: string): Tag[] => {
-    if (userId === -1) return [];
+    if (userId === 0) return [];
     return TagsSyncService.getTagSuggestions(query, userId);
   }, [userId]);
 
   const incrementTagUsage = useCallback(async (tagUuid: string): Promise<void> => {
-    if (userId === -1) return;
+    if (userId === 0) return;
 
     try {
       await TagsSyncService.incrementTagUsage(tagUuid, userId);
@@ -165,7 +165,7 @@ export const useTags = (): UseTagsResult => {
   }, [loadTags, loadTopTags]);
 
   const syncTags = useCallback(async (): Promise<void> => {
-    if (userId === -1) return;
+    if (userId === 0) return;
 
     try {
       await TagsSyncService.syncTags(userId);

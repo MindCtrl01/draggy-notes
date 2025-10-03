@@ -1,5 +1,5 @@
 import { API_CONFIG } from '@/config/api';
-import { TokenManager } from '@/helpers/token-manager';
+import { SessionManager } from '@/helpers/session-manager';
 import { ApiError, ApiResponse } from './models/api.model';
 import { API } from '@/constants/ui-constants';
 
@@ -11,7 +11,7 @@ export async function apiRequest<T>(
   const url = `${API_CONFIG.BASE_URL}${endpoint}`;
   
   // Get token
-  const token = TokenManager.getToken();
+  const token = SessionManager.getToken();
   
   const config: RequestInit = {
     headers: {
@@ -27,7 +27,7 @@ export async function apiRequest<T>(
     
     // Handle authentication errors
     if (response.status === API.STATUS_CODES.UNAUTHORIZED) {
-      TokenManager.clearTokens();
+      SessionManager.clearSession();
       throw new ApiError('Authentication failed. Please login again.', API.STATUS_CODES.UNAUTHORIZED);
     }
     

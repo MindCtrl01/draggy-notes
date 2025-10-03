@@ -18,13 +18,13 @@ import {
 export function transformNoteResponseToNote(response: NoteResponse): Note {
   const transformedTasks = response.tasks ? response.tasks.map(task => ({
     ...transformTaskResponseToNoteTask(task),
-    noteUuid: response.uuid // Set the note UUID for each task
+    noteId: response.id // Set the note ID for each task
   })) : [];
 
   return {
     id: response.id,
     uuid: response.uuid,
-    userId: response.userId || API.DEFAULT_IDS.TEMPORARY_USER,
+    userId: response.userId || 0,
     title: response.title,
     content: response.content,
     date: new Date(response.date),

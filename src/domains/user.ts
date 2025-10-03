@@ -1,16 +1,17 @@
 import { BaseEntity } from './base-entity';
 
 export interface User extends BaseEntity {
+  uuid: string;
   username: string;
-  firstName: string;
-  lastName: string;
   email: string;
   phoneNumber?: string;
+  displayName?: string;
+  photoUrl?: string;
+  isEmailVerified?: boolean;
+  lastSignInAt?: Date;
+  createdAt?: Date;
   isActive: boolean;
   isDelete: boolean;
-  passwordHash?: string;
-  googleId?: string;
-  roles: string[];
   
   // Navigation properties (using type references to avoid circular imports)
   refreshTokens?: Array<{
@@ -45,7 +46,4 @@ export interface User extends BaseEntity {
       usageCount: number;
     }>;
   }>;
-  
-  passwordResetToken?: string;
-  passwordResetExpires?: Date;
 }

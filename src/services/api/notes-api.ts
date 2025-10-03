@@ -1,5 +1,5 @@
 import { API_CONFIG } from '@/config/api';
-import { TokenManager } from '@/helpers/token-manager';
+import { SessionManager } from '@/helpers/session-manager';
 import { ApiError, ApiResponse } from './models/api.model';
 import { API } from '@/constants/ui-constants';
 import {
@@ -27,7 +27,7 @@ class NotesApi {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
-    const token = TokenManager.getToken();
+    const token = SessionManager.getToken();
     const url = `${API_CONFIG.BASE_URL}${endpoint}`;
     
     const config: RequestInit = {

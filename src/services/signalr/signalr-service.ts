@@ -1,5 +1,5 @@
 import { HubConnection, HubConnectionBuilder, HubConnectionState, LogLevel } from '@microsoft/signalr';
-import { TokenManager } from '@/helpers/token-manager';
+import { SessionManager } from '@/helpers/session-manager';
 import { NoteSyncEvent, SignalRConnectionState, RealTimeSyncStatus } from '@/types/sync.types';
 import { Note } from '@/domains/note';
 import { NotesStorage } from '@/helpers/notes-storage';
@@ -43,7 +43,7 @@ export class SignalRService {
       this.connection = new HubConnectionBuilder()
         .withUrl(hubUrl, {
           accessTokenFactory: () => {
-            const token = TokenManager.getToken();
+            const token = SessionManager.getToken();
             return token || '';
           },
           skipNegotiation: false, // Allow negotiation for best transport
@@ -127,7 +127,7 @@ export class SignalRService {
    */
   private static canConnect(): boolean {
     return (
-      TokenManager.isAuthenticated() &&
+      SessionManager.isAuthenticated() &&
       navigator.onLine &&
       !this.connectionState.isConnected &&
       !this.connectionState.isConnecting
@@ -206,7 +206,7 @@ export class SignalRService {
    */
   private static handleNotesCreated(syncEvent: NoteSyncEvent): void {
     try {
-      const currentUser = TokenManager.getCurrentUserFromToken();
+      const currentUser = SessionManager.getCurrentUser();
       if (!currentUser || currentUser.id != syncEvent.userId) {
         console.log('Ignoring NotesCreated event for different user');
         return;
@@ -263,7 +263,7 @@ export class SignalRService {
    */
   private static handleNotesUpdated(syncEvent: NoteSyncEvent): void {
     try {
-      const currentUser = TokenManager.getCurrentUserFromToken();
+      const currentUser = SessionManager.getCurrentUser();
       if (!currentUser || currentUser.id != syncEvent.userId) {
         console.log('Ignoring NotesCreated event for different user');
         return;
@@ -321,7 +321,7 @@ export class SignalRService {
    */
   private static handleNotesDeleted(syncEvent: NoteSyncEvent): void {
     try {
-      const currentUser = TokenManager.getCurrentUserFromToken();
+      const currentUser = SessionManager.getCurrentUser();
       if (!currentUser || currentUser.id != syncEvent.userId) {
         console.log('Ignoring NotesCreated event for different user');
         return;
@@ -387,7 +387,7 @@ export class SignalRService {
       tags: serverNote.tags || [],
       createdAt: new Date(serverNote.createdAt),
       updatedAt: new Date(serverNote.updatedAt),
-      userId: serverNote.userId || -1,
+      userId: serverNote.userId || 0,
       syncVersion: serverNote.syncVersion || 1,
       localVersion: serverNote.syncVersion || 1, // Set localVersion to syncVersion for server notes
       lastSyncedAt: new Date(),
@@ -492,7 +492,7 @@ export class SignalRService {
    * Handle network status change
    */
   static handleNetworkChange(isOnline: boolean): void {
-    if (isOnline && TokenManager.isAuthenticated() && !this.isConnected()) {
+    if (isOnline && SessionManager.isAuthenticated() && !this.isConnected()) {
       console.log('Network restored - reconnecting SignalR');
       this.initialize();
     } else if (!isOnline && this.isConnected()) {

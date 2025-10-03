@@ -23,7 +23,6 @@ export const Register: React.FC = () => {
       <LoginModal
         isOpen={true}
         onClose={handleClose}
-        defaultMode="register"
       />
     </div>
   );

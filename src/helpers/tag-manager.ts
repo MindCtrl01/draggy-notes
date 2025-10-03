@@ -11,7 +11,7 @@ const TAGS_STORAGE_KEY = (userId: number) => `${STORAGE_PREFIX}-note_tag_${userI
 export class TagManager {
   /**
    * Get all tags for a user (including predefined tags)
-   * @param userId - The user ID
+   * @param userId - The user UUID
    * @returns Array of all tags
    */
   static getAllTags(userId: number): Tag[] {
@@ -26,7 +26,7 @@ export class TagManager {
 
   /**
    * Get user-created tags from localStorage
-   * @param userId - The user ID
+   * @param userId - The user UUID
    * @returns Array of user-created tags
    */
   static getUserTags(userId: number): Tag[] {
@@ -55,7 +55,7 @@ export class TagManager {
   /**
    * Save a tag to localStorage
    * @param tag - The tag to save
-   * @param userId - The user ID
+   * @param userId - The user UUID
    */
   static saveTag(tag: Tag, userId: number): void {
     try {
@@ -78,7 +78,7 @@ export class TagManager {
   /**
    * Create a new tag from name
    * @param name - The tag name
-   * @param userId - The user ID
+   * @param userId - The user UUID
    * @returns The created tag
    */
   static createTag(name: string, userId: number): Tag {
@@ -100,7 +100,7 @@ export class TagManager {
   /**
    * Increment usage count for a tag
    * @param tagUuid - The tag UUID
-   * @param userId - The user ID
+   * @param userId - The user UUID
    */
   static incrementTagUsage(tagUuid: string, userId: number): void {
     try {
@@ -121,7 +121,7 @@ export class TagManager {
   /**
    * Find or create tags from text content
    * @param text - The text to parse for tags
-   * @param userId - The user ID
+   * @param userId - The user UUID
    * @returns Array of Tag objects found or created
    */
   static findOrCreateTagsFromText(text: string, userId: number): Tag[] {
@@ -160,7 +160,7 @@ export class TagManager {
   /**
    * Find or create tags from text content - Legacy UUID version
    * @param text - The text to parse for tags
-   * @param userId - The user ID
+   * @param userId - The user UUID
    * @returns Array of tag UUIDs found or created
    * @deprecated Use findOrCreateTagsFromText instead
    */
@@ -171,7 +171,7 @@ export class TagManager {
   /**
    * Get tags by UUIDs
    * @param tagUuids - Array of tag UUIDs
-   * @param userId - The user ID
+   * @param userId - The user UUID
    * @returns Array of tags
    */
   static getTagsByUuids(tagUuids: string[], userId: number): Tag[] {
@@ -184,7 +184,7 @@ export class TagManager {
   /**
    * Search tags by name
    * @param query - Search query
-   * @param userId - The user ID
+   * @param userId - The user UUID
    * @returns Array of matching tags
    */
   static searchTags(query: string, userId: number): Tag[] {
@@ -199,7 +199,7 @@ export class TagManager {
   /**
    * Get tag suggestions for autocomplete
    * @param query - Partial tag name (without #)
-   * @param userId - The user ID
+   * @param userId - The user UUID
    * @returns Array of suggested tags (3 default tags + 2 most used tags when no query, or filtered results when query exists)
    */
   static getTagSuggestions(query: string, userId: number): Tag[] {
@@ -219,7 +219,7 @@ export class TagManager {
   /**
    * Extract tags from text content and return tag objects
    * @param text - The text to parse for tags
-   * @param userId - The user ID
+   * @param userId - The user UUID
    * @returns Array of tag objects found in the text
    */
   static extractTagsFromText(text: string, userId: number): Tag[] {
@@ -262,7 +262,7 @@ export class TagManager {
   /**
    * Delete a user-created tag
    * @param tagUuid - The tag UUID to delete
-   * @param userId - The user ID
+   * @param userId - The user UUID
    */
   static deleteTag(tag: Tag): void {
     try {

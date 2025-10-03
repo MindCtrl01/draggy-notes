@@ -45,13 +45,18 @@ export class TokenManager {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
       return {
-        id: payload.sub || payload.userId,
+        id: payload.id || payload.user_id || 0,
+        uuid: payload.sub || payload.uuid,
         username: payload.username || payload.name,
         email: payload.email,
         phoneNumber: payload.phoneNumber,
+        displayName: payload.displayName,
+        photoUrl: payload.photoUrl,
+        emailVerified: payload.emailVerified,
+        lastSignInAt: payload.lastSignInAt ? new Date(payload.lastSignInAt) : undefined,
+        createdAt: payload.createdAt ? new Date(payload.createdAt) : undefined,
         isActive: payload.isActive !== false,
         isDelete: payload.isDelete || false,
-        roles: payload.roles || [],
       };
     } catch {
       return null;

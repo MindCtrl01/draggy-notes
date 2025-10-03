@@ -1,52 +1,57 @@
 import { useState, useEffect, useCallback } from 'react';
 import { 
-  authApi, 
+  AuthResponse,
   AuthUser, 
-  LoginRequest, 
-  RegisterRequest, 
-  AuthenticationResponse 
+  FirebaseLoginRequest,
 } from '@/services/api';
-import { API } from '@/constants/ui-constants';
-import { TokenManager } from '@/helpers/token-manager';
+import { SessionManager } from '@/helpers/session-manager';
+import { authApi } from '@/services/api/auth-api';
+import { firebaseAuthService } from '@/services/auth/firebase-auth';
 
 interface UseAuthReturn {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (credentials: LoginRequest) => Promise<AuthenticationResponse>;
-  register: (userData: RegisterRequest) => Promise<AuthenticationResponse>;
+  signInWithGoogle: () => Promise<AuthResponse>;
+  signInWithFacebook: () => Promise<AuthResponse>;
+  signInWithApple: () => Promise<AuthResponse>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
-  forgotPassword: (email: string) => Promise<void>;
-  resetPassword: (email: string, resetToken: string, newPassword: string) => Promise<void>;
 }
 
 export const useAuth = (): UseAuthReturn => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Helper function to verify Firebase token with backend
+  const verifyWithBackend = useCallback(async (firebaseToken: string | undefined): Promise<AuthResponse> => {
+    if (!firebaseToken) {
+      throw new Error('Firebase authentication failed');
+    }
+
+    // Create Firebase login request that matches backend model
+    const firebaseLoginRequest: FirebaseLoginRequest = {
+      firebaseToken, // Firebase ID token for verification
+    };
+
+    const authResponse = await authApi.login(firebaseLoginRequest);
+    
+    // The authApi.login() now returns the converted AuthUser directly
+    // Save session with JWT token from backend
+    SessionManager.saveSession(authResponse.user, firebaseToken || '');
+    setUser(authResponse.user);
+    
+    return authResponse;
+  }, []);
+
   // Initialize auth state
   useEffect(() => {
     const initAuth = async () => {
       try {
-        if (TokenManager.isAuthenticated()) {
-          // Try to get user from token first (faster)
-          const userFromToken = TokenManager.getCurrentUserFromToken();
-          if (userFromToken) {
-            setUser(userFromToken);
-          }
-          
-          // Then refresh from server to get latest data
-          try {
-            const currentUser = await authApi.getCurrentUser();
-            setUser(currentUser);
-          } catch (error) {
-            // If server request fails, keep token user or clear if invalid
-            console.warn('Failed to refresh user from server:', error);
-            if (!userFromToken) {
-              setUser(null);
-            }
-          }
+        // Check for existing session first
+        const existingUser = SessionManager.getCurrentUser();
+        if (existingUser) {
+          setUser(existingUser);
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
@@ -57,107 +62,105 @@ export const useAuth = (): UseAuthReturn => {
     };
 
     initAuth();
+
+    // Listen to Firebase auth state changes
+    const unsubscribe = firebaseAuthService.onAuthStateChange((firebaseUser) => {
+      if (firebaseUser) {
+        // Sync with backend if user exists
+        try {
+          SessionManager.saveSession(firebaseUser, ''); // Token will be handled by Firebase
+          setUser(firebaseUser);
+        } catch (error) {
+          console.error('Error syncing Firebase user:', error);
+        }
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const login = useCallback(async (credentials: LoginRequest): Promise<AuthenticationResponse> => {
+  const signInWithGoogle = useCallback(async (): Promise<AuthResponse> => {
     setIsLoading(true);
     try {
-      const response = await authApi.login(credentials);
-      // Convert UserInfo to AuthUser by adding missing properties
-      const authUser: AuthUser = {
-        ...response.user,
-        id: response.user.id || API.DEFAULT_IDS.NEW_ENTITY,
-        username: response.user.username || '',
-        email: response.user.email || '',
-        phoneNumber: response.user.phoneNumber || '',
-        roles: response.user.roles || [],
-        isActive: true, // Default value
-        isDelete: false, // Default value
-      };
-      setUser(authUser);
-      return response;
+      // Use Firebase Google authentication
+      const firebaseResult = await firebaseAuthService.signInWithGoogle();
+      const authResponse = await verifyWithBackend(firebaseResult.token);
+      
+      return authResponse;
     } catch (error) {
       setUser(null);
       throw error;
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [verifyWithBackend]);
 
-  const register = useCallback(async (userData: RegisterRequest): Promise<AuthenticationResponse> => {
+  const signInWithFacebook = useCallback(async (): Promise<AuthResponse> => {
     setIsLoading(true);
     try {
-      const response = await authApi.register(userData);
-      // Convert UserInfo to AuthUser by adding missing properties
-      const authUser: AuthUser = {
-        ...response.user,
-        username: response.user.username || '',
-        email: response.user.email || '',
-        phoneNumber: '',
-        roles: response.user.roles || [],
-        isActive: true, // Default value
-        isDelete: false, // Default value
-      };
-      setUser(authUser);
-      return response;
+      // Use Firebase Facebook authentication
+      const firebaseResult = await firebaseAuthService.signInWithFacebook();
+      const authResponse = await verifyWithBackend(firebaseResult.token);
+      
+      return authResponse;
     } catch (error) {
       setUser(null);
       throw error;
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [verifyWithBackend]);
+
+  const signInWithApple = useCallback(async (): Promise<AuthResponse> => {
+    setIsLoading(true);
+    try {
+      // Use Firebase Apple authentication
+      const firebaseResult = await firebaseAuthService.signInWithApple();
+      const authResponse = await verifyWithBackend(firebaseResult.token);
+      
+      return authResponse;
+    } catch (error) {
+      setUser(null);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [verifyWithBackend]);
 
   const logout = useCallback(async (): Promise<void> => {
     setIsLoading(true);
     try {
-      await authApi.logout();
+      await firebaseAuthService.logout();
+      SessionManager.clearSession();
+      setUser(null);
     } catch (error) {
       console.error('Logout error:', error);
+      throw error;
     } finally {
-      setUser(null);
       setIsLoading(false);
     }
   }, []);
 
   const refreshUser = useCallback(async (): Promise<void> => {
-    if (!TokenManager.isAuthenticated()) {
-      setUser(null);
-      return;
-    }
-
     try {
-      const currentUser = await authApi.getCurrentUser();
-      setUser(currentUser);
+      const currentUser = SessionManager.getCurrentUser();
+      if (currentUser) {
+        setUser(currentUser);
+      }
     } catch (error) {
-      console.error('Failed to refresh user:', error);
+      console.error('Refresh user error:', error);
       setUser(null);
     }
-  }, []);
-
-
-  const forgotPassword = useCallback(async (email: string): Promise<void> => {
-    return authApi.forgotPassword({ email });
-  }, []);
-
-  const resetPassword = useCallback(async (
-    email: string,
-    resetToken: string, 
-    newPassword: string
-  ): Promise<void> => {
-    const request = { email, resetToken, newPassword };
-    return authApi.resetPasswordWithRequest(request);
   }, []);
 
   return {
     user,
-    isAuthenticated: !!user && TokenManager.isAuthenticated(),
+    isAuthenticated: !!user,
     isLoading,
-    login,
-    register,
+    signInWithGoogle,
+    signInWithFacebook,
+    signInWithApple,
     logout,
     refreshUser,
-    forgotPassword,
-    resetPassword,
   };
 };

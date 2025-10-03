@@ -1,7 +1,7 @@
 import { Note } from '@/domains/note';
 import { notesApi } from './api/notes-api';
 import { NotesStorage } from '@/helpers/notes-storage';
-import { TokenManager } from '@/helpers/token-manager';
+import { SessionManager } from '@/helpers/session-manager';
 import { transformNoteResponseToNote } from './api/transformers/note-transformers';
 import { QueueManager } from './sync/queue-manager';
 import { BatchSyncHandler } from './sync/batch-sync-handler';
@@ -157,7 +157,7 @@ export class NotesSyncService {
     // Set userId if user is authenticated
     let noteToSave = note;
     if (this.isAuthenticated()) {
-      const currentUser = TokenManager.getCurrentUserFromToken();
+      const currentUser = SessionManager.getCurrentUser();
       if (currentUser && currentUser.id) {
         console.log(`Setting userId ${currentUser.id} for note ${note.uuid} (was ${note.userId})`);
         noteToSave = { ...note, userId: currentUser.id };
@@ -189,7 +189,7 @@ export class NotesSyncService {
     // Set userId if user is authenticated
     let noteToSave = note;
     if (this.isAuthenticated()) {
-      const currentUser = TokenManager.getCurrentUserFromToken();
+      const currentUser = SessionManager.getCurrentUser();
       if (currentUser && currentUser.id) {
         noteToSave = { ...note, userId: currentUser.id };
       }
@@ -292,7 +292,7 @@ export class NotesSyncService {
    */
   static async loadAllNotes(): Promise<Note[]> {
     // If user has never logged in, only use localStorage
-    if (!TokenManager.hasUserEverLoggedIn()) {
+    if (!SessionManager.hasUserEverLoggedIn()) {
       console.log('User has never logged in, using localStorage only');
       return NotesStorage.getAllNotes();
     }
@@ -424,7 +424,7 @@ export class NotesSyncService {
    * Check if user is authenticated
    */
   private static isAuthenticated(): boolean {
-    return TokenManager.isAuthenticated();
+    return SessionManager.isAuthenticated();
   }
 
   /**

@@ -3,7 +3,7 @@ import { NotesSyncService } from '@/services/notes-sync-service';
 import { QueueManager } from '@/services/sync/queue-manager';
 import { QueueStats, RealTimeSyncStatus } from '@/types/sync.types';
 import { SYNC } from '@/constants/ui-constants';
-import { TokenManager } from '@/helpers/token-manager';
+import { SessionManager } from '@/helpers/session-manager';
 
 export interface SyncStatus {
   isOnline: boolean;
@@ -26,7 +26,7 @@ export const useSyncStatus = () => {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({
     isOnline: navigator.onLine,
     isApiAvailable: false,
-    isAuthenticated: TokenManager.isAuthenticated(),
+    isAuthenticated: SessionManager.isAuthenticated(),
     lastSyncTime: null,
     primaryQueueCount: SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT,
     retryQueueCount: SYNC.DEFAULT_QUEUE_STATS.EMPTY_COUNT,
@@ -67,7 +67,7 @@ export const useSyncStatus = () => {
       retryQueueCount: status.retryQueueCount,
       isTimerActive: status.isTimerActive,
       isSyncing: status.isSyncing,
-      isAuthenticated: TokenManager.isAuthenticated(),
+      isAuthenticated: SessionManager.isAuthenticated(),
       queueStats: status.queueStats,
       realTimeStatus: status.realTimeStatus
     }));

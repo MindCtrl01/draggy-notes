@@ -23,7 +23,6 @@ export const Login: React.FC = () => {
       <LoginModal
         isOpen={true}
         onClose={handleClose}
-        defaultMode="login"
       />
     </div>
   );

@@ -1,110 +1,43 @@
 // Authentication Request Models
+export interface FirebaseLoginRequest {
+  firebaseToken: string; // For Firebase token verification
+}
+
+// Legacy interface for backward compatibility
 export interface LoginRequest {
-  email: string | null;
-  password: string | null;
-}
-
-export interface RegisterRequest {
-  username: string | null;
-  email: string | null;
-  password: string | null;
-}
-
-export interface GoogleLoginRequest {
-  idToken: string | null;
-}
-
-export interface LogoutRequest {
-  token: string | null;
-}
-
-export interface ForgotPasswordRequest {
-  email: string | null;
-}
-
-export interface ResetPasswordRequest {
-  email: string;
-  resetToken: string;
-  newPassword: string;
-}
-
-export interface RefreshTokenRequest {
-  refreshToken: string | null;
+  firebaseToken?: string;
 }
 
 // Authentication Response Models
 export interface UserInfo {
   id: number;
-  username: string | null;
-  firstName: string | null;
-  lastName: string | null;
-  email: string | null;
-  phoneNumber: string | null;
-  roles: string[] | null;
-}
-
-export interface AuthenticationResponse {
-  token: string | null;
-  refreshToken: string | null;
-  expiresAt: string; // ISO date string format
-  user: UserInfo;
-}
-
-// User Models
-export interface UserResponse {
-  id: number;
-  firstName: string | null;
-  lastName: string | null;
-  email: string | null;
-  phoneNumber: string | null;
-  isActive: boolean;
-  createdAt: string; // ISO date string format
-  updatedAt: string; // ISO date string format
-}
-
-export interface CreateUserRequest {
-  username: string | null;
-  firstName: string | null;
-  lastName: string | null;
-  email: string | null;
-  phoneNumber?: string | null;
-}
-
-export interface UpdateUserRequest {
-  id: number;
-  username: string | null;
-  firstName: string | null;
-  lastName: string | null;
-  email: string | null;
-  phoneNumber: string | null;
-  isActive: boolean;
-}
-
-export interface GetUserByIdRequest {
-  id: number;
-}
-
-export interface DeleteUserRequest {
-  id: number;
-}
-
-// Legacy types for backward compatibility
-export interface AuthTokens {
-  accessToken: string;
-  refreshToken: string;
+  uuid: string;
+  username: string;
+  email: string;
+  displayName?: string;
+  photoUrl?: string;
+  phoneNumber?: string;
+  emailVerified?: boolean;
+  lastSignInAt?: Date;
+  createdAt?: Date;
 }
 
 export interface AuthUser {
   id: number;
+  uuid: string;
   username: string;
   email: string;
   phoneNumber?: string;
+  displayName?: string;
+  photoUrl?: string;
+  emailVerified?: boolean;
+  lastSignInAt?: Date;
+  createdAt?: Date;
   isActive: boolean;
   isDelete: boolean;
-  roles: string[];
 }
 
 export interface AuthResponse {
   user: AuthUser;
-  tokens: AuthTokens;
+  token?: string;
 }

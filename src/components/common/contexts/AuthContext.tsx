@@ -1,20 +1,16 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useAuth } from '@/hooks/auth/use-auth';
-import { AuthUser } from '@/services/api/models/auth.model';
-import { LoginRequest } from '@/services/api/models/auth.model';
-import { AuthenticationResponse } from '@/services/api/models/auth.model';
-import { RegisterRequest } from '@/services/api/models/auth.model';
+import { AuthResponse, AuthUser } from '@/services/api/models/auth.model';
 
 interface AuthContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (credentials: LoginRequest) => Promise<AuthenticationResponse>;
-  register: (userData: RegisterRequest) => Promise<AuthenticationResponse>;
+  signInWithGoogle: () => Promise<AuthResponse>;
+  signInWithFacebook: () => Promise<AuthResponse>;
+  signInWithApple: () => Promise<AuthResponse>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
-  forgotPassword: (email: string) => Promise<void>;
-  resetPassword: (email: string, resetToken: string, newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

@@ -24,7 +24,7 @@ export class NotesStorage {
         date: note.date.toISOString(),
         createdAt: note.createdAt?.toISOString() || new Date().toISOString(),
         updatedAt: note.updatedAt?.toISOString() || new Date().toISOString(),
-        userId: note.userId || -1, // Default to -1 if not set
+        userId: note.userId || 0, // Default to 0 if not set
         tags: note.tags || [], // Default to empty array if not set
         isPinned: note.isPinned || false, // Default to false if not set
         // sync properties - preserve tracking fields
@@ -62,7 +62,7 @@ export class NotesStorage {
         date: new Date(parsed.date),
         createdAt: new Date(parsed.createdAt),
         updatedAt: new Date(parsed.updatedAt),
-        userId: parsed.userId || -1, // Default to -1 if not set
+        userId: parsed.userId || 0, // Default to 0 if not set
         tags: parsed.tags || [], // Default to empty array if not set
         isPinned: parsed.isPinned || false, // Default to false if not set
         // sync properties - restore tracking fields

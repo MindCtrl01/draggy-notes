@@ -88,11 +88,11 @@ export const useNotes = (selectedDate?: Date, isAuthenticated?: boolean) => {
       position: defaultPosition,
       createdAt: new Date(),
       updatedAt: new Date(),
-      userId: API.DEFAULT_IDS.TEMPORARY_USER, // Temporary userId
-      tags: [], // Empty tags initially
-      isTaskMode: true, // Default to task mode
-      noteTasks: [], // Initialize empty tasks array
-      isDeleted: false, // New notes are not deleted by default
+      userId: 0, // Update later
+      tags: [],
+      isTaskMode: true,
+      noteTasks: [],
+      isDeleted: false,
       isPinned: false,
       // sync properties - initialize for tracking
       syncVersion: 1, // Start with version 1 for new notes

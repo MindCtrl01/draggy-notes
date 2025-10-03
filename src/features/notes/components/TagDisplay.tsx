@@ -15,7 +15,7 @@ export const TagDisplay: React.FC<TagDisplayProps> = ({
   tags, 
   className = '', 
   onTagsChange,
-  userId: _userId = -1,
+  userId: _userId = 0,
   readOnly = false
 }) => {
   const [isAddingTag, setIsAddingTag] = useState(false);

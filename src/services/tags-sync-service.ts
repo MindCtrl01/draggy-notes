@@ -1,7 +1,7 @@
 import { Tag } from '@/domains/tag';
 import { tagsApi } from './api/tags-api';
 import { TagManager } from '@/helpers/tag-manager';
-import { TokenManager } from '@/helpers/token-manager';
+import { SessionManager } from '@/helpers/session-manager';
 import { 
   transformTagResponseArrayToTags, 
   transformTopTagResponseArrayToTags,
@@ -23,7 +23,7 @@ export class TagsSyncService {
   static async getAllTags(userId: number): Promise<Tag[]> {
     try {
       // If authenticated, try to fetch from API
-      if (TokenManager.isAuthenticated()) {
+      if (SessionManager.isAuthenticated()) {
         const apiTags = await tagsApi.getAllTags();
         const tags = transformTagResponseArrayToTags(apiTags);
         
@@ -47,7 +47,7 @@ export class TagsSyncService {
   static async getTopTags(userId: number): Promise<Tag[]> {
     try {
       // If authenticated, try to fetch from API
-      if (TokenManager.isAuthenticated()) {
+      if (SessionManager.isAuthenticated()) {
         const apiTags = await tagsApi.getTopTags();
         const tags = transformTopTagResponseArrayToTags(apiTags);
         
@@ -68,7 +68,7 @@ export class TagsSyncService {
   static async createTag(name: string, userId: number): Promise<Tag> {
     try {
       // If authenticated, create via API
-      if (TokenManager.isAuthenticated()) {
+      if (SessionManager.isAuthenticated()) {
         const request = transformTagToCreateRequest({
           id: 0,
           uuid: '',
@@ -103,7 +103,7 @@ export class TagsSyncService {
   static async updateTag(tag: Tag): Promise<Tag> {
     try {
       // If authenticated and tag has server ID, update via API
-      if (TokenManager.isAuthenticated() && tag.id > 0 && !tag.isPreDefined) {
+      if (SessionManager.isAuthenticated() && tag.id > 0 && !tag.isPreDefined) {
         const request = transformTagToUpdateRequest(tag);
         const apiTag = await tagsApi.updateTag(tag.id, request);
         const updatedTag = transformTagResponseArrayToTags([apiTag])[0];
@@ -135,7 +135,7 @@ export class TagsSyncService {
 
     try {
       // If authenticated and tag has server ID, delete via API
-      if (TokenManager.isAuthenticated() && tag.id > 0) {
+      if (SessionManager.isAuthenticated() && tag.id > 0) {
         await tagsApi.deleteTag(tag.id);
       }
     } catch (error) {
@@ -179,7 +179,7 @@ export class TagsSyncService {
    * Performs full synchronization between localStorage and API
    */
   static async syncTags(userId: number): Promise<void> {
-    if (this.isSyncing || !TokenManager.isAuthenticated()) {
+    if (this.isSyncing || !SessionManager.isAuthenticated()) {
       return;
     }
 
