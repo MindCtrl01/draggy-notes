@@ -18,6 +18,7 @@ export interface CreateNoteRequest {
   content: string;
   date: string; // ISO date string format
   userId: number;
+  noteGroupId?: number; // New field for group notes
   color: string;
   isDisplayed: boolean;
   position: CreateNotePositionRequest;
@@ -50,6 +51,7 @@ export interface UpdateNoteRequest {
   id: number;
   uuid: string;
   userId: number;
+  noteGroupId?: number; // New field for group notes
   title: string;
   content: string;
   date: string; // ISO date string format
@@ -161,6 +163,7 @@ export interface NoteResponse {
   id: number;
   uuid: string;
   userId: number;
+  noteGroupId?: number; // New field for group notes
   title: string;
   content: string;
   date: string; // ISO date string format

@@ -25,6 +25,7 @@ export function transformNoteResponseToNote(response: NoteResponse): Note {
     id: response.id,
     uuid: response.uuid,
     userId: response.userId || 0,
+    noteGroupId: response.noteGroupId, // Include group ID
     title: response.title,
     content: response.content,
     date: new Date(response.date),
@@ -59,6 +60,7 @@ export function transformNoteToCreateRequest(note: Note): CreateNoteRequest {
     content: note.content,
     date: note.date.toISOString(),
     userId: note.userId,
+    noteGroupId: note.noteGroupId, // Include group ID
     color: note.color,
     isDisplayed: note.isDisplayed,
     position: {
@@ -86,6 +88,7 @@ export function transformNoteToUpdateRequest(note: Note): UpdateNoteRequest {
     id: note.id || API.DEFAULT_IDS.NEW_ENTITY, // Will be set from the API response
     uuid: note.uuid,
     userId: note.userId,
+    noteGroupId: note.noteGroupId, // Include group ID
     title: note.title,
     content: note.content,
     date: note.date.toISOString(),

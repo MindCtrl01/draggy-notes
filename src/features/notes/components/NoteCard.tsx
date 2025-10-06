@@ -409,7 +409,14 @@ export const NoteCard = ({ note, onUpdate, onDelete, onDrag, onDragEnd, onMoveTo
         
         {/* Date display with task progress */}
         <div className="flex items-center justify-between text-xs opacity-70 mb-2">
-          <span>{formatDateDisplay(note.date)}</span>
+          <div className="flex items-center gap-2">
+            <span>{formatDateDisplay(note.date)}</span>
+            {note.noteGroupId && (
+              <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
+                👥 Group
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             {note.noteTasks && note.noteTasks.length > 0 && !note.isTaskMode && (
               <span className="task-progress-display">

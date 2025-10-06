@@ -5,6 +5,8 @@ import { SearchSidebar } from './SearchSidebar';
 import { CalendarSidebar } from './CalendarSidebar';
 import { QuickNoteTabs } from './QuickNoteTabs';
 import { ConfirmationDialog } from './ConfirmationDialog';
+import { ShareLinkButton } from './ShareLinkButton';
+import { GroupSelector } from './GroupSelector';
 import { LoginModal } from '@/components/auth';
 import { ThemeToggle } from '@/components/common';
 import { useNotes, formatDateKey } from '../hooks/use-notes';
@@ -19,6 +21,7 @@ import { NotesSyncService } from '@/services/notes-sync-service';
 
 export const NotesCanvas = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedGroupId, setSelectedGroupId] = useState<number | undefined>(undefined);
   const [showSearchSidebar, setShowSearchSidebar] = useState(false);
   const [selectedNoteUuid, setSelectedNoteUuid] = useState<string | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -42,7 +45,7 @@ export const NotesCanvas = () => {
     isCreating,
     isUpdating,
     isDeleting 
-  } = useNotes(selectedDate, isAuthenticated);
+  } = useNotes(selectedDate, isAuthenticated, selectedGroupId);
 
   const { containerRef, isDragging, handleMouseDown } = useCanvasDrag();
 
@@ -298,6 +301,14 @@ export const NotesCanvas = () => {
           {/* Hide theme toggle and auth buttons when search sidebar is open */}
           {!showSearchSidebar && (
             <>
+              {/* Group Selector */}
+              {isAuthenticated && (
+                <GroupSelector
+                  selectedGroupId={selectedGroupId}
+                  onGroupSelect={setSelectedGroupId}
+                />
+              )}
+
               {/* Search button */}
               <button
                 onClick={handleSearchToggle}
@@ -317,6 +328,7 @@ export const NotesCanvas = () => {
 
               {isAuthenticated && user ? (
                 <>
+                  <ShareLinkButton className="flex items-center gap-2 px-3 py-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100/90 dark:hover:bg-gray-700/90 text-sm font-medium transition-colors" />
                   <div className="flex items-center gap-2 px-3 py-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
                     <User size={16} className="text-gray-600 dark:text-gray-400" />
                     <span className="text-sm font-medium text-gray-800 dark:text-gray-200">

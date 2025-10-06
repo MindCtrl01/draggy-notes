@@ -431,7 +431,7 @@ export class NotesSyncService {
    * Set up SignalR event handlers for real-time sync
    */
   private static setupSignalREventHandlers(): void {
-    // Handle real-time note events
+    // Handle personal note events
     SignalRService.addEventListener('notesCreated', (data: any) => {
       console.log('Real-time notes created:', data.notes.length);
       this.notifyRealTimeEventHandlers('notesCreated', data);
@@ -445,6 +445,33 @@ export class NotesSyncService {
     SignalRService.addEventListener('notesDeleted', (data: any) => {
       console.log('Real-time notes deleted:', data.notes.length);
       this.notifyRealTimeEventHandlers('notesDeleted', data);
+    });
+
+    // Handle group note events
+    SignalRService.addEventListener('groupNotesCreated', (data: any) => {
+      console.log('Real-time group notes created:', data.notes.length);
+      this.notifyRealTimeEventHandlers('groupNotesCreated', data);
+    });
+
+    SignalRService.addEventListener('groupNotesUpdated', (data: any) => {
+      console.log('Real-time group notes updated:', data.notes.length);
+      this.notifyRealTimeEventHandlers('groupNotesUpdated', data);
+    });
+
+    SignalRService.addEventListener('groupNotesDeleted', (data: any) => {
+      console.log('Real-time group notes deleted:', data.notes.length);
+      this.notifyRealTimeEventHandlers('groupNotesDeleted', data);
+    });
+
+    // Handle group membership events
+    SignalRService.addEventListener('userJoinedGroup', (data: any) => {
+      console.log('User joined group:', data);
+      this.notifyRealTimeEventHandlers('userJoinedGroup', data);
+    });
+
+    SignalRService.addEventListener('userLeftGroup', (data: any) => {
+      console.log('User left group:', data);
+      this.notifyRealTimeEventHandlers('userLeftGroup', data);
     });
 
     // Handle connection events

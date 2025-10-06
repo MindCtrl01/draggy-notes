@@ -10,7 +10,7 @@ import { API } from '@/constants/ui-constants';
 import { toast } from '@/hooks/use-toast';
 
 
-export const useNotes = (selectedDate?: Date, isAuthenticated?: boolean) => {
+export const useNotes = (selectedDate?: Date, isAuthenticated?: boolean, selectedGroupId?: number) => {
   const [allNotes, setAllNotes] = useState<Note[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -60,10 +60,16 @@ export const useNotes = (selectedDate?: Date, isAuthenticated?: boolean) => {
   }, [isAuthenticated]); // Add isAuthenticated as dependency
 
   const notes = selectedDate
-    ? allNotes.filter(note => 
-        !note.isDeleted && (isSameDay(note.date, selectedDate) || note.isPinned)
-      )
-    : allNotes.filter(note => !note.isDeleted);
+    ? allNotes.filter(note => {
+        const isDateMatch = !note.isDeleted && (isSameDay(note.date, selectedDate) || note.isPinned);
+        const isGroupMatch = selectedGroupId ? note.noteGroupId === selectedGroupId : !note.noteGroupId;
+        return isDateMatch && isGroupMatch;
+      })
+    : allNotes.filter(note => {
+        const isNotDeleted = !note.isDeleted;
+        const isGroupMatch = selectedGroupId ? note.noteGroupId === selectedGroupId : !note.noteGroupId;
+        return isNotDeleted && isGroupMatch;
+      });
 
   const [draggedNotes, setDraggedNotes] = useState<Record<string, { x: number; y: number }>>({});
 
@@ -89,6 +95,7 @@ export const useNotes = (selectedDate?: Date, isAuthenticated?: boolean) => {
       createdAt: new Date(),
       updatedAt: new Date(),
       userId: 0, // Update later
+      noteGroupId: selectedGroupId, // Include group ID if provided
       tags: [],
       isTaskMode: true,
       noteTasks: [],
@@ -123,7 +130,7 @@ export const useNotes = (selectedDate?: Date, isAuthenticated?: boolean) => {
         setIsCreating(false);
       }, ANIMATION.CREATE_NOTE_DELAY);
     }
-  }, [selectedDate]);
+  }, [selectedDate, selectedGroupId]);
 
   const updateNote = useCallback(async (updatedNote: Note) => {
     setIsUpdating(true);

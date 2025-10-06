@@ -140,22 +140,51 @@ export class SignalRService {
   private static setupEventHandlers(): void {
     if (!this.connection) return;
 
-    // Handle NotesCreated event
+    // Handle personal NotesCreated event
     this.connection.on('NotesCreated', (syncEvent: NoteSyncEvent) => {
       console.log('Received NotesCreated event:', syncEvent);
       this.handleNotesCreated(syncEvent);
     });
 
-    // Handle NotesUpdated event
+    // Handle personal NotesUpdated event
     this.connection.on('NotesUpdated', (syncEvent: NoteSyncEvent) => {
       console.log('Received NotesUpdated event:', syncEvent);
       this.handleNotesUpdated(syncEvent);
     });
 
-    // Handle NotesDeleted event
+    // Handle personal NotesDeleted event
     this.connection.on('NotesDeleted', (syncEvent: NoteSyncEvent) => {
       console.log('Received NotesDeleted event:', syncEvent);
       this.handleNotesDeleted(syncEvent);
+    });
+
+    // Handle group NotesCreated event
+    this.connection.on('GroupNotesCreated', (syncEvent: NoteSyncEvent) => {
+      console.log('Received GroupNotesCreated event:', syncEvent);
+      this.handleGroupNotesCreated(syncEvent);
+    });
+
+    // Handle group NotesUpdated event
+    this.connection.on('GroupNotesUpdated', (syncEvent: NoteSyncEvent) => {
+      console.log('Received GroupNotesUpdated event:', syncEvent);
+      this.handleGroupNotesUpdated(syncEvent);
+    });
+
+    // Handle group NotesDeleted event
+    this.connection.on('GroupNotesDeleted', (syncEvent: NoteSyncEvent) => {
+      console.log('Received GroupNotesDeleted event:', syncEvent);
+      this.handleGroupNotesDeleted(syncEvent);
+    });
+
+    // Handle group membership events
+    this.connection.on('UserJoinedGroup', (event: any) => {
+      console.log('Received UserJoinedGroup event:', event);
+      this.notifyEventHandlers('userJoinedGroup', event);
+    });
+
+    this.connection.on('UserLeftGroup', (event: any) => {
+      console.log('Received UserLeftGroup event:', event);
+      this.notifyEventHandlers('userLeftGroup', event);
     });
   }
 
@@ -368,6 +397,136 @@ export class SignalRService {
   }
 
   /**
+   * Handle GroupNotesCreated event from server
+   */
+  private static handleGroupNotesCreated(syncEvent: NoteSyncEvent): void {
+    try {
+      // Process each created group note
+      syncEvent.notes.forEach(noteData => {
+        const existingNote = NotesStorage.getNote(noteData.uuid);
+        
+        if (!existingNote) {
+          // New group note from another client - add to localStorage
+          const note = this.transformServerNoteToLocalNote(noteData);
+          NotesStorage.saveNote(note);
+          console.log(`Added new group note from server: ${note.uuid}`);
+        } else {
+          // Note exists locally - check versions
+          const serverSyncVersion = noteData.syncVersion || 1;
+          const localSyncVersion = existingNote.syncVersion || 1;
+          
+          if (serverSyncVersion > localSyncVersion) {
+            // Server version is newer - update local note
+            const note = this.transformServerNoteToLocalNote(noteData);
+            NotesStorage.saveNote(note);
+            console.log(`Updated existing group note from server: ${note.uuid} (server v${serverSyncVersion} > local v${localSyncVersion})`);
+          } else {
+            console.log(`Keeping local version of group note: ${noteData.uuid} (local v${localSyncVersion} >= server v${serverSyncVersion})`);
+          }
+        }
+      });
+
+      this.realTimeStatus.eventsProcessed++;
+      this.realTimeStatus.lastEventReceived = new Date();
+      this.updateRealTimeStatus();
+      
+      // Notify event handlers
+      this.notifyEventHandlers('groupNotesCreated', { syncEvent, notes: syncEvent.notes });
+      
+      // Force reload all notes from localStorage after successful sync
+      this.notifyEventHandlers('forceReloadNotes', { reason: 'groupNotesCreated', affectedNotes: syncEvent.notes.length });
+
+    } catch (error) {
+      console.error('Error handling GroupNotesCreated event:', error);
+    }
+  }
+
+  /**
+   * Handle GroupNotesUpdated event from server
+   */
+  private static handleGroupNotesUpdated(syncEvent: NoteSyncEvent): void {
+    try {
+      // Process each updated group note
+      syncEvent.notes.forEach(noteData => {
+        const existingNote = NotesStorage.getNote(noteData.uuid);
+        
+        if (existingNote) {
+          // Check versions to determine if we should update
+          const serverSyncVersion = noteData.syncVersion || 1;
+          const localSyncVersion = existingNote.syncVersion || 1;
+          const localVersion = existingNote.localVersion || 1;
+          
+          // Only update if server version is newer and local hasn't been modified
+          if (serverSyncVersion > localSyncVersion && localVersion === localSyncVersion) {
+            const note = this.transformServerNoteToLocalNote(noteData);
+            NotesStorage.saveNote(note);
+            console.log(`Updated group note from server: ${note.uuid} (server v${serverSyncVersion} > local v${localSyncVersion})`);
+          } else {
+            console.log(`Keeping local version of group note: ${noteData.uuid} (local modifications detected or server version not newer)`);
+          }
+        } else {
+          // Note doesn't exist locally - treat as create
+          const note = this.transformServerNoteToLocalNote(noteData);
+          NotesStorage.saveNote(note);
+          console.log(`Added missing group note from server update: ${note.uuid}`);
+        }
+      });
+
+      this.realTimeStatus.eventsProcessed++;
+      this.realTimeStatus.lastEventReceived = new Date();
+      this.updateRealTimeStatus();
+      
+      // Notify event handlers
+      this.notifyEventHandlers('groupNotesUpdated', { syncEvent, notes: syncEvent.notes });
+      
+      // Force reload all notes from localStorage after successful sync
+      this.notifyEventHandlers('forceReloadNotes', { reason: 'groupNotesUpdated', affectedNotes: syncEvent.notes.length });
+
+    } catch (error) {
+      console.error('Error handling GroupNotesUpdated event:', error);
+    }
+  }
+
+  /**
+   * Handle GroupNotesDeleted event from server
+   */
+  private static handleGroupNotesDeleted(syncEvent: NoteSyncEvent): void {
+    try {
+      // Process each deleted group note
+      syncEvent.notes.forEach(noteData => {
+        const existingNote = NotesStorage.getNote(noteData.uuid);
+        
+        if (existingNote) {
+          // Check if local note has unsaved changes
+          const localVersion = existingNote.localVersion || 1;
+          const syncVersion = existingNote.syncVersion || 1;
+          
+          if (localVersion > syncVersion) {
+            console.log(`Not deleting group note ${noteData.uuid}: has unsaved local changes`);
+          } else {
+            // Safe to delete - no local changes
+            NotesStorage.deleteNote(noteData.uuid);
+            console.log(`Deleted group note from server: ${noteData.uuid}`);
+          }
+        }
+      });
+
+      this.realTimeStatus.eventsProcessed++;
+      this.realTimeStatus.lastEventReceived = new Date();
+      this.updateRealTimeStatus();
+      
+      // Notify event handlers
+      this.notifyEventHandlers('groupNotesDeleted', { syncEvent, notes: syncEvent.notes });
+      
+      // Force reload all notes from localStorage after successful sync
+      this.notifyEventHandlers('forceReloadNotes', { reason: 'groupNotesDeleted', affectedNotes: syncEvent.notes.length });
+
+    } catch (error) {
+      console.error('Error handling GroupNotesDeleted event:', error);
+    }
+  }
+
+  /**
    * Transform server note data to local Note object
    */
   private static transformServerNoteToLocalNote(serverNote: any): Note {
@@ -383,6 +542,7 @@ export class SignalRService {
       isPinned: serverNote.isPinned,
       isTaskMode: serverNote.isTaskMode,
       isDeleted: serverNote.isDeleted,
+      noteGroupId: serverNote.noteGroupId, // Include group ID
       noteTasks: serverNote.tasks || [],
       tags: serverNote.tags || [],
       createdAt: new Date(serverNote.createdAt),

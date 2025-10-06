@@ -17,6 +17,7 @@ export interface Note extends BaseEntity {
   noteTasks?: NoteTask[] | null;
   isTaskMode: boolean;
   userId: number;
+  noteGroupId?: number; // New field for group notes
   tags?: Tag[] | null;
   isDeleted: boolean;
 
